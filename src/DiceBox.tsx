@@ -32,15 +32,21 @@ const DiceBoxComponent: React.FC<DiceBoxComponentProps> = ({ onRoll }) => {
                 if (diceBoxRef.current.scene) {
                     const camera = diceBoxRef.current.scene.activeCamera;
                     if (camera) {
-                        camera.radius = 20; // Distância da câmera (mais próxima para melhor visão)
-                        camera.beta = Math.PI / 4; // Ângulo vertical (45 graus)
-                        camera.alpha = 0; // Rotação horizontal
+                        camera.radius = 30; // Increased distance for better visibility
+                        camera.beta = Math.PI / 3; // Slightly different angle
                     }
                 }
 
                 // Set up event listener for roll results
                 if (onRoll) {
                     diceBoxRef.current.onRollComplete = onRoll;
+                }
+                
+                // Force initial scene render
+                if (diceBoxRef.current.scene) {
+                    setTimeout(() => {
+                        diceBoxRef.current.scene.render();
+                    }, 100);
                 }
             }
         };
@@ -69,7 +75,10 @@ const DiceBoxComponent: React.FC<DiceBoxComponentProps> = ({ onRoll }) => {
                 diceBoxRef.current.onRollComplete = onRoll;
             }
             
-            diceBoxRef.current.roll(notation);
+            // Small delay to ensure proper initialization
+            setTimeout(() => {
+                diceBoxRef.current.roll(notation);
+            }, 10);
         } else {
             console.warn("DiceBox not initialized yet");
         }
