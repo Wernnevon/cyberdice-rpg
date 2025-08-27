@@ -19,16 +19,29 @@ function App() {
     const handleRoll = (results: any) => {
         try {
             console.log("Raw results from dice box:", results);
-            // A biblioteca retorna um array de resultados
-            const resultData = results[0];
-            console.log("First result data:", resultData);
+            
+            // Verificar a estrutura dos resultados
+            if (!results || !Array.isArray(results) || results.length === 0) {
+                console.error("Invalid results structure");
+                return;
+            }
+            
+            // A biblioteca pode retornar diretamente o objeto de resultado
+            const resultData = Array.isArray(results[0]) ? results[0][0] : results[0];
+            console.log("Processing result data:", resultData);
+            
+            // Verificar se temos os dados necessários
+            if (!resultData.results || !Array.isArray(resultData.results)) {
+                console.error("Invalid result data structure:", resultData);
+                return;
+            }
             
             // Mapear os dados para o formato esperado pela interface RollResult
             const formattedResult = {
-                total: resultData.total,
+                total: resultData.total || 0,
                 rolls: resultData.results.map((die: any) => ({
-                    type: `d${die.sides}`,
-                    value: die.value
+                    type: `d${die.sides || 0}`,
+                    value: die.value || 0
                 }))
             };
             
@@ -51,10 +64,10 @@ function App() {
                     <pre>
                         {rollResult
                             ? `TOTAL: ${rollResult.total}
-DADOS: ${rollResult.rolls.map(r => r.value).join(', ')}
+DADOS: ${rollResult.rolls.map((r) => r.value).join(", ")}
 QUANTIDADE: ${rollResult.rolls.length}
-MÍNIMO: ${Math.min(...rollResult.rolls.map(r => r.value))}
-MÁXIMO: ${Math.max(...rollResult.rolls.map(r => r.value))}`
+MÍNIMO: ${Math.min(...rollResult.rolls.map((r) => r.value))}
+MÁXIMO: ${Math.max(...rollResult.rolls.map((r) => r.value))}`
                             : "AGUARDANDO COMANDO..."}
                     </pre>
                 </div>
