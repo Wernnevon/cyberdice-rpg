@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import DiceBox from "@3d-dice/dice-box";
 
 interface DiceBoxComponentProps {
@@ -8,20 +8,10 @@ interface DiceBoxComponentProps {
 const DiceBoxComponent: React.FC<DiceBoxComponentProps> = ({ onRoll }) => {
     const diceBoxRef = useRef<any>(null);
     const boxRef = useRef<HTMLDivElement>(null);
-    const [rollCount, setRollCount] = useState(0);
 
     useEffect(() => {
         const initDiceBox = async () => {
             if (boxRef.current) {
-                // Clean up existing instance if it exists
-                if (diceBoxRef.current) {
-                    try {
-                        diceBoxRef.current.clear();
-                    } catch (e) {
-                        console.warn("Error clearing dice box:", e);
-                    }
-                }
-
                 // Initialize dice box with Dice of Rolling theme
                 diceBoxRef.current = new DiceBox("#dice-box", {
                     assetPath: "/assets/",
@@ -42,8 +32,9 @@ const DiceBoxComponent: React.FC<DiceBoxComponentProps> = ({ onRoll }) => {
                 if (diceBoxRef.current.scene) {
                     const camera = diceBoxRef.current.scene.activeCamera;
                     if (camera) {
-                        camera.radius = 30; // Distância da câmera (aumentada para melhor visão)
+                        camera.radius = 20; // Distância da câmera (mais próxima para melhor visão)
                         camera.beta = Math.PI / 4; // Ângulo vertical (45 graus)
+                        camera.alpha = 0; // Rotação horizontal
                     }
                 }
 
@@ -63,19 +54,22 @@ const DiceBoxComponent: React.FC<DiceBoxComponentProps> = ({ onRoll }) => {
             clearTimeout(timeoutId);
             // Cleanup if needed
             if (diceBoxRef.current) {
-                try {
-                    diceBoxRef.current.clear();
-                } catch (e) {
-                    console.warn("Error cleaning up dice box:", e);
-                }
+                // Add cleanup logic if available
             }
         };
-    }, [onRoll, rollCount]);
+    }, [onRoll]);
 
     const rollDice = (notation: string) => {
         if (diceBoxRef.current) {
-            // Force reinitialization for each roll to fix animation
-            setRollCount(prev => prev + 1);
+            // Clear previous dice before rolling new ones
+            diceBoxRef.current.clear();
+            
+            // Re-register the callback to ensure it's active for the next roll
+            if (onRoll) {
+                diceBoxRef.current.onRollComplete = onRoll;
+            }
+            
+            diceBoxRef.current.roll(notation);
         } else {
             console.warn("DiceBox not initialized yet");
         }
