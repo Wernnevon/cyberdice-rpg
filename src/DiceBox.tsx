@@ -61,13 +61,8 @@ const DiceBoxComponent: React.FC<DiceBoxComponentProps> = ({ onRoll }) => {
 
     const rollDice = (notation: string) => {
         if (diceBoxRef.current) {
-            console.log("Rolling dice with notation:", notation);
             // Clear previous dice before rolling new ones
             diceBoxRef.current.clear();
-            // Re-register the callback to ensure it's active
-            if (onRoll) {
-                diceBoxRef.current.onRollComplete = onRoll;
-            }
             diceBoxRef.current.roll(notation);
         } else {
             console.warn("DiceBox not initialized yet");
