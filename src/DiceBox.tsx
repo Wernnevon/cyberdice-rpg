@@ -64,8 +64,13 @@ const DiceBoxComponent: React.FC<DiceBoxComponentProps> = ({ onRoll }) => {
             // Clear previous dice before rolling new ones
             diceBoxRef.current.clear();
             
-            // Reset the scene to ensure animation visibility
+            // Reset camera position to ensure dice are visible
             if (diceBoxRef.current.scene) {
+                const camera = diceBoxRef.current.scene.activeCamera;
+                if (camera) {
+                    camera.radius = 30; // Reset to initial distance
+                    camera.beta = Math.PI / 4; // Reset to initial angle
+                }
                 // Force a scene refresh
                 diceBoxRef.current.scene.render();
             }
@@ -78,7 +83,7 @@ const DiceBoxComponent: React.FC<DiceBoxComponentProps> = ({ onRoll }) => {
             // Small delay to ensure scene is ready
             setTimeout(() => {
                 diceBoxRef.current.roll(notation);
-            }, 10);
+            }, 50);
         } else {
             console.warn("DiceBox not initialized yet");
         }
