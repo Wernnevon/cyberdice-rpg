@@ -48,9 +48,13 @@ function App() {
                     <h3>// SYSTEM OUTPUT:</h3>
                     <pre>
                         {rollResult
-                            ? `> TOTAL: ${rollResult.total}
-> DADOS: ${JSON.stringify(rollResult.rolls.map((r) => r.value))}`
-                            : "> AGUARDANDO COMANDO..."}
+                            ? `> Total: ${
+                                  rollResult.total
+                              }
+> Rolls: ${JSON.stringify(
+                                  rollResult.rolls.map((r) => r.value)
+                              )}`
+                            : "> Awaiting command..."}
                     </pre>
                 </div>
             </div>
