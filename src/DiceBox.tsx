@@ -1,96 +1,103 @@
-import React, { useEffect, useRef } from "react";
-import DiceBox from "@3d-dice/dice-box";
+import React, { useEffect, useRef, useState } from "react"
+import DiceBox from "@3d-dice/dice-box"
 
 interface DiceBoxComponentProps {
-    onRoll?: (results: any) => void;
+    onRoll?: (results: any) => void
 }
 
 const DiceBoxComponent: React.FC<DiceBoxComponentProps> = ({ onRoll }) => {
-    const diceBoxRef = useRef<any>(null);
-    const boxRef = useRef<HTMLDivElement>(null);
+    const diceBoxRef = useRef<any>(null)
+    const boxRef = useRef<HTMLDivElement>(null)
+    const [diceConfig, setDiceConfig] = useState({
+        assetPath: "/assets/",
+        width: 800,
+        height: 600,
+        gravity: 6,
+        mass: 1,
+        friction: 0.9,
+        restitution: 0.9,
+        angularDamping: 0.8,
+        linearDamping: 0.9,
+        theme: "default",
+        themeColor: "#00ccff",
+    })
 
     useEffect(() => {
         const initDiceBox = async () => {
             if (boxRef.current) {
-                // Initialize dice box with default theme for better visibility
-                diceBoxRef.current = new DiceBox("#dice-box", {
-                    assetPath: "/assets/",
-                    width: boxRef.current.clientWidth || 800,
-                    height: boxRef.current.clientHeight || 600,
-                    gravity: 6,
-                    mass: 1,
-                    friction: 0.9,
-                    restitution: 0.9,
-                    angularDamping: 0.8,
-                    linearDamping: 0.9,
-                    theme: "diceOfRolling",
-                });
+                // Clean up existing instance if it exists
+                if (diceBoxRef.current) {
+                    try {
+                        diceBoxRef.current.clear()
+                    } catch (e) {
+                        console.warn("Error clearing dice box:", e)
+                    }
+                }
 
-                await diceBoxRef.current.init();
+                // Initialize dice box with default theme for better visibility
+                diceBoxRef.current = new DiceBox("#dice-box", diceConfig)
+
+                await diceBoxRef.current.init()
 
                 // Ajusta a posição da câmera para melhor visualização
                 if (diceBoxRef.current.scene) {
-                    const camera = diceBoxRef.current.scene.activeCamera;
+                    const camera = diceBoxRef.current.scene.activeCamera
                     if (camera) {
-                        camera.radius = 20; // Distância da câmera (mais próxima para melhor visão)
-                        camera.beta = Math.PI / 4; // Ângulo vertical (45 graus)
-                        camera.alpha = 0; // Rotação horizontal
+                        camera.radius = 20 // Distância da câmera (mais próxima para melhor visão)
+                        camera.beta = Math.PI / 4 // Ângulo vertical (45 graus)
+                        camera.alpha = 0 // Rotação horizontal
                     }
                 }
 
                 // Set up event listener for roll results
                 if (onRoll) {
-                    diceBoxRef.current.onRollComplete = onRoll;
+                    diceBoxRef.current.onRollComplete = onRoll
                 }
             }
-        };
+        }
 
         // Initialize the dice box after a short delay to ensure DOM is ready
         const timeoutId = setTimeout(() => {
-            initDiceBox();
-        }, 100);
+            initDiceBox()
+        }, 100)
 
         return () => {
-            clearTimeout(timeoutId);
+            clearTimeout(timeoutId)
             // Cleanup if needed
             if (diceBoxRef.current) {
-                // Add cleanup logic if available
+                try {
+                    diceBoxRef.current.clear()
+                } catch (e) {
+                    console.warn("Error cleaning up dice box:", e)
+                }
             }
-        };
-    }, [onRoll]);
+        }
+    }, [onRoll, diceConfig])
 
     const rollDice = (notation: string) => {
         if (diceBoxRef.current) {
-            console.log("Rolling dice with notation:", notation);
-            // Clear previous dice before rolling new ones
-            diceBoxRef.current.clear();
+            console.log("Rolling dice with notation:", notation)
             
             // Reset camera position for better visibility
             if (diceBoxRef.current.scene) {
-                const camera = diceBoxRef.current.scene.activeCamera;
+                const camera = diceBoxRef.current.scene.activeCamera
                 if (camera) {
-                    camera.radius = 20; // Reset distance
-                    camera.beta = Math.PI / 4; // Reset vertical angle
-                    camera.alpha = 0; // Reset horizontal rotation
+                    camera.radius = 20 // Reset distance
+                    camera.beta = Math.PI / 4 // Reset vertical angle
+                    camera.alpha = 0 // Reset horizontal rotation
                 }
             }
             
             // Re-register the callback to ensure it's active
             if (onRoll) {
-                diceBoxRef.current.onRollComplete = onRoll;
+                diceBoxRef.current.onRollComplete = onRoll
             }
             
-            // Force a scene refresh
-            setTimeout(() => {
-                if (diceBoxRef.current.scene) {
-                    diceBoxRef.current.scene.render();
-                }
-                diceBoxRef.current.roll(notation);
-            }, 50); // Small delay to ensure scene is ready
+            diceBoxRef.current.roll(notation)
         } else {
-            console.warn("DiceBox not initialized yet");
+            console.warn("DiceBox not initialized yet")
         }
-    };
+    }
 
     return (
         <div className="dice-box-container">
@@ -108,7 +115,7 @@ const DiceBoxComponent: React.FC<DiceBoxComponentProps> = ({ onRoll }) => {
                 <button onClick={() => rollDice("4d6")}>4d6</button>
             </div>
         </div>
-    );
-};
+    )
+}
 
-export default DiceBoxComponent;
+export default DiceBoxComponent
