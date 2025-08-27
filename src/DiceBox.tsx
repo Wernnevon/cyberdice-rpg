@@ -64,19 +64,6 @@ const DiceBoxComponent: React.FC<DiceBoxComponentProps> = ({ onRoll }) => {
             console.log("Rolling dice with notation:", notation);
             // Clear previous dice before rolling new ones
             diceBoxRef.current.clear();
-            
-            // Reset camera position for better visibility
-            if (diceBoxRef.current.scene) {
-                const camera = diceBoxRef.current.scene.activeCamera;
-                if (camera) {
-                    camera.radius = 20; // Reset distance
-                    camera.beta = Math.PI / 4; // Reset vertical angle
-                    camera.alpha = 0; // Reset horizontal rotation
-                }
-                // Force a scene refresh
-                diceBoxRef.current.scene.render();
-            }
-            
             // Re-register the callback to ensure it's active
             if (onRoll) {
                 diceBoxRef.current.onRollComplete = onRoll;
