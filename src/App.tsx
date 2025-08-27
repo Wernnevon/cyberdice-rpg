@@ -47,6 +47,7 @@ function App() {
             
             console.log("Formatted result:", formattedResult);
             setRollResult(formattedResult);
+            console.log("Results displayed successfully");
         } catch (error) {
             console.error("Error processing dice roll results:", error);
         }
