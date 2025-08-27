@@ -20,54 +20,39 @@ function App() {
         try {
             console.log("Raw results from dice box:", results);
             
-            // Verificar a estrutura dos resultados
-            if (!results || !Array.isArray(results) || results.length === 0) {
-                console.error("Invalid results structure");
-                return;
-            }
-            
-            // A biblioteca pode retornar diferentes estruturas
-            const resultData = results[0];
-            console.log("First result data:", resultData);
-            
-            // Verificar se temos os dados necessários
-            let formattedResult;
-            
-            // Tratar diferentes estruturas de dados
-            if (resultData.results && Array.isArray(resultData.results)) {
-                // Estrutura com results array
-                formattedResult = {
-                    total: resultData.total || 0,
-                    rolls: resultData.results.map((die: any) => ({
+            // Simple handling - just take the first result
+            if (results && Array.isArray(results) && results.length > 0) {
+                const resultData = results[0];
+                console.log("Processing result data:", resultData);
+                
+                // Create a simple formatted result
+                const formattedResult = {
+                    total: resultData.value || resultData.total || 0,
+                    rolls: []
+                };
+                
+                // Handle different possible structures
+                if (resultData.rolls && Array.isArray(resultData.rolls)) {
+                    formattedResult.rolls = resultData.rolls.map((die: any) => ({
+                        type: `d${resultData.sides || 0}`,
+                        value: die.value || 0
+                    }));
+                } else if (resultData.results && Array.isArray(resultData.results)) {
+                    formattedResult.rolls = resultData.results.map((die: any) => ({
                         type: `d${die.sides || 0}`,
                         value: die.value || 0
-                    }))
-                };
-            } else if (resultData.rolls && Array.isArray(resultData.rolls)) {
-                // Estrutura com rolls array (como vimos antes)
-                formattedResult = {
-                    total: resultData.value || 0,
-                    rolls: resultData.rolls.map((die: any) => ({
+                    }));
+                } else {
+                    // Fallback for simple structure
+                    formattedResult.rolls = [{
                         type: `d${resultData.sides || 0}`,
-                        value: die.value || 0
-                    }))
-                };
-            } else if (resultData.value !== undefined) {
-                // Estrutura simples com apenas o valor total e lados
-                formattedResult = {
-                    total: resultData.value || 0,
-                    rolls: [{
-                        type: `d${resultData.sides || 0}`,
-                        value: resultData.value || 0
-                    }]
-                };
-            } else {
-                console.error("Unknown result data structure:", resultData);
-                return;
+                        value: resultData.value || resultData.total || 0
+                    }];
+                }
+                
+                console.log("Formatted result:", formattedResult);
+                setRollResult(formattedResult);
             }
-            
-            console.log("Formatted result:", formattedResult);
-            setRollResult(formattedResult);
         } catch (error) {
             console.error("Error processing dice roll results:", error);
         }
