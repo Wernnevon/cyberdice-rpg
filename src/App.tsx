@@ -18,8 +18,10 @@ function App() {
     // Função para receber o resultado do componente DiceBox e atualizar o estado
     const handleRoll = (results: any) => {
         try {
+            console.log("Raw results from dice box:", results);
             // A biblioteca retorna um array de resultados
             const resultData = results[0];
+            console.log("First result data:", resultData);
             
             // Mapear os dados para o formato esperado pela interface RollResult
             const formattedResult = {
@@ -30,8 +32,8 @@ function App() {
                 }))
             };
             
+            console.log("Formatted result:", formattedResult);
             setRollResult(formattedResult);
-            console.log("Dice roll results:", formattedResult);
         } catch (error) {
             console.error("Error processing dice roll results:", error);
         }
@@ -48,18 +50,12 @@ function App() {
                     <h3>// SYSTEM OUTPUT:</h3>
                     <pre>
                         {rollResult
-                            ? `┌─ RESULTADO DA ROLAGEM ─────────────────────┐
-│ TOTAL: ${rollResult.total.toString().padStart(3)}                            │
-├─ DADOS INDIVIDUAIS ────────────────────────┤
-│ ${rollResult.rolls.map((r, i) => `DADO ${i + 1}: ${r.value.toString().padStart(2)}`).join("   ")} │
-├─ ESTATÍSTICAS ─────────────────────────────┤
-│ QUANTIDADE DE DADOS: ${rollResult.rolls.length.toString().padStart(2)}                   │
-│ VALOR MÍNIMO: ${Math.min(...rollResult.rolls.map(r => r.value)).toString().padStart(3)}                         │
-│ VALOR MÁXIMO: ${Math.max(...rollResult.rolls.map(r => r.value)).toString().padStart(3)}                         │
-└─────────────────────────────────────────────┘`
-                            : `┌─ SISTEMA PRONTO ───────────────────────────┐
-│ AGUARDANDO COMANDO DE ROLAGEM...          │
-└─────────────────────────────────────────────┘`}
+                            ? `TOTAL: ${rollResult.total}
+DADOS: ${rollResult.rolls.map(r => r.value).join(', ')}
+QUANTIDADE: ${rollResult.rolls.length}
+MÍNIMO: ${Math.min(...rollResult.rolls.map(r => r.value))}
+MÁXIMO: ${Math.max(...rollResult.rolls.map(r => r.value))}`
+                            : "AGUARDANDO COMANDO..."}
                     </pre>
                 </div>
             </div>
