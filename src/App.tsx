@@ -26,21 +26,21 @@ function App() {
                 return;
             }
             
-            // A biblioteca pode retornar diretamente o objeto de resultado
-            const resultData = Array.isArray(results[0]) ? results[0][0] : results[0];
+            // Processar os dados com a estrutura correta
+            const resultData = results[0];
             console.log("Processing result data:", resultData);
             
             // Verificar se temos os dados necessários
-            if (!resultData.results || !Array.isArray(resultData.results)) {
+            if (!resultData.rolls || !Array.isArray(resultData.rolls)) {
                 console.error("Invalid result data structure:", resultData);
                 return;
             }
             
             // Mapear os dados para o formato esperado pela interface RollResult
             const formattedResult = {
-                total: resultData.total || 0,
-                rolls: resultData.results.map((die: any) => ({
-                    type: `d${die.sides || 0}`,
+                total: resultData.value || 0,
+                rolls: resultData.rolls.map((die: any) => ({
+                    type: `d${resultData.sides || 0}`,
                     value: die.value || 0
                 }))
             };
