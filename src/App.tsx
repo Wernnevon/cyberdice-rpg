@@ -14,6 +14,7 @@ interface RollResult {
 function App() {
     // Estado para armazenar e exibir o resultado da rolagem
     const [rollResult, setRollResult] = useState<RollResult | null>(null);
+    const [rollKey, setRollKey] = useState(0); // Key to force re-render
 
     // Função para receber o resultado do componente DiceBox e atualizar o estado
     const handleRoll = (results: any) => {
@@ -53,11 +54,17 @@ function App() {
         }
     };
 
+    // Function to trigger a new roll
+    const triggerNewRoll = () => {
+        setRollKey(prev => prev + 1); // Change key to force re-render
+        setRollResult(null); // Clear previous results
+    };
+
     return (
         <div className="app">
             <h1>CYBERDICE v1.0</h1>
             <div className="dice-demo">
-                <DiceBoxComponent onRoll={handleRoll} />
+                <DiceBoxComponent key={rollKey} onRoll={handleRoll} />
 
                 {/* Novo painel para exibir os resultados */}
                 <div className="roll-result">
@@ -65,12 +72,17 @@ function App() {
                     <pre>
                         {rollResult
                             ? `TOTAL: ${rollResult.total}
-DADOS: ${rollResult.rolls.map((r) => r.value).join(", ")}
+DADOS: ${rollResult.rolls.map(r => r.value).join(', ')}
 QUANTIDADE: ${rollResult.rolls.length}
-MÍNIMO: ${Math.min(...rollResult.rolls.map((r) => r.value))}
-MÁXIMO: ${Math.max(...rollResult.rolls.map((r) => r.value))}`
+MÍNIMO: ${Math.min(...rollResult.rolls.map(r => r.value))}
+MÁXIMO: ${Math.max(...rollResult.rolls.map(r => r.value))}`
                             : "AGUARDANDO COMANDO..."}
                     </pre>
+                </div>
+                
+                {/* Add a button to trigger new roll */}
+                <div className="dice-controls">
+                    <button onClick={triggerNewRoll}>NOVA ROLAGEM</button>
                 </div>
             </div>
         </div>
