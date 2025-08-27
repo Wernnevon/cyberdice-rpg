@@ -12,7 +12,7 @@ const DiceBoxComponent: React.FC<DiceBoxComponentProps> = ({ onRoll }) => {
     useEffect(() => {
         const initDiceBox = async () => {
             if (boxRef.current) {
-                // Initialize dice box with default theme for better visibility
+                // Initialize dice box with Dice of Rolling theme
                 diceBoxRef.current = new DiceBox("#dice-box", {
                     assetPath: "/assets/",
                     width: boxRef.current.clientWidth || 800,
@@ -23,8 +23,7 @@ const DiceBoxComponent: React.FC<DiceBoxComponentProps> = ({ onRoll }) => {
                     restitution: 0.9,
                     angularDamping: 0.8,
                     linearDamping: 0.9,
-                    theme: "default",
-                    themeColor: "#00ccff", // Ciano elétrico para combinar com o tema
+                    theme: "diceOfRolling",
                 });
 
                 await diceBoxRef.current.init();
@@ -64,21 +63,6 @@ const DiceBoxComponent: React.FC<DiceBoxComponentProps> = ({ onRoll }) => {
         if (diceBoxRef.current) {
             // Clear previous dice before rolling new ones
             diceBoxRef.current.clear();
-            
-            // Reset camera position to ensure animation is visible
-            if (diceBoxRef.current.scene) {
-                const camera = diceBoxRef.current.scene.activeCamera;
-                if (camera) {
-                    // Slightly adjust camera to trigger animation refresh
-                    camera.radius = 20.1;
-                    setTimeout(() => {
-                        if (camera) {
-                            camera.radius = 20;
-                        }
-                    }, 10);
-                }
-            }
-            
             diceBoxRef.current.roll(notation);
         } else {
             console.warn("DiceBox not initialized yet");

@@ -18,20 +18,47 @@ function App() {
     // Função para receber o resultado do componente DiceBox e atualizar o estado
     const handleRoll = (results: any) => {
         try {
-            // A biblioteca retorna um array de resultados
+            console.log("Raw results from dice box:", results);
+            
+            // Verificar a estrutura dos resultados
+            if (!results || !Array.isArray(results) || results.length === 0) {
+                console.error("Invalid results structure");
+                return;
+            }
+            
+            // A biblioteca pode retornar diferentes estruturas
             const resultData = results[0];
+            console.log("First result data:", resultData);
             
-            // Mapear os dados para o formato esperado pela interface RollResult
-            const formattedResult = {
-                total: resultData.total,
-                rolls: resultData.results.map((die: any) => ({
-                    type: `d${die.sides}`,
-                    value: die.value,
-                })),
-            };
+            // Verificar se temos os dados necessários
+            let formattedResult;
             
+            // Tratar diferentes estruturas de dados
+            if (resultData.results && Array.isArray(resultData.results)) {
+                // Estrutura com results array
+                formattedResult = {
+                    total: resultData.total || 0,
+                    rolls: resultData.results.map((die: any) => ({
+                        type: `d${die.sides || 0}`,
+                        value: die.value || 0
+                    }))
+                };
+            } else if (resultData.rolls && Array.isArray(resultData.rolls)) {
+                // Estrutura com rolls array (como vimos antes)
+                formattedResult = {
+                    total: resultData.value || 0,
+                    rolls: resultData.rolls.map((die: any) => ({
+                        type: `d${resultData.sides || 0}`,
+                        value: die.value || 0
+                    }))
+                };
+            } else {
+                console.error("Unknown result data structure:", resultData);
+                return;
+            }
+            
+            console.log("Formatted result:", formattedResult);
             setRollResult(formattedResult);
-            console.log("Dice roll results:", formattedResult);
         } catch (error) {
             console.error("Error processing dice roll results:", error);
         }
