@@ -48,12 +48,18 @@ function App() {
                     <h3>// SYSTEM OUTPUT:</h3>
                     <pre>
                         {rollResult
-                            ? `> Total: ${
-                                  rollResult.total
-                              }\n> Rolls: ${JSON.stringify(
-                                  rollResult.rolls.map((r) => r.value)
-                              )}`
-                            : "> Awaiting command..."}
+                            ? `┌─ RESULTADO DA ROLAGEM ─────────────────────┐
+│ TOTAL: ${rollResult.total.toString().padStart(3)}                            │
+├─ DADOS INDIVIDUAIS ────────────────────────┤
+│ ${rollResult.rolls.map((r, i) => `DADO ${i + 1}: ${r.value.toString().padStart(2)}`).join("   ")} │
+├─ ESTATÍSTICAS ─────────────────────────────┤
+│ QUANTIDADE DE DADOS: ${rollResult.rolls.length.toString().padStart(2)}                   │
+│ VALOR MÍNIMO: ${Math.min(...rollResult.rolls.map(r => r.value)).toString().padStart(3)}                         │
+│ VALOR MÁXIMO: ${Math.max(...rollResult.rolls.map(r => r.value)).toString().padStart(3)}                         │
+└─────────────────────────────────────────────┘`
+                            : `┌─ SISTEMA PRONTO ───────────────────────────┐
+│ AGUARDANDO COMANDO DE ROLAGEM...          │
+└─────────────────────────────────────────────┘`}
                     </pre>
                 </div>
             </div>
