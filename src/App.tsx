@@ -18,35 +18,20 @@ function App() {
     // Função para receber o resultado do componente DiceBox e atualizar o estado
     const handleRoll = (results: any) => {
         try {
-            console.log("Raw results from dice box:", results);
-            
-            // Verificar a estrutura dos resultados
-            if (!results || !Array.isArray(results) || results.length === 0) {
-                console.error("Invalid results structure");
-                return;
-            }
-            
-            // A biblioteca pode retornar diretamente o objeto de resultado
-            const resultData = Array.isArray(results[0]) ? results[0][0] : results[0];
-            console.log("Processing result data:", resultData);
-            
-            // Verificar se temos os dados necessários
-            if (!resultData.results || !Array.isArray(resultData.results)) {
-                console.error("Invalid result data structure:", resultData);
-                return;
-            }
+            // A biblioteca retorna um array de resultados
+            const resultData = results[0];
             
             // Mapear os dados para o formato esperado pela interface RollResult
             const formattedResult = {
-                total: resultData.total || 0,
+                total: resultData.total,
                 rolls: resultData.results.map((die: any) => ({
-                    type: `d${die.sides || 0}`,
-                    value: die.value || 0
-                }))
+                    type: `d${die.sides}`,
+                    value: die.value,
+                })),
             };
             
-            console.log("Formatted result:", formattedResult);
             setRollResult(formattedResult);
+            console.log("Dice roll results:", formattedResult);
         } catch (error) {
             console.error("Error processing dice roll results:", error);
         }
@@ -63,12 +48,9 @@ function App() {
                     <h3>// SYSTEM OUTPUT:</h3>
                     <pre>
                         {rollResult
-                            ? `TOTAL: ${rollResult.total}
-DADOS: ${rollResult.rolls.map((r) => r.value).join(", ")}
-QUANTIDADE: ${rollResult.rolls.length}
-MÍNIMO: ${Math.min(...rollResult.rolls.map((r) => r.value))}
-MÁXIMO: ${Math.max(...rollResult.rolls.map((r) => r.value))}`
-                            : "AGUARDANDO COMANDO..."}
+                            ? `> TOTAL: ${rollResult.total}
+> DADOS: ${JSON.stringify(rollResult.rolls.map((r) => r.value))}`
+                            : "> AGUARDANDO COMANDO..."}
                     </pre>
                 </div>
             </div>
