@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import DiceBoxComponent from "./DiceBox";
 import "./index.css"; // Importando os novos estilos
 
@@ -12,8 +12,9 @@ interface RollResult {
 }
 
 function App() {
-    // Estado para armazenar e exibir o resultado da rolagem
-    const [rollResult, setRollResult] = useState<RollResult | null>(null);
+    // Ref para armazenar o resultado da rolagem
+    const rollResultRef = useRef<RollResult | null>(null);
+    const [, forceUpdate] = useState({});
 
     // Função para receber o resultado do componente DiceBox e atualizar o estado
     const handleRoll = (results: any) => {
@@ -51,7 +52,9 @@ function App() {
                 }
                 
                 console.log("Formatted result:", formattedResult);
-                setRollResult(formattedResult);
+                rollResultRef.current = formattedResult;
+                // Force update to trigger re-render
+                forceUpdate({});
             }
         } catch (error) {
             console.error("Error processing dice roll results:", error);
@@ -68,12 +71,12 @@ function App() {
                 <div className="roll-result">
                     <h3>// SYSTEM OUTPUT:</h3>
                     <pre>
-                        {rollResult
+                        {rollResultRef.current
                             ? `> Total: ${
-                                  rollResult.total
+                                  rollResultRef.current.total
                               }
 > Rolls: ${JSON.stringify(
-                                  rollResult.rolls.map((r) => r.value)
+                                  rollResultRef.current.rolls.map((r) => r.value)
                               )}`
                             : "> Awaiting command..."}
                     </pre>
