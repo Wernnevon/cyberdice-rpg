@@ -64,12 +64,21 @@ const DiceBoxComponent: React.FC<DiceBoxComponentProps> = ({ onRoll }) => {
             // Clear previous dice before rolling new ones
             diceBoxRef.current.clear();
             
+            // Reset the scene to ensure animation visibility
+            if (diceBoxRef.current.scene) {
+                // Force a scene refresh
+                diceBoxRef.current.scene.render();
+            }
+            
             // Re-register the callback to ensure it's active for the next roll
             if (onRoll) {
                 diceBoxRef.current.onRollComplete = onRoll;
             }
             
-            diceBoxRef.current.roll(notation);
+            // Small delay to ensure scene is ready
+            setTimeout(() => {
+                diceBoxRef.current.roll(notation);
+            }, 10);
         } else {
             console.warn("DiceBox not initialized yet");
         }
