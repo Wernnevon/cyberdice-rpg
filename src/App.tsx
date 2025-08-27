@@ -52,6 +52,15 @@ function App() {
                         value: die.value || 0
                     }))
                 };
+            } else if (resultData.value !== undefined) {
+                // Estrutura simples com apenas o valor total e lados
+                formattedResult = {
+                    total: resultData.value || 0,
+                    rolls: [{
+                        type: `d${resultData.sides || 0}`,
+                        value: resultData.value || 0
+                    }]
+                };
             } else {
                 console.error("Unknown result data structure:", resultData);
                 return;
