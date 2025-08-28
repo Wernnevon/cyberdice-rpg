@@ -20,7 +20,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  overflow: hidden; /* Prevent body scroll */
+  overflow-x: hidden; /* Prevent horizontal scroll */
   background-color: #0a1a2a; /* Cor mais apropriada ao sistema */
 }
 
@@ -91,5 +91,63 @@ h1 {
   }
   100% {
     transform: translateY(calc(100vh + 100px));
+  }
+}
+
+/* Estilos responsivos para dispositivos móveis */
+@media (max-width: 768px) {
+  .app {
+    padding: 0.5rem;
+  }
+  
+  .dice-demo {
+    flex-direction: column;
+    gap: 1rem;
+    max-height: none;
+    overflow: visible;
+  }
+  
+  h1 {
+    font-size: 2em;
+  }
+  
+  .falling-dice {
+    font-size: 18px;
+  }
+  
+  @keyframes fall {
+    0% {
+      transform: translateY(-50px);
+    }
+    100% {
+      transform: translateY(calc(100vh + 50px));
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .app {
+    padding: 0.25rem;
+  }
+  
+  .dice-demo {
+    padding: 0.5rem;
+  }
+  
+  h1 {
+    font-size: 1.5em;
+  }
+  
+  .falling-dice {
+    font-size: 14px;
+  }
+  
+  @keyframes fall {
+    0% {
+      transform: translateY(-30px);
+    }
+    100% {
+      transform: translateY(calc(100vh + 30px));
+    }
   }
 }

@@ -35,3 +35,30 @@
   overflow-x: hidden;
   box-sizing: border-box;
 }
+
+/* Estilos responsivos para dispositivos móveis */
+@media (max-width: 768px) {
+  .roll-result {
+    height: 180px;
+    padding: 1rem;
+  }
+  
+  .roll-result pre {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .roll-result {
+    height: 150px;
+    padding: 0.75rem;
+  }
+  
+  .roll-result h3 {
+    font-size: 1.1rem;
+  }
+  
+  .roll-result pre {
+    font-size: 0.9rem;
+  }
+}

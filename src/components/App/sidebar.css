@@ -37,3 +37,34 @@
   -ms-user-select: none;
   user-select: none;
 }
+
+/* Estilos responsivos para dispositivos móveis */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    max-height: none;
+    margin-top: 0;
+  }
+  
+  .rpg-shield {
+    padding: 0.5rem;
+  }
+  
+  .d20-logo {
+    max-height: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar {
+    gap: 1rem;
+  }
+  
+  .rpg-shield {
+    padding: 0.25rem;
+  }
+  
+  .d20-logo {
+    max-height: 100px;
+  }
+}
