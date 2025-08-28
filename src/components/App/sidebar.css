@@ -67,4 +67,9 @@
   .d20-logo {
     max-height: 100px;
   }
+  
+  /* Ocultar o rpg-shield em telas muito pequenas */
+  .rpg-shield {
+    display: none;
+  }
 }
