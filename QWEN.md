@@ -1,7 +1,7 @@
 # Project Context for Qwen Code
 
 ## Project Overview
-This directory contains a demo dice RPG project implemented with React, TypeScript, and Vite. It's a minimal setup focused on providing a clean foundation for testing implementations.
+This directory contains the CYBERDICE RPG project implemented with React, TypeScript, and Vite. It's a minimal setup focused on providing a clean foundation for testing implementations.
 
 ## Technology Stack
 - React 18+ with TypeScript
@@ -11,7 +11,7 @@ This directory contains a demo dice RPG project implemented with React, TypeScri
 
 ## Project Structure
 ```
-demo-dice-rpg/
+cyberdice-rpg/
 ├── index.html
 ├── package.json
 ├── tsconfig.json

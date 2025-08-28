@@ -17,11 +17,10 @@ const DiceBox = forwardRef<DiceBoxRef, DiceBoxProps>(({ onRoll }, ref) => {
   useEffect(() => {
     const initDiceBox = async () => {
       if (boxRef.current) {
-        // Initialize dice box with Dice of Rolling theme
-        diceBoxRef.current = new DiceBoxClass("#dice-box", {
+        // Initialize dice box with Dice of Rolling theme using new API
+        diceBoxRef.current = new DiceBoxClass({
+          container: "#dice-box",
           assetPath: "/assets/",
-          width: boxRef.current.clientWidth || 800,
-          height: boxRef.current.clientHeight || 600,
           gravity: 6,
           mass: 1,
           friction: 0.9,

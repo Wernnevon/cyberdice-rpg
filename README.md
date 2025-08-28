@@ -1,4 +1,4 @@
-# Demo Dice RPG
+# CYBERDICE RPG
 
 Uma aplicação de dados 3D para RPG usando React, TypeScript e a biblioteca @3d-dice/dice-box.
 
