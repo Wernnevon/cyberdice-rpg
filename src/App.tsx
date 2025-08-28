@@ -34,6 +34,9 @@ function App() {
         <div className="sidebar">
           <RollResult rollResult={rollResult} />
           <DiceControls onRoll={handleDiceRoll} />
+          <div className="rpg-shield">
+            <img src="/assets/images/d20.png" alt="D20 Dice" className="d20-logo" />
+          </div>
         </div>
       </div>
     </div>

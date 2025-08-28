@@ -2,9 +2,31 @@
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  width: 300px; /* Fixed width */
+  width: 300px;
+  /* Fixed width */
   box-sizing: border-box;
   flex-shrink: 0;
-  max-height: 85vh; /* Increased height limit */
-  overflow: hidden; /* Prevent overflow */
+  max-height: 85vh;
+  /* Increased height limit */
+  overflow: hidden;
+  /* Prevent overflow */
+  margin-top: 59px;
+}
+
+.rpg-shield {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 225px;
+  padding: 1rem;
+  border: 1px solid #00ccff;
+  background-color: rgba(10, 25, 40, 0.5);
+  box-shadow: inset 0 0 15px rgba(0, 204, 255, 0.3), 0 0 15px rgba(0, 204, 255, 0.2);
+}
+
+.d20-logo {
+  max-width: 100%;
+  height: auto;
+  max-height: 150px;
+  filter: drop-shadow(0 0 5px rgba(0, 204, 255, 0.8));
 }
