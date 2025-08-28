@@ -20,16 +20,15 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  overflow: hidden;
-  /* Prevent body scroll */
+  overflow: hidden; /* Prevent body scroll */
+  background-color: #0a1a2a; /* Cor mais apropriada ao sistema */
 }
 
 .app {
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 1rem;
-  /* Minimal padding */
+  padding: 1rem; /* Minimal padding */
   text-align: center;
   min-height: 100vh;
   display: flex;
@@ -37,6 +36,9 @@ body {
   justify-content: center;
   align-items: center;
   box-sizing: border-box;
+  background-color: #0a1a2a; /* Cor mais apropriada ao sistema */
+  position: relative;
+  overflow: hidden;
 }
 
 /* Container principal da demo */
@@ -44,9 +46,8 @@ body {
   border: 1px solid #00ccff;
   border-radius: 0;
   /* Ângulos retos */
-  padding: 1rem;
-  /* Minimal padding */
-  background-color: #2b007cd7;
+  padding: 1rem; /* Minimal padding */
+  background-color: rgba(10, 25, 40, 0.5);
   box-shadow: inset 0 0 15px rgba(0, 204, 255, 0.3), 0 0 15px rgba(0, 204, 255, 0.2);
   display: flex;
   flex-direction: row;
@@ -54,21 +55,38 @@ body {
   align-items: flex-start;
   width: 100%;
   box-sizing: border-box;
-  max-height: 90vh;
-  /* Limit height to prevent overflow */
-  overflow: hidden;
-  /* Prevent internal scrolling */
+  max-height: 85vh; /* Limit height to prevent overflow */
+  overflow: hidden; /* Prevent internal scrolling */
+  position: relative;
+  z-index: 2;
 }
 
 h1 {
-  font-size: 2.5em;
-  /* Slightly smaller to fit inside container */
+  font-size: 2.5em; /* Slightly smaller to fit inside container */
   line-height: 1.1;
   color: #00ccff;
   /* Ciano elétrico */
   text-shadow: 0 0 5px #00ccff, 0 0 10px #00ccff, 0 0 15px #ff00ff;
   /* Efeito de brilho neon */
-  margin: 0 0 1rem 0;
-  /* Adjusted margin */
+  margin: 0 0 1rem 0; /* Adjusted margin */
   width: 100%;
+}
+
+/* Estilos para os dados caindo */
+.falling-dice {
+  position: fixed; /* Fixed para preencher toda a tela */
+  font-size: 24px;
+  z-index: 1;
+  pointer-events: none;
+  text-shadow: 
+    0 0 5px #00ccff,
+    0 0 10px #00ccff,
+    0 0 15px #ff00ff;
+  animation: fall linear infinite;
+}
+
+@keyframes fall {
+  to {
+    transform: translateY(100vh);
+  }
 }
