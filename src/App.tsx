@@ -17,7 +17,6 @@ function App() {
 
     const handleRoll = useCallback(([result]: Array<DiceResultT>) => {
         const diceData = mountDiceResult(result);
-        console.log(diceData);
         setRollResult(diceData);
     }, []);
 

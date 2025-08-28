@@ -86,7 +86,10 @@ h1 {
 }
 
 @keyframes fall {
-  to {
-    transform: translateY(100vh);
+  0% {
+    transform: translateY(-100px);
+  }
+  100% {
+    transform: translateY(calc(100vh + 100px));
   }
 }
