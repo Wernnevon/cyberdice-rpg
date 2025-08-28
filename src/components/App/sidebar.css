@@ -17,7 +17,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 225px;
   padding: 1rem;
   border: 1px solid #00ccff;
   background-color: rgba(10, 25, 40, 0.5);
@@ -27,6 +26,14 @@
 .d20-logo {
   max-width: 100%;
   height: auto;
-  max-height: 150px;
+  max-height: 225px;
   filter: drop-shadow(0 0 5px rgba(0, 204, 255, 0.8));
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
