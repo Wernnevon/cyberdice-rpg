@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./styles.css";
 
 interface DiceControlsProps {
@@ -13,6 +13,7 @@ interface DiceType {
 const DiceControls = ({ onRoll }: DiceControlsProps) => {
     const [selectedDice, setSelectedDice] = useState<string>("d20");
     const [diceCount, setDiceCount] = useState<number>(1);
+    const [isMobile, setIsMobile] = useState<boolean>(false);
 
     const diceTypes: DiceType[] = [
         { value: "d4", label: "d4 🔺" },
@@ -23,6 +24,20 @@ const DiceControls = ({ onRoll }: DiceControlsProps) => {
         { value: "d20", label: "d20 🎯" },
         { value: "d100", label: "d100 💯" },
     ];
+
+    // Detectar se é mobile
+    useEffect(() => {
+        const checkIsMobile = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+        
+        checkIsMobile();
+        window.addEventListener('resize', checkIsMobile);
+        
+        return () => {
+            window.removeEventListener('resize', checkIsMobile);
+        };
+    }, []);
 
     const rollDice = () => {
         onRoll(`${diceCount}${selectedDice}`);
@@ -41,14 +56,35 @@ const DiceControls = ({ onRoll }: DiceControlsProps) => {
             <div className="dice-inputs">
                 <div className="dice-count">
                     <label htmlFor="dice-count">Quantidade: 🔢</label>
-                    <div className="dice-count-wrapper">
-                        <button 
-                            className="dice-count-btn decrement" 
-                            onClick={decrementCount}
-                            aria-label="Diminuir quantidade"
-                        >
-                            -
-                        </button>
+                    {isMobile ? (
+                        <div className="dice-count-wrapper">
+                            <button 
+                                className="dice-count-btn decrement" 
+                                onClick={decrementCount}
+                                aria-label="Diminuir quantidade"
+                            >
+                                -
+                            </button>
+                            <input
+                                id="dice-count"
+                                type="number"
+                                min="1"
+                                max="10"
+                                value={diceCount}
+                                onChange={(e) =>
+                                    setDiceCount(parseInt(e.target.value) || 1)
+                                }
+                                className="dice-count-input"
+                            />
+                            <button 
+                                className="dice-count-btn increment" 
+                                onClick={incrementCount}
+                                aria-label="Aumentar quantidade"
+                            >
+                                +
+                            </button>
+                        </div>
+                    ) : (
                         <input
                             id="dice-count"
                             type="number"
@@ -58,16 +94,8 @@ const DiceControls = ({ onRoll }: DiceControlsProps) => {
                             onChange={(e) =>
                                 setDiceCount(parseInt(e.target.value) || 1)
                             }
-                            className="dice-count-input"
                         />
-                        <button 
-                            className="dice-count-btn increment" 
-                            onClick={incrementCount}
-                            aria-label="Aumentar quantidade"
-                        >
-                            +
-                        </button>
-                    </div>
+                    )}
                 </div>
 
                 <div className="dice-selector">

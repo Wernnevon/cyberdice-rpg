@@ -91,7 +91,7 @@
   transform: scale(0.98);
 }
 
-/* Novos estilos para os botões de incremento/decremento */
+/* Novos estilos para os botões de incremento/decremento - apenas mobile */
 .dice-count-wrapper {
   display: flex;
   width: 100%;
@@ -171,6 +171,12 @@
     font-size: 1.2rem;
     padding: 0.75rem;
   }
+  
+  .dice-selector select,
+  .dice-count input:not(.dice-count-input) {
+    padding: 0.75rem;
+    font-size: 1.1rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -183,7 +189,7 @@
   }
   
   .dice-selector select,
-  .dice-count-input {
+  .dice-count input:not(.dice-count-input) {
     padding: 0.75rem;
     font-size: 1.1rem;
   }
