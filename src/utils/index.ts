@@ -1,0 +1,1 @@
+export { mountDiceResult } from './dice.utils';

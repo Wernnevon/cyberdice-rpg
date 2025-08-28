@@ -18,7 +18,7 @@ declare module '@3d-dice/dice-box' {
     notation: string;
     sides: number;
     value: number;
-    roll: number;
+    rollId: number;
     groupId: string;
   }
 
@@ -37,6 +37,15 @@ declare module '@3d-dice/dice-box' {
     clear(): void;
     onRollComplete(results: RollResult[]): void;
     updateConfig(config: Partial<DiceBoxConfig>): void;
+    
+    // Scene properties
+    scene?: {
+      activeCamera?: {
+        radius: number;
+        beta: number;
+      };
+      render(): void;
+    };
   }
 
   export default DiceBox;

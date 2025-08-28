@@ -1,0 +1,74 @@
+/* Estilo Cyberpunk Futurista */
+:root {
+  font-family: 'Consolas', 'Menlo', 'monospace', sans-serif;
+  /* Fonte monoespaçada para um look de terminal */
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #0a0a0a;
+  /* Fundo de breu, mais escuro que o padrão */
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow: hidden;
+  /* Prevent body scroll */
+}
+
+.app {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1rem;
+  /* Minimal padding */
+  text-align: center;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+/* Container principal da demo */
+.dice-demo {
+  border: 1px solid #00ccff;
+  border-radius: 0;
+  /* Ângulos retos */
+  padding: 1rem;
+  /* Minimal padding */
+  background-color: #2b007cd7;
+  box-shadow: inset 0 0 15px rgba(0, 204, 255, 0.3), 0 0 15px rgba(0, 204, 255, 0.2);
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
+  align-items: flex-start;
+  width: 100%;
+  box-sizing: border-box;
+  max-height: 90vh;
+  /* Limit height to prevent overflow */
+  overflow: hidden;
+  /* Prevent internal scrolling */
+}
+
+h1 {
+  font-size: 2.5em;
+  /* Slightly smaller to fit inside container */
+  line-height: 1.1;
+  color: #00ccff;
+  /* Ciano elétrico */
+  text-shadow: 0 0 5px #00ccff, 0 0 10px #00ccff, 0 0 15px #ff00ff;
+  /* Efeito de brilho neon */
+  margin: 0 0 1rem 0;
+  /* Adjusted margin */
+  width: 100%;
+}

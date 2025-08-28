@@ -1,0 +1,1 @@
+export type { DiceResultT, RollT, DiceDataT } from './app.types';

@@ -1,89 +1,43 @@
-import { useRef, useState } from "react";
-import DiceBoxComponent from "./DiceBox";
-import "./index.css"; // Importando os novos estilos
-
-// Interface para definir a estrutura dos resultados
-interface RollResult {
-    total: number;
-    rolls: Array<{
-        type: string;
-        value: number;
-    }>;
-}
+import { useCallback, useState, useRef } from "react";
+import DiceBox, { DiceBoxRef } from "./components/DiceBox";
+import DiceControls from "./components/DiceControls";
+import RollResult from "./components/RollResult";
+import { DiceResultT, DiceDataT } from "./types";
+import { mountDiceResult } from "./utils/dice.utils";
+import "./components/App/styles.css";
+import "./components/App/sidebar.css";
 
 function App() {
-    // Ref para armazenar o resultado da rolagem
-    const rollResultRef = useRef<RollResult | null>(null);
-    const [, forceUpdate] = useState({});
+  const [rollResult, setRollResult] = useState<DiceDataT>({} as DiceDataT);
+  const diceBoxRef = useRef<DiceBoxRef>(null);
 
-    // Função para receber o resultado do componente DiceBox e atualizar o estado
-    const handleRoll = (results: any) => {
-        try {
-            console.log("Raw results from dice box:", results);
-            
-            // Simple handling - just take the first result
-            if (results && Array.isArray(results) && results.length > 0) {
-                const resultData = results[0];
-                console.log("Processing result data:", resultData);
-                
-                // Create a simple formatted result
-                const formattedResult = {
-                    total: resultData.value || resultData.total || 0,
-                    rolls: []
-                };
-                
-                // Handle different possible structures
-                if (resultData.rolls && Array.isArray(resultData.rolls)) {
-                    formattedResult.rolls = resultData.rolls.map((die: any) => ({
-                        type: `d${resultData.sides || 0}`,
-                        value: die.value || 0
-                    }));
-                } else if (resultData.results && Array.isArray(resultData.results)) {
-                    formattedResult.rolls = resultData.results.map((die: any) => ({
-                        type: `d${die.sides || 0}`,
-                        value: die.value || 0
-                    }));
-                } else {
-                    // Fallback for simple structure
-                    formattedResult.rolls = [{
-                        type: `d${resultData.sides || 0}`,
-                        value: resultData.value || resultData.total || 0
-                    }];
-                }
-                
-                console.log("Formatted result:", formattedResult);
-                rollResultRef.current = formattedResult;
-                // Force update to trigger re-render
-                forceUpdate({});
-            }
-        } catch (error) {
-            console.error("Error processing dice roll results:", error);
-        }
-    };
+  const handleRoll = useCallback(([result]: Array<DiceResultT>) => {
+    const diceData = mountDiceResult(result);
+    console.log(diceData);
+    setRollResult(diceData);
+  }, []);
 
-    return (
-        <div className="app">
-            <h1>CYBERDICE v1.0</h1>
-            <div className="dice-demo">
-                <DiceBoxComponent onRoll={handleRoll} />
+  const handleDiceRoll = (notation: string) => {
+    if (diceBoxRef.current) {
+      diceBoxRef.current.roll(notation);
+    }
+  };
 
-                {/* Novo painel para exibir os resultados */}
-                <div className="roll-result">
-                    <h3>// SYSTEM OUTPUT:</h3>
-                    <pre>
-                        {rollResultRef.current
-                            ? `> Total: ${
-                                  rollResultRef.current.total
-                              }
-> Rolls: ${JSON.stringify(
-                                  rollResultRef.current.rolls.map((r) => r.value)
-                              )}`
-                            : "> Awaiting command..."}
-                    </pre>
-                </div>
-            </div>
+  return (
+    <div className="app">
+      <div className="dice-demo">
+        <div className="main-content">
+          <h1>CYBERDICE v1.0 🎲💻</h1>
+          <DiceBox ref={diceBoxRef} onRoll={handleRoll} />
         </div>
-    );
+
+        <div className="sidebar">
+          <RollResult rollResult={rollResult} />
+          <DiceControls onRoll={handleDiceRoll} />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default App;
