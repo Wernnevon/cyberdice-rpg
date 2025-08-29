@@ -138,6 +138,7 @@
   border-radius: 0;
   box-sizing: border-box;
   min-width: 0;
+  height: 40px; /* Altura igual aos botões */
 }
 
 .dice-count-input:focus {
@@ -170,6 +171,7 @@
   .dice-count-input {
     font-size: 1.2rem;
     padding: 0.75rem;
+    height: 45px; /* Altura igual aos botões em telas médias */
   }
   
   .dice-selector select,
@@ -208,5 +210,6 @@
   .dice-count-input {
     font-size: 1.3rem;
     padding: 1rem;
+    height: 50px; /* Altura igual aos botões em telas pequenas */
   }
 }
