@@ -150,6 +150,12 @@
   box-shadow: 0 0 10px rgba(0, 204, 255, 0.8);
 }
 
+/* Estilos específicos para o input readonly no modo mobile */
+.dice-count-input.mobile-readonly {
+  cursor: default;
+  background-color: rgba(0, 204, 255, 0.1); /* Fundo sutil para indicar que é readonly */
+}
+
 /* Estilos responsivos para dispositivos móveis */
 @media (max-width: 768px) {
   .dice-controls {
