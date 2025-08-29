@@ -1,4 +1,4 @@
-import { useCallback, useState, useRef } from "react";
+import { useCallback, useState, useRef, memo } from "react";
 import DiceBox, { DiceBoxRef } from "./components/DiceBox";
 import DiceControls from "./components/DiceControls";
 import RollResult from "./components/RollResult";
@@ -7,6 +7,11 @@ import { mountDiceResult } from "./utils/dice.utils";
 import { useFallingDice } from "./hooks/useFallingDice";
 import "./components/App/styles.css";
 import "./components/App/sidebar.css";
+
+// Memoized components to prevent unnecessary re-renders
+const MemoizedDiceBox = memo(DiceBox);
+const MemoizedRollResult = memo(RollResult);
+const MemoizedDiceControls = memo(DiceControls);
 
 function App() {
     const [rollResult, setRollResult] = useState<DiceDataT>({} as DiceDataT);
@@ -20,23 +25,23 @@ function App() {
         setRollResult(diceData);
     }, []);
 
-    const handleDiceRoll = (notation: string) => {
+    const handleDiceRoll = useCallback((notation: string) => {
         if (diceBoxRef.current) {
             diceBoxRef.current.roll(notation);
         }
-    };
+    }, []);
 
     return (
         <div className="app">
             <div className="dice-demo">
                 <div className="main-content">
                     <h1>CYBERDICE v1.0 🎲💻</h1>
-                    <DiceBox ref={diceBoxRef} onRoll={handleRoll} />
+                    <MemoizedDiceBox ref={diceBoxRef} onRoll={handleRoll} />
                 </div>
 
                 <div className="sidebar">
-                    <DiceControls onRoll={handleDiceRoll} />
-                    <RollResult rollResult={rollResult} />
+                    <MemoizedDiceControls onRoll={handleDiceRoll} />
+                    <MemoizedRollResult rollResult={rollResult} />
                     <div className="rpg-shield">
                         <img
                             src="/assets/images/d20.png"

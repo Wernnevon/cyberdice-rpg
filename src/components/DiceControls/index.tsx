@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
+import { MemoizedMobileDiceCountControl, MemoizedDesktopDiceCountControl } from "./DiceCountControls";
 import "./styles.css";
 
 interface DiceControlsProps {
@@ -43,57 +44,20 @@ const DiceControls = ({ onRoll }: DiceControlsProps) => {
         onRoll(`${diceCount}${selectedDice}`);
     };
 
-    const incrementCount = () => {
-        setDiceCount(prev => Math.min(prev + 1, 10));
-    };
-
-    const decrementCount = () => {
-        setDiceCount(prev => Math.max(prev - 1, 1));
-    };
-
     return (
         <div className="dice-controls">
             <div className="dice-inputs">
                 <div className="dice-count">
                     <label htmlFor="dice-count">Quantidade: 🔢</label>
                     {isMobile ? (
-                        <div className="dice-count-wrapper">
-                            <button 
-                                className="dice-count-btn decrement" 
-                                onClick={decrementCount}
-                                aria-label="Diminuir quantidade"
-                            >
-                                -
-                            </button>
-                            <input
-                                id="dice-count"
-                                type="number"
-                                min="1"
-                                max="10"
-                                value={diceCount}
-                                onChange={(e) =>
-                                    setDiceCount(parseInt(e.target.value) || 1)
-                                }
-                                className="dice-count-input"
-                            />
-                            <button 
-                                className="dice-count-btn increment" 
-                                onClick={incrementCount}
-                                aria-label="Aumentar quantidade"
-                            >
-                                +
-                            </button>
-                        </div>
+                        <MemoizedMobileDiceCountControl 
+                            diceCount={diceCount} 
+                            setDiceCount={setDiceCount} 
+                        />
                     ) : (
-                        <input
-                            id="dice-count"
-                            type="number"
-                            min="1"
-                            max="10"
-                            value={diceCount}
-                            onChange={(e) =>
-                                setDiceCount(parseInt(e.target.value) || 1)
-                            }
+                        <MemoizedDesktopDiceCountControl 
+                            diceCount={diceCount} 
+                            setDiceCount={setDiceCount} 
                         />
                     )}
                 </div>
@@ -121,4 +85,4 @@ const DiceControls = ({ onRoll }: DiceControlsProps) => {
     );
 };
 
-export default DiceControls;
+export default memo(DiceControls);

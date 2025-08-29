@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { DiceDataT } from "../../types";
 import "./styles.css";
 
@@ -26,4 +27,14 @@ const RollResult = ({ rollResult }: RollResultProps) => {
     );
 };
 
-export default RollResult;
+// Custom comparison function for memoization
+const areEqual = (prevProps: RollResultProps, nextProps: RollResultProps) => {
+    return (
+        prevProps.rollResult.total === nextProps.rollResult.total &&
+        prevProps.rollResult.quantity === nextProps.rollResult.quantity &&
+        prevProps.rollResult.diceSides === nextProps.rollResult.diceSides &&
+        prevProps.rollResult.dices === nextProps.rollResult.dices
+    );
+};
+
+export default memo(RollResult, areEqual);

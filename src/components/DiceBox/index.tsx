@@ -1,4 +1,4 @@
-import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
+import { useEffect, useRef, forwardRef, useImperativeHandle, memo } from "react";
 import DiceBoxClass from "@3d-dice/dice-box";
 import "./styles.css";
 
@@ -98,4 +98,4 @@ const DiceBox = forwardRef<DiceBoxRef, DiceBoxProps>(({ onRoll }, ref) => {
   );
 });
 
-export default DiceBox;
+export default memo(DiceBox);
