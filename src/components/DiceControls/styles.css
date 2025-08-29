@@ -49,6 +49,9 @@
   width: 100%;
   text-align: center;
   box-sizing: border-box;
+  height: 40px;
+  /* Altura padrão igual aos botões */
+
 }
 
 .dice-selector select:focus,
@@ -138,7 +141,8 @@
   border-radius: 0;
   box-sizing: border-box;
   min-width: 0;
-  height: 40px; /* Altura igual aos botões */
+  height: 40px;
+  /* Altura igual aos botões */
 }
 
 .dice-count-input:focus {
@@ -151,33 +155,38 @@
   .dice-controls {
     padding: 1rem;
   }
-  
+
   /* Mantém os inputs na mesma linha em telas menores */
   .dice-inputs {
     gap: 0.75rem;
   }
-  
+
   .roll-button {
     padding: 1rem;
     font-size: 1.1rem;
   }
-  
+
   .dice-count-btn {
     width: 45px;
     height: 45px;
     font-size: 1.3rem;
   }
-  
+
   .dice-count-input {
     font-size: 1.2rem;
     padding: 0.75rem;
-    height: 45px; /* Altura igual aos botões em telas médias */
+    height: 45px;
+    /* Altura igual aos botões em telas médias */
   }
-  
+
   .dice-selector select,
   .dice-count input:not(.dice-count-input) {
     padding: 0.75rem;
     font-size: 1.1rem;
+    height: 45px;
+    /* Altura igual aos botões em telas médias */
+    padding-right: 2rem;
+    /* Espaço para o ícone do select */
   }
 }
 
@@ -185,31 +194,36 @@
   .dice-controls {
     padding: 0.75rem;
   }
-  
+
   .dice-inputs {
     gap: 0.5rem;
   }
-  
+
   .dice-selector select,
   .dice-count input:not(.dice-count-input) {
     padding: 0.75rem;
     font-size: 1.1rem;
+    height: 50px;
+    /* Altura igual aos botões em telas pequenas */
+    padding-right: 2.5rem;
+    /* Espaço para o ícone do select */
   }
-  
+
   .roll-button {
     padding: 1.25rem;
     font-size: 1.2rem;
   }
-  
+
   .dice-count-btn {
     width: 50px;
     height: 50px;
     font-size: 1.5rem;
   }
-  
+
   .dice-count-input {
     font-size: 1.3rem;
     padding: 1rem;
-    height: 50px; /* Altura igual aos botões em telas pequenas */
+    height: 50px !important;
+    /* Altura igual aos botões em telas pequenas */
   }
 }
