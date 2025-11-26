@@ -35,7 +35,7 @@ function App() {
         <div className="app">
             <div className="dice-demo">
                 <div className="main-content">
-                    <h1>CYBERDICE v1.0 🎲💻</h1>
+                    <h1>⚡ CYBERDICE v1.0 ⚡</h1>
                     <MemoizedDiceBox ref={diceBoxRef} onRoll={handleRoll} />
                 </div>
 

@@ -9,19 +9,19 @@ interface RollResultProps {
 const RollResult = ({ rollResult }: RollResultProps) => {
     const formatResult = () => {
         if (!rollResult.total) {
-            return "> Awaiting command... 🤖";
+            return ">> AWAITING SIGNAL...";
         }
 
         return [
-            `> Dado: ${rollResult.quantity}D${rollResult.diceSides} 🎲`,
-            `> Dados: [${rollResult.dices}] 🧮`,
-            `> Total: ${rollResult.total} 🎲`,
+            `>> DICE: ${rollResult.quantity}D${rollResult.diceSides}`,
+            `>> VALUES: [${rollResult.dices}]`,
+            `>> RESULT: ${rollResult.total} ◈`,
         ].join("\n");
     };
 
     return (
         <div className="roll-result">
-            <h3>// SYSTEM OUTPUT: 💻</h3>
+            <h3>[ ● OUTPUT ]</h3>
             <pre>{formatResult()}</pre>
         </div>
     );

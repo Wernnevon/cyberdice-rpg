@@ -1,15 +1,26 @@
-/* Controles dos dados - nova estrutura */
+/* Controles dos dados - Estilo Cyberpunk */
 .dice-controls {
   margin-top: 0;
   display: flex;
   flex-direction: column;
   gap: 1rem;
   padding: 1.5rem;
-  border: 1px solid #00ccff;
-  background-color: rgba(10, 25, 40, 0.5);
-  box-shadow: inset 0 0 15px rgba(0, 204, 255, 0.3), 0 0 15px rgba(0, 204, 255, 0.2);
+  border: 2px solid #ff00c8;
+  background: linear-gradient(135deg, rgba(15, 30, 50, 0.6) 0%, rgba(20, 40, 60, 0.6) 100%);
+  box-shadow:
+    inset 0 0 15px rgba(255, 0, 200, 0.2),
+    0 0 15px rgba(255, 0, 200, 0.3),
+    0 0 30px rgba(0, 255, 136, 0.1);
   box-sizing: border-box;
   flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.dice-controls:hover {
+  box-shadow:
+    inset 0 0 20px rgba(255, 0, 200, 0.3),
+    0 0 20px rgba(255, 0, 200, 0.4),
+    0 0 40px rgba(0, 255, 136, 0.2);
 }
 
 .dice-selector,
@@ -22,9 +33,12 @@
 
 .dice-selector label,
 .dice-count label {
-  color: #00ccff;
+  color: #00ff88;
   text-transform: uppercase;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  text-shadow: 0 0 5px rgba(0, 255, 136, 0.5);
+  font-weight: 600;
 }
 
 .dice-inputs {
@@ -40,61 +54,65 @@
 
 .dice-selector select,
 .dice-count input {
-  padding: 0.5rem;
-  background-color: transparent;
-  color: #ffffff;
-  border: 1px solid #00ccff;
-  border-radius: 0;
+  padding: 0.6rem;
+  background-color: rgba(0, 20, 40, 0.8);
+  color: #00ff88;
+  border: 2px solid #00ff88;
+  border-radius: 2px;
   font-size: 1rem;
   width: 100%;
   text-align: center;
   box-sizing: border-box;
   height: 40px;
-  /* Altura padrão igual aos botões */
-
+  transition: all 0.2s ease;
+  font-family: 'Courier New', monospace;
 }
 
 .dice-selector select:focus,
 .dice-count input:focus {
   outline: none;
-  box-shadow: 0 0 10px rgba(0, 204, 255, 0.8);
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.8), inset 0 0 5px rgba(0, 255, 136, 0.3);
+  border-color: #ff00c8;
 }
 
 .dice-selector select option {
   background-color: #0a0a0a;
-  color: #ffffff;
+  color: #00ff88;
 }
 
 .roll-button {
   padding: 0.75rem 1.5rem;
   background-color: transparent;
-  color: #39ff14;
-  border: 1px solid #39ff14;
-  border-radius: 0;
+  color: #00ff88;
+  border: 2px solid #00ff88;
+  border-radius: 2px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 1rem;
   transition: all 0.3s ease;
   text-transform: uppercase;
-  box-shadow: 0 0 5px rgba(57, 255, 20, 0.5);
+  letter-spacing: 1px;
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
   width: 100%;
   margin-top: 0.5rem;
   box-sizing: border-box;
   flex-shrink: 0;
+  font-family: 'Courier New', monospace;
 }
 
 .roll-button:hover {
-  background-color: rgba(57, 255, 20, 0.1);
-  color: #ffffff;
-  box-shadow: 0 0 10px rgba(57, 255, 20, 0.8), 0 0 15px rgba(0, 204, 255, 0.5);
+  background-color: rgba(0, 255, 136, 0.15);
+  color: #00ff88;
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.8), 0 0 25px rgba(255, 0, 200, 0.4);
+  border-color: #ff00c8;
 }
 
 .roll-button:active {
-  background-color: rgba(57, 255, 20, 0.3);
+  background-color: rgba(0, 255, 136, 0.3);
   transform: scale(0.98);
 }
 
-/* Novos estilos para os botões de incremento/decremento - apenas mobile */
+/* Novos estilos para os botões de incremento/decremento */
 .dice-count-wrapper {
   display: flex;
   width: 100%;
@@ -103,9 +121,9 @@
 
 .dice-count-btn {
   background-color: transparent;
-  color: #00ccff;
-  border: 1px solid #00ccff;
-  border-radius: 0;
+  color: #00ff88;
+  border: 2px solid #00ff88;
+  border-radius: 2px;
   cursor: pointer;
   font-size: 1.2rem;
   font-weight: bold;
@@ -117,15 +135,16 @@
   justify-content: center;
   transition: all 0.2s ease;
   flex-shrink: 0;
+  box-shadow: 0 0 5px rgba(0, 255, 136, 0.4);
 }
 
 .dice-count-btn:hover {
-  background-color: rgba(0, 204, 255, 0.1);
-  box-shadow: 0 0 5px rgba(0, 204, 255, 0.5);
+  background-color: rgba(0, 255, 136, 0.15);
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.6);
 }
 
 .dice-count-btn:active {
-  background-color: rgba(0, 204, 255, 0.3);
+  background-color: rgba(0, 255, 136, 0.3);
   transform: scale(0.95);
 }
 
@@ -135,25 +154,27 @@
   text-align: center;
   font-size: 1.1rem;
   padding: 0.5rem;
-  background-color: transparent;
-  color: #ffffff;
-  border: 1px solid #00ccff;
-  border-radius: 0;
+  background-color: rgba(0, 20, 40, 0.8);
+  color: #00ff88;
+  border: 2px solid #00ff88;
+  border-radius: 2px;
   box-sizing: border-box;
   min-width: 0;
   height: 40px;
-  /* Altura igual aos botões */
+  transition: all 0.2s ease;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
 }
 
 .dice-count-input:focus {
   outline: none;
-  box-shadow: 0 0 10px rgba(0, 204, 255, 0.8);
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.8), inset 0 0 5px rgba(0, 255, 136, 0.3);
+  border-color: #ff00c8;
 }
 
-/* Estilos específicos para o input readonly no modo mobile */
 .dice-count-input.mobile-readonly {
   cursor: default;
-  background-color: rgba(0, 204, 255, 0.1); /* Fundo sutil para indicar que é readonly */
+  background-color: rgba(0, 255, 136, 0.1);
 }
 
 /* Estilos responsivos para dispositivos móveis */
@@ -162,7 +183,6 @@
     padding: 1rem;
   }
 
-  /* Mantém os inputs na mesma linha em telas menores */
   .dice-inputs {
     gap: 0.75rem;
   }
@@ -182,7 +202,6 @@
     font-size: 1.2rem;
     padding: 0.75rem;
     height: 45px;
-    /* Altura igual aos botões em telas médias */
   }
 
   .dice-selector select,
@@ -190,9 +209,7 @@
     padding: 0.75rem;
     font-size: 1.1rem;
     height: 45px;
-    /* Altura igual aos botões em telas médias */
     padding-right: 2rem;
-    /* Espaço para o ícone do select */
   }
 }
 
@@ -210,9 +227,7 @@
     padding: 0.75rem;
     font-size: 1.1rem;
     height: 50px;
-    /* Altura igual aos botões em telas pequenas */
     padding-right: 2.5rem;
-    /* Espaço para o ícone do select */
   }
 
   .roll-button {
@@ -230,6 +245,5 @@
     font-size: 1.3rem;
     padding: 1rem;
     height: 50px !important;
-    /* Altura igual aos botões em telas pequenas */
   }
 }

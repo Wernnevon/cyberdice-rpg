@@ -1,14 +1,12 @@
 /* Estilo Cyberpunk Futurista */
 :root {
-  font-family: 'Consolas', 'Menlo', 'monospace', sans-serif;
-  /* Fonte monoespaçada para um look de terminal */
+  font-family: 'Courier New', 'Consolas', 'Menlo', monospace;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #0a0a0a;
-  /* Fundo de breu, mais escuro que o padrão */
+  color: rgba(0, 255, 200, 0.95);
+  background-color: #010310;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -20,15 +18,16 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  overflow-x: hidden; /* Prevent horizontal scroll */
-  background-color: #0a1a2a; /* Cor mais apropriada ao sistema */
+  overflow-x: hidden;
+  background: linear-gradient(135deg, #010310 0%, #0a1a2a 100%);
+  background-attachment: fixed;
 }
 
 .app {
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 1rem; /* Minimal padding */
+  padding: 1rem;
   text-align: center;
   min-height: 100vh;
   display: flex;
@@ -36,52 +35,94 @@ body {
   justify-content: center;
   align-items: center;
   box-sizing: border-box;
-  background-color: #0a1a2a; /* Cor mais apropriada ao sistema */
+  background: transparent;
   position: relative;
   overflow: hidden;
 }
 
 /* Container principal da demo */
 .dice-demo {
-  border: 1px solid #00ccff;
-  border-radius: 0;
-  /* Ângulos retos */
-  padding: 1rem; /* Minimal padding */
-  background-color: rgba(10, 25, 40, 0.5);
-  box-shadow: inset 0 0 15px rgba(0, 204, 255, 0.3), 0 0 15px rgba(0, 204, 255, 0.2);
+  border: 2px solid #00ff88;
+  border-radius: 2px;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(10, 25, 40, 0.7) 0%, rgba(15, 30, 50, 0.8) 100%);
+  box-shadow:
+    inset 0 0 20px rgba(0, 255, 136, 0.2),
+    0 0 20px rgba(0, 255, 136, 0.3),
+    0 0 40px rgba(255, 0, 200, 0.15);
   display: flex;
   flex-direction: row;
   gap: 2rem;
   align-items: flex-start;
   width: 100%;
   box-sizing: border-box;
-  max-height: 85vh; /* Limit height to prevent overflow */
-  overflow: hidden; /* Prevent internal scrolling */
+  max-height: 85vh;
+  overflow: hidden;
   position: relative;
   z-index: 2;
+  animation: borderPulse 4s ease-in-out infinite;
+}
+
+@keyframes borderPulse {
+
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 20px rgba(0, 255, 136, 0.2),
+      0 0 20px rgba(0, 255, 136, 0.3),
+      0 0 40px rgba(255, 0, 200, 0.15);
+  }
+
+  50% {
+    box-shadow:
+      inset 0 0 30px rgba(0, 255, 136, 0.4),
+      0 0 30px rgba(0, 255, 136, 0.5),
+      0 0 50px rgba(255, 0, 200, 0.25);
+  }
 }
 
 h1 {
-  font-size: 2.5em; /* Slightly smaller to fit inside container */
+  font-size: 2.5em;
   line-height: 1.1;
-  color: #00ccff;
-  /* Ciano elétrico */
-  text-shadow: 0 0 5px #00ccff, 0 0 10px #00ccff, 0 0 15px #ff00ff;
-  /* Efeito de brilho neon */
-  margin: 0 0 1rem 0; /* Adjusted margin */
+  color: #00ff88;
+  text-shadow:
+    0 0 10px #00ff88,
+    0 0 20px #00ff88,
+    0 0 30px #ff00c8,
+    0 0 40px #ff00c8;
+  margin: 0 0 1rem 0;
   width: 100%;
+  letter-spacing: 2px;
+  animation: glitch 2s ease-in-out infinite;
+}
+
+@keyframes glitch {
+
+  0%,
+  100% {
+    text-shadow:
+      0 0 10px #00ff88,
+      0 0 20px #00ff88,
+      0 0 30px #ff00c8;
+  }
+
+  50% {
+    text-shadow:
+      -2px 0 10px #00ff88,
+      2px 0 20px #ff00c8,
+      0 0 30px #00ccff;
+  }
 }
 
 /* Estilos para os dados caindo */
 .falling-dice {
-  position: fixed; /* Fixed para preencher toda a tela */
+  position: fixed;
   font-size: 24px;
   z-index: 1;
   pointer-events: none;
-  text-shadow: 
-    0 0 5px #00ccff,
-    0 0 10px #00ccff,
-    0 0 15px #ff00ff;
+  text-shadow:
+    0 0 5px #00ff88,
+    0 0 10px #ff00c8;
   animation: fall linear infinite;
 }
 
@@ -89,6 +130,7 @@ h1 {
   0% {
     transform: translateY(-100px);
   }
+
   100% {
     transform: translateY(calc(100vh + 100px));
   }
@@ -99,26 +141,27 @@ h1 {
   .app {
     padding: 0.5rem;
   }
-  
+
   .dice-demo {
     flex-direction: column;
     gap: 1rem;
     max-height: none;
     overflow: visible;
   }
-  
+
   h1 {
     font-size: 2em;
   }
-  
+
   .falling-dice {
     font-size: 18px;
   }
-  
+
   @keyframes fall {
     0% {
       transform: translateY(-50px);
     }
+
     100% {
       transform: translateY(calc(100vh + 50px));
     }
@@ -129,23 +172,24 @@ h1 {
   .app {
     padding: 0.25rem;
   }
-  
+
   .dice-demo {
     padding: 0.5rem;
   }
-  
+
   h1 {
     font-size: 1.5em;
   }
-  
+
   .falling-dice {
     font-size: 14px;
   }
-  
+
   @keyframes fall {
     0% {
       transform: translateY(-30px);
     }
+
     100% {
       transform: translateY(calc(100vh + 30px));
     }

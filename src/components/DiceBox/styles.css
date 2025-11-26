@@ -1,4 +1,4 @@
-/* Container da caixa de dados 3D */
+/* Container da caixa de dados 3D - Estilo Cyberpunk */
 .dice-box-container {
   display: flex;
   flex-direction: column;
@@ -7,8 +7,6 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  background-color: #414141c4;
-  /* Prevent overflow */
 }
 
 .main-content {
@@ -18,22 +16,21 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /* Prevent overflow */
 }
 
 #dice-box {
   width: 100%;
   height: 730px;
-  /* Reduced height to accommodate taller roll-result */
-  /* Altura aumentada para melhor visualização dos dados */
-  border: 1px solid #ff00ff;
-  /* Borda magenta */
-  box-shadow: none;
-  border-radius: 0;
+  border: 2px solid #ff00c8;
+  box-shadow:
+    inset 0 0 20px rgba(255, 0, 200, 0.2),
+    0 0 20px rgba(255, 0, 200, 0.3),
+    0 0 40px rgba(0, 255, 136, 0.1);
+  border-radius: 2px;
   overflow: hidden;
-  /* Prevent container expansion */
   box-sizing: border-box;
   flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(10, 25, 40, 0.8) 0%, rgba(15, 30, 50, 0.8) 100%);
 }
 
 #dice-box canvas {
@@ -53,7 +50,7 @@
   .dice-box-container {
     gap: 1rem;
   }
-  
+
   #dice-box {
     height: 400px;
   }

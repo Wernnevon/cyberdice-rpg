@@ -1,5 +1,8 @@
 import { useState, useEffect, memo } from "react";
-import { MemoizedMobileDiceCountControl, MemoizedDesktopDiceCountControl } from "./DiceCountControls";
+import {
+    MemoizedMobileDiceCountControl,
+    MemoizedDesktopDiceCountControl,
+} from "./DiceCountControls";
 import "./styles.css";
 
 interface DiceControlsProps {
@@ -17,13 +20,13 @@ const DiceControls = ({ onRoll }: DiceControlsProps) => {
     const [isMobile, setIsMobile] = useState<boolean>(false);
 
     const diceTypes: DiceType[] = [
-        { value: "d4", label: "d4 🔺" },
-        { value: "d6", label: "d6 ⬛" },
-        { value: "d8", label: "d8 ✴️" },
-        { value: "d10", label: "d10 🔟" },
-        { value: "d12", label: "d12 🌕" },
-        { value: "d20", label: "d20 🎯" },
-        { value: "d100", label: "d100 💯" },
+        { value: "d4", label: "d4 ▲" },
+        { value: "d6", label: "d6 ◆" },
+        { value: "d8", label: "d8 ★" },
+        { value: "d10", label: "d10 ◇" },
+        { value: "d12", label: "d12 ⬡" },
+        { value: "d20", label: "d20 ◈" },
+        { value: "d100", label: "d100 ◉" },
     ];
 
     // Detectar se é mobile
@@ -31,12 +34,12 @@ const DiceControls = ({ onRoll }: DiceControlsProps) => {
         const checkIsMobile = () => {
             setIsMobile(window.innerWidth <= 768);
         };
-        
+
         checkIsMobile();
-        window.addEventListener('resize', checkIsMobile);
-        
+        window.addEventListener("resize", checkIsMobile);
+
         return () => {
-            window.removeEventListener('resize', checkIsMobile);
+            window.removeEventListener("resize", checkIsMobile);
         };
     }, []);
 
@@ -48,22 +51,22 @@ const DiceControls = ({ onRoll }: DiceControlsProps) => {
         <div className="dice-controls">
             <div className="dice-inputs">
                 <div className="dice-count">
-                    <label htmlFor="dice-count">Quantidade: 🔢</label>
+                    <label htmlFor="dice-count">[ QTD ]</label>
                     {isMobile ? (
-                        <MemoizedMobileDiceCountControl 
-                            diceCount={diceCount} 
-                            setDiceCount={setDiceCount} 
+                        <MemoizedMobileDiceCountControl
+                            diceCount={diceCount}
+                            setDiceCount={setDiceCount}
                         />
                     ) : (
-                        <MemoizedDesktopDiceCountControl 
-                            diceCount={diceCount} 
-                            setDiceCount={setDiceCount} 
+                        <MemoizedDesktopDiceCountControl
+                            diceCount={diceCount}
+                            setDiceCount={setDiceCount}
                         />
                     )}
                 </div>
 
                 <div className="dice-selector">
-                    <label htmlFor="dice-type">Tipo de Dado: 🎲</label>
+                    <label htmlFor="dice-type">[ TYPE ]</label>
                     <select
                         id="dice-type"
                         value={selectedDice}
@@ -79,7 +82,7 @@ const DiceControls = ({ onRoll }: DiceControlsProps) => {
             </div>
 
             <button className="roll-button" onClick={rollDice}>
-                ROLAR DADOS 🎰
+                ▶ EXECUTE ◀
             </button>
         </div>
     );
