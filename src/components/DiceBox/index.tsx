@@ -27,8 +27,6 @@ const DiceBox = forwardRef<DiceBoxRef, DiceBoxProps>(({ onRoll }, ref) => {
           restitution: 0.5, // Reduced bounciness
           angularDamping: 0.8,
           linearDamping: 0.9,
-          // spinForce: 6, // Optional: control spin
-          // throwForce: 4, // Reduce throw force
           scale: 7, // Scale up dice to make them easier to see and fit better
           theme: "diceOfRolling",
         });
