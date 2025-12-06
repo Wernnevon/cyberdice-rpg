@@ -60,6 +60,7 @@ export const DesktopDiceCountControl = ({
             onChange={(e) =>
                 setDiceCount(parseInt(e.target.value) || 1)
             }
+            className="dice-count-input"
         />
     );
 };

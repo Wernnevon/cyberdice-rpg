@@ -1,82 +1,102 @@
-/* Novo painel de resultados - Estilo Cyberpunk */
+/* ROLL RESULT - CYBER HUD */
 .roll-result {
-  padding: 1.5rem;
-  border: 2px solid #00ff88;
-  background: linear-gradient(135deg, #051a05 0%, #0a2a0a 100%);
-  color: #00ff88;
-  text-align: left;
-  height: 225px;
-  box-shadow:
-    inset 0 0 15px rgba(0, 255, 136, 0.2),
-    0 0 15px rgba(0, 255, 136, 0.3),
-    0 0 30px rgba(0, 255, 136, 0.1);
-  width: 100%;
-  box-sizing: border-box;
-  align-self: flex-start;
+  margin-top: auto;
+  /* Push to bottom if space permits */
+  padding: var(--space-md);
+  background: rgba(0, 10, 20, 0.9);
+  border-left: 4px solid var(--color-primary);
+  border-right: 1px solid var(--color-primary-dark);
+  position: relative;
+  font-family: var(--font-family-mono);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+  min-height: 120px;
+  /* Minimum reasonable height */
+  height: auto;
+  /* Let it grow */
+  max-height: 300px;
+  /* Cap it reasonably so it doesn't hide controls entirely */
   overflow-y: auto;
-  flex-shrink: 0;
-  transition: all 0.3s ease;
-  border-radius: 2px;
-  font-family: 'Courier New', monospace;
-}
-
-.roll-result:hover {
-  box-shadow:
-    inset 0 0 20px rgba(0, 255, 136, 0.3),
-    0 0 20px rgba(0, 255, 136, 0.4),
-    0 0 40px rgba(255, 0, 200, 0.15);
-  border-color: #ff00c8;
-}
-
-.roll-result h3 {
-  margin: 0 0 1rem 0;
-  color: #ff00c8;
-  text-transform: uppercase;
-  border-bottom: 2px solid #00ff88;
-  padding-bottom: 0.5rem;
-  letter-spacing: 1px;
-  font-weight: 700;
-  text-shadow: 0 0 5px rgba(255, 0, 200, 0.5);
-}
-
-.roll-result pre {
-  margin: 0;
-  font-size: 1.1rem;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  word-break: break-all;
-  max-width: 100%;
   overflow-x: hidden;
-  box-sizing: border-box;
-  color: #00ff88;
-  font-weight: 500;
-  text-shadow: 0 0 3px rgba(0, 255, 136, 0.3);
+  flex-shrink: 0;
+  /* Prevent it from shrinking */
 }
 
-/* Estilos responsivos para dispositivos móveis */
+/* Scanline animation overlay for the result box */
+.roll-result::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom,
+      transparent 50%,
+      rgba(0, 243, 255, 0.05) 50%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 2;
+  /* Sit above text but below nothing? wait text is z-index 1. Scanlines should be ABOVE text for effect? No normally below or overlay. */
+  /* Re-reading user issue about "bugged output" and my previous fix putting text ABOVE z-index 1. 
+     If scanlines are z-index 999 in App style, but this is local. 
+     If local before is z-index 2, it covers text (z-index 1). 
+     User said "bugged output". If scanlines cover text, it might look bugged.
+     My previous fix put text at z-index 1. 
+     If I want text READABLE, I should keep it above. 
+     But scanlines are "overlay". 
+     Let's keep scanlines at pointer-events: none. 
+     But visuals... Glitch effect usually implies scanlines ON TOP.
+     But for readability... 
+     Let's set scanline to z-index 2 but use mix-blend-mode or low opacity?
+     Actually, let's just ensure height is fixed first.
+     I will remove the media queries below.
+  */
+}
+
+/* Remove media queries regarding height */
+/* Responsivos */
 @media (max-width: 768px) {
   .roll-result {
-    height: 180px;
-    padding: 1rem;
-  }
-
-  .roll-result pre {
-    font-size: 1rem;
+    padding: var(--space-md);
   }
 }
 
 @media (max-width: 480px) {
   .roll-result {
-    height: 150px;
-    padding: 0.75rem;
+    padding: var(--space-sm);
   }
+}
 
-  .roll-result h3 {
-    font-size: 1.1rem;
-  }
+.roll-result h3 {
+  margin: 0 0 var(--space-sm) 0;
+  color: var(--color-secondary);
+  font-size: var(--font-size-sm);
+  border-bottom: 1px dashed var(--color-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
 
-  .roll-result pre {
-    font-size: 0.9rem;
-  }
+.roll-result h3::after {
+  content: "LOG_01";
+  font-size: 0.7em;
+  opacity: 0.7;
+}
+
+.roll-result pre {
+  color: var(--color-primary);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  text-shadow: 0 0 5px var(--color-primary);
+  margin: 0;
+  padding: var(--space-xs);
+  position: relative;
+  z-index: 1;
+}
+
+/* Highlight the numbers */
+.roll-result pre strong {
+  color: var(--color-accent);
+  font-size: 1.2em;
 }

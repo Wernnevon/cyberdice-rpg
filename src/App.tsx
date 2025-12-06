@@ -5,10 +5,11 @@ import RollResult from "./components/RollResult";
 import { DiceResultT, DiceDataT } from "./types";
 import { mountDiceResult } from "./utils/dice.utils";
 import { useFallingDice } from "./hooks/useFallingDice";
+// Global styles imported in main.tsx
+// Component specific styles
 import "./components/App/styles.css";
-import "./components/App/sidebar.css";
 
-// Memoized components to prevent unnecessary re-renders
+// Memoized components
 const MemoizedDiceBox = memo(DiceBox);
 const MemoizedRollResult = memo(RollResult);
 const MemoizedDiceControls = memo(DiceControls);
@@ -17,7 +18,6 @@ function App() {
     const [rollResult, setRollResult] = useState<DiceDataT>({} as DiceDataT);
     const diceBoxRef = useRef<DiceBoxRef>(null);
 
-    // Usar o custom hook para criar o efeito de dados caindo
     useFallingDice();
 
     const handleRoll = useCallback(([result]: Array<DiceResultT>) => {
@@ -33,24 +33,30 @@ function App() {
 
     return (
         <div className="app">
-            <div className="dice-demo">
-                <div className="main-content">
-                    <h1>⚡ CYBERDICE v1.0 ⚡</h1>
+            <main className="cyber-interface">
+                <section className="dice-display">
+                    <header className="app-header">
+                        <h1 className="glitch-title" data-text="CYBERDICE">CYBERDICE_v2.0</h1>
+                    </header>
                     <MemoizedDiceBox ref={diceBoxRef} onRoll={handleRoll} />
-                </div>
+                </section>
 
-                <div className="sidebar">
-                    <MemoizedDiceControls onRoll={handleDiceRoll} />
+                <aside className="control-panel">
                     <MemoizedRollResult rollResult={rollResult} />
-                    <div className="rpg-shield">
-                        <img
-                            src="/assets/images/d20.png"
-                            alt="D20 Dice"
-                            className="d20-logo"
-                        />
+                    <MemoizedDiceControls onRoll={handleDiceRoll} />
+                    
+                    {/* Decorative footer/shield for the sidebar */}
+                    <div className="system-status" style={{ 
+                        marginTop: 'auto', 
+                        opacity: 0.5, 
+                        fontSize: '0.8rem', 
+                        textAlign: 'center',
+                        color: 'var(--color-primary-dark)'
+                    }}>
+                        SYSTEM: ONLINE // CONNECTION: SECURE
                     </div>
-                </div>
-            </div>
+                </aside>
+            </main>
         </div>
     );
 }

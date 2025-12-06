@@ -1,0 +1,9 @@
+/* ========================================
+   DESIGN SYSTEM - ÍNDICE
+   ======================================== */
+
+/* Import all design system files */
+@import url('./variables.css');
+@import url('./typography.css');
+@import url('./spacing.css');
+@import url('./animations.css');

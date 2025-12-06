@@ -1,197 +1,133 @@
-/* Estilo Cyberpunk Futurista */
-:root {
-  font-family: 'Courier New', 'Consolas', 'Menlo', monospace;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: dark;
-  color: rgba(0, 255, 200, 0.95);
-  background-color: #010310;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+/* CYBERPUNK APP LAYOUT */
 
 body {
   margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  overflow-x: hidden;
-  background: linear-gradient(135deg, #010310 0%, #0a1a2a 100%);
-  background-attachment: fixed;
+  overflow: hidden;
+  /* Prevent scrolling on the main body */
+  background: radial-gradient(circle at center, var(--color-bg-medium) 0%, var(--color-bg-dark) 100%);
 }
 
 .app {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  color: var(--color-text-primary);
+}
+
+/* Main Grid Layout */
+.cyber-interface {
+  display: grid;
   width: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 1rem;
+  height: 100%;
+  grid-template-columns: 1fr;
+  grid-template-rows: 60% 40%;
+  grid-template-areas:
+    "dice"
+    "controls";
+  background-image:
+    linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+  background-size: 30px 30px;
+  position: relative;
+}
+
+/* decorative noise/scanlines overlay */
+.cyber-interface::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom,
+      rgba(255, 255, 255, 0),
+      rgba(255, 255, 255, 0) 50%,
+      rgba(0, 0, 0, 0.1) 50%,
+      rgba(0, 0, 0, 0.1));
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0.3;
+}
+
+/* DICE DISPLAY AREA */
+.dice-display {
+  grid-area: dice;
+  position: relative;
+  border-bottom: 2px solid var(--color-primary);
+  box-shadow: var(--shadow-glow-md);
+  background: radial-gradient(circle at center, rgba(0, 243, 255, 0.05) 0%, transparent 70%);
+}
+
+.app-header {
+  position: absolute;
+  top: var(--space-md);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
   text-align: center;
-  min-height: 100vh;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.glitch-title {
+  font-size: var(--font-size-3xl);
+  margin: 0;
+  color: var(--color-primary);
+  text-shadow: 0 0 10px var(--color-primary);
+  background: rgba(5, 5, 16, 0.7);
+  padding: var(--space-xs) var(--space-lg);
+  display: inline-block;
+  border: 1px solid var(--color-primary);
+  backdrop-filter: blur(4px);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+
+/* CONTROL PANEL SIDEBAR/BOTTOM SHEET */
+.control-panel {
+  grid-area: controls;
+  background: var(--color-bg-surface);
+  border-top: 1px solid var(--color-primary-dark);
+  padding: var(--space-md);
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  box-sizing: border-box;
-  background: transparent;
+  gap: var(--space-md);
+  overflow-y: auto;
   position: relative;
-  overflow: hidden;
+  z-index: 20;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
 }
 
-/* Container principal da demo */
-.dice-demo {
-  border: 2px solid #00ff88;
-  border-radius: 2px;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, rgba(10, 25, 40, 0.7) 0%, rgba(15, 30, 50, 0.8) 100%);
-  box-shadow:
-    inset 0 0 20px rgba(0, 255, 136, 0.2),
-    0 0 20px rgba(0, 255, 136, 0.3),
-    0 0 40px rgba(255, 0, 200, 0.15);
-  display: flex;
-  flex-direction: row;
-  gap: 2rem;
-  align-items: flex-start;
-  width: 100%;
-  box-sizing: border-box;
-  max-height: 85vh;
-  overflow: hidden;
-  position: relative;
-  z-index: 2;
-  animation: borderPulse 4s ease-in-out infinite;
-}
-
-@keyframes borderPulse {
-
-  0%,
-  100% {
-    box-shadow:
-      inset 0 0 20px rgba(0, 255, 136, 0.2),
-      0 0 20px rgba(0, 255, 136, 0.3),
-      0 0 40px rgba(255, 0, 200, 0.15);
+/* DESKTOP LAYOUT overrides */
+@media (min-width: 1024px) {
+  .cyber-interface {
+    grid-template-columns: 1fr 400px;
+    grid-template-rows: 1fr;
+    grid-template-areas: "dice controls";
   }
 
-  50% {
-    box-shadow:
-      inset 0 0 30px rgba(0, 255, 136, 0.4),
-      0 0 30px rgba(0, 255, 136, 0.5),
-      0 0 50px rgba(255, 0, 200, 0.25);
+  .dice-display {
+    border-bottom: none;
+    border-right: 2px solid var(--color-primary);
+  }
+
+  .control-panel {
+    border-top: none;
+    border-left: 1px solid var(--color-primary-dark);
   }
 }
 
-h1 {
-  font-size: 2.5em;
-  line-height: 1.1;
-  color: #00ff88;
-  text-shadow:
-    0 0 10px #00ff88,
-    0 0 20px #00ff88,
-    0 0 30px #ff00c8,
-    0 0 40px #ff00c8;
-  margin: 0 0 1rem 0;
-  width: 100%;
-  letter-spacing: 2px;
-  animation: glitch 2s ease-in-out infinite;
-}
-
-@keyframes glitch {
-
-  0%,
-  100% {
-    text-shadow:
-      0 0 10px #00ff88,
-      0 0 20px #00ff88,
-      0 0 30px #ff00c8;
-  }
-
-  50% {
-    text-shadow:
-      -2px 0 10px #00ff88,
-      2px 0 20px #ff00c8,
-      0 0 30px #00ccff;
-  }
-}
-
-/* Estilos para os dados caindo */
+/* Utility for falling dice hook */
 .falling-dice {
   position: fixed;
-  font-size: 24px;
-  z-index: 1;
+  z-index: 1 !important;
+  /* Background layer */
   pointer-events: none;
-  text-shadow:
-    0 0 5px #00ff88,
-    0 0 10px #ff00c8;
+  text-shadow: 0 0 5px var(--color-primary), 0 0 10px var(--color-secondary);
   animation: fall linear infinite;
-}
-
-@keyframes fall {
-  0% {
-    transform: translateY(-100px);
-  }
-
-  100% {
-    transform: translateY(calc(100vh + 100px));
-  }
-}
-
-/* Estilos responsivos para dispositivos móveis */
-@media (max-width: 768px) {
-  .app {
-    padding: 0.5rem;
-  }
-
-  .dice-demo {
-    flex-direction: column;
-    gap: 1rem;
-    max-height: none;
-    overflow: visible;
-  }
-
-  h1 {
-    font-size: 2em;
-  }
-
-  .falling-dice {
-    font-size: 18px;
-  }
-
-  @keyframes fall {
-    0% {
-      transform: translateY(-50px);
-    }
-
-    100% {
-      transform: translateY(calc(100vh + 50px));
-    }
-  }
-}
-
-@media (max-width: 480px) {
-  .app {
-    padding: 0.25rem;
-  }
-
-  .dice-demo {
-    padding: 0.5rem;
-  }
-
-  h1 {
-    font-size: 1.5em;
-  }
-
-  .falling-dice {
-    font-size: 14px;
-  }
-
-  @keyframes fall {
-    0% {
-      transform: translateY(-30px);
-    }
-
-    100% {
-      transform: translateY(calc(100vh + 30px));
-    }
-  }
+  /* Animation name matches keyframes in animations.css */
+  font-family: var(--font-family-mono);
+  /* Ensure consistent font */
 }

@@ -67,6 +67,7 @@ const DiceControls = ({ onRoll }: DiceControlsProps) => {
 
                 <div className="dice-selector">
                     <label htmlFor="dice-type">[ TYPE ]</label>
+                    <div className="select-wrapper">
                     <select
                         id="dice-type"
                         value={selectedDice}
@@ -78,6 +79,7 @@ const DiceControls = ({ onRoll }: DiceControlsProps) => {
                             </option>
                         ))}
                     </select>
+                </div>
                 </div>
             </div>
 

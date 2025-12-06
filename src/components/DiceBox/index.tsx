@@ -21,12 +21,15 @@ const DiceBox = forwardRef<DiceBoxRef, DiceBoxProps>(({ onRoll }, ref) => {
         diceBoxRef.current = new DiceBoxClass({
           container: "#dice-box",
           assetPath: "/assets/",
-          gravity: 6,
+          gravity: 3, // Reduced gravity for lighter feel, less sporadic bouncing
           mass: 1,
-          friction: 0.9,
-          restitution: 0.9,
+          friction: 0.8,
+          restitution: 0.5, // Reduced bounciness
           angularDamping: 0.8,
           linearDamping: 0.9,
+          // spinForce: 6, // Optional: control spin
+          // throwForce: 4, // Reduce throw force
+          scale: 7, // Scale up dice to make them easier to see and fit better
           theme: "diceOfRolling",
         });
 
