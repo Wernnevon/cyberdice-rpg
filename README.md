@@ -1,4 +1,4 @@
-# CYBERDICE RPG
+# CYBERDICE RPG v2.0
 
 Uma aplicação de dados 3D para RPG usando React, TypeScript e a biblioteca @3d-dice/dice-box.
 
