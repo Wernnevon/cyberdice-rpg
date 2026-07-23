@@ -11,6 +11,8 @@ body {
 .app {
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
+  /* Mobile viewport fix */
   overflow: hidden;
   position: relative;
   color: var(--color-text-primary);
@@ -28,6 +30,8 @@ body {
     linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
   background-size: 30px 30px;
   position: relative;
+  overflow: hidden;
+  /* Ensure no scroll on container */
 }
 
 .cyber-interface::after {
@@ -68,14 +72,18 @@ body {
 .app-header {
   position: absolute;
   top: var(--space-md);
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  text-align: center;
+  left: var(--space-md);
+  /* Align to left */
+  right: auto;
+  width: auto;
+  /* Auto width */
+  text-align: left;
   z-index: 10;
   pointer-events: none;
   padding: 0 var(--space-md);
 }
+
+/* Version styles removed */
 
 .glitch-title {
   font-size: clamp(var(--font-size-xl), 5vw, var(--font-size-3xl));

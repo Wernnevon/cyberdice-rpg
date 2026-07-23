@@ -4,10 +4,17 @@ import "./styles.css";
 
 interface RollResultProps {
     rollResult: DiceDataT;
+    isRolling?: boolean;
 }
 
-const RollResult = ({ rollResult }: RollResultProps) => {
+const RollResult = ({ rollResult, isRolling }: RollResultProps) => {
     const formatResult = () => {
+        if (isRolling) {
+            return (
+                <span className="loading-text">&gt;&gt; CALCULATING...</span>
+            );
+        }
+
         if (!rollResult.total) {
             return ">> AWAITING SIGNAL...";
         }
@@ -30,6 +37,7 @@ const RollResult = ({ rollResult }: RollResultProps) => {
 // Custom comparison function for memoization
 const areEqual = (prevProps: RollResultProps, nextProps: RollResultProps) => {
     return (
+        prevProps.isRolling === nextProps.isRolling && // check rolling state
         prevProps.rollResult.total === nextProps.rollResult.total &&
         prevProps.rollResult.quantity === nextProps.rollResult.quantity &&
         prevProps.rollResult.diceSides === nextProps.rollResult.diceSides &&
