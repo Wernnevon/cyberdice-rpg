@@ -1,25 +1,6 @@
-```gitignore
+```
 # Dependencies
 node_modules/
-
-# Build artifacts
-dist/
-build/
-target/
-
-# Environment
-.env
-.env.local
-*.env.*
-
-# Editors
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Logs
-*.log
 
 # Python
 __pycache__/
@@ -27,21 +8,31 @@ __pycache__/
 *.pyo
 *.pyd
 .Python
-env/
 venv/
+env/
+ENV/
 .venv/
-.ENV
-.python-version
+.env
+.env.local
+.env.*
 
-# Compiled JavaScript
-*.js.map
-*.jsx.map
-*.ts.map
-*.tsx.map
+# Build outputs
+dist/
+build/
+*.min.js
+*.min.css
 
-# Temporary files
-*.tmp
-*.temp
+# Logs
+*.log
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
 .DS_Store
 Thumbs.db
 
@@ -49,35 +40,4 @@ Thumbs.db
 coverage/
 htmlcov/
 .coverage
-
-# Cache
-.mypy_cache/
-.pytest_cache/
-.gradle/
-.npm/
-.yarn/
-
-# Compressed files
-*.zip
-*.gz
-*.tar
-*.tgz
-*.bz2
-*.xz
-*.7z
-*.rar
-*.zst
-*.lz4
-*.lzh
-*.cab
-*.arj
-*.rpm
-*.deb
-*.Z
-*.lz
-*.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
 ```

@@ -1,8 +1,8 @@
-import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, PerspectiveCamera, Environment, ContactShadows } from "@react-three/drei";
-import { useRef, useState, useEffect, forwardRef, useImperativeHandle, memo, Suspense } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { OrbitControls, PerspectiveCamera, Environment, ContactShadows, RoundedBox } from "@react-three/drei";
+import { useRef, useState, useEffect, forwardRef, useImperativeHandle, Suspense, useCallback } from "react";
 import * as THREE from "three";
-import { useControls } from "leva";
+import { useControls, folder } from "leva";
 import "./styles.css";
 
 interface DiceBoxProps {
@@ -16,111 +16,105 @@ export interface DiceBoxRef {
 interface DieProps {
   position: [number, number, number];
   faces: number;
-  onLand: (value: number) => void;
+  onLand: (value: number, dieIndex: number) => void;
   color: string;
   isRolling: boolean;
+  dieIndex: number;
+  glowIntensity: number;
 }
 
 const getDiceGeometry = (faces: number) => {
   switch (faces) {
-    case 4: return new THREE.TetrahedronGeometry(0.5);
-    case 6: return new THREE.BoxGeometry(0.6, 0.6, 0.6);
-    case 8: return new THREE.OctahedronGeometry(0.5);
-    case 10: return new THREE.ConeGeometry(0.4, 0.8, 5);
-    case 12: return new THREE.DodecahedronGeometry(0.5);
-    case 20: return new THREE.IcosahedronGeometry(0.5);
-    case 100: return new THREE.SphereGeometry(0.5, 16, 16);
-    default: return new THREE.BoxGeometry(0.6, 0.6, 0.6);
+    case 4: return new THREE.TetrahedronGeometry(0.6);
+    case 6: return new RoundedBox(0.7, 0.7, 0.7, 4, 0.1);
+    case 8: return new THREE.OctahedronGeometry(0.6);
+    case 10: return new THREE.ConeGeometry(0.5, 1.0, 5);
+    case 12: return new THREE.DodecahedronGeometry(0.55);
+    case 20: return new THREE.IcosahedronGeometry(0.55);
+    case 100: return new THREE.SphereGeometry(0.55, 32, 32);
+    default: return new RoundedBox(0.7, 0.7, 0.7, 4, 0.1);
   }
 };
 
-const Die = ({ position, faces, onLand, color, isRolling }: DieProps) => {
+const getFaceValueFromRotation = (mesh: THREE.Mesh, faces: number): number => {
+  const quaternion = mesh.quaternion;
+  const up = new THREE.Vector3(0, 1, 0);
+  up.applyQuaternion(quaternion);
+  
+  if (faces === 6) {
+    if (up.y > 0.9) return 1;
+    if (up.y < -0.9) return 6;
+    if (up.x > 0.9) return 3;
+    if (up.x < -0.9) return 4;
+    if (up.z > 0.9) return 5;
+    if (up.z < -0.9) return 2;
+  }
+  
+  return Math.floor(Math.random() * faces) + 1;
+};
+
+const Die = ({ position, faces, onLand, color, isRolling, dieIndex, glowIntensity }: DieProps) => {
   const meshRef = useRef<THREE.Mesh>(null);
-  const rotationVelocity = useRef(new THREE.Vector3());
+  const velocity = useRef(new THREE.Vector3(0, 0, 0));
+  const angularVelocity = useRef(new THREE.Vector3(0, 0, 0));
   const landed = useRef(false);
+  const bounceCount = useRef(0);
+  const materialRef = useRef<THREE.MeshStandardMaterial | null>(null);
   
   const geometry = getDiceGeometry(faces);
   
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     if (!meshRef.current || !isRolling || landed.current) return;
     
-    meshRef.current.rotation.x += rotationVelocity.current.x * delta;
-    meshRef.current.rotation.y += rotationVelocity.current.y * delta;
-    meshRef.current.rotation.z += rotationVelocity.current.z * delta;
+    const limitedDelta = Math.min(delta, 0.1);
+    
+    angularVelocity.current.multiplyScalar(1 - (2 * limitedDelta));
+    meshRef.current.rotation.x += angularVelocity.current.x * limitedDelta;
+    meshRef.current.rotation.y += angularVelocity.current.y * limitedDelta;
+    meshRef.current.rotation.z += angularVelocity.current.z * limitedDelta;
+    
+    velocity.current.y -= 20 * limitedDelta;
     
     const newPosition = meshRef.current.position.clone();
-    newPosition.y -= 9.8 * delta;
+    newPosition.addScaledVector(velocity.current, limitedDelta);
     
-    if (newPosition.y < -2) {
-      newPosition.y = -2;
-      rotationVelocity.current.set(
-        (Math.random() - 0.5) * 10,
-        (Math.random() - 0.5) * 10,
-        (Math.random() - 0.5) * 10
-      );
-      rotationVelocity.current.multiplyScalar(0.7);
+    const floorLevel = -3 + (dieIndex * 0.3);
+    if (newPosition.y < floorLevel) {
+      newPosition.y = floorLevel;
+      velocity.current.y = -velocity.current.y * 0.4;
+      velocity.current.x *= 0.6;
+      velocity.current.z *= 0.6;
       
-      if (rotationVelocity.current.length() < 1) {
+      angularVelocity.current.multiplyScalar(0.5);
+      bounceCount.current += 1;
+      
+      if (Math.abs(velocity.current.y) < 0.5 && bounceCount.current > 3) {
+        velocity.current.set(0, 0, 0);
+        angularVelocity.current.set(0, 0, 0);
         landed.current = true;
-        const finalValue = Math.floor(Math.random() * faces) + 1;
-        onLand(finalValue);
+        
+        const finalValue = getFaceValueFromRotation(meshRef.current, faces);
+        onLand(finalValue, dieIndex);
       }
     }
     
     meshRef.current.position.copy(newPosition);
+    
+    if (materialRef.current) {
+      materialRef.current.emissiveIntensity = isRolling ? glowIntensity * (0.5 + Math.sin(state.clock.elapsedTime * 10) * 0.5) : glowIntensity * 0.3;
+    }
   });
   
   useEffect(() => {
     if (isRolling && !landed.current) {
-      rotationVelocity.current.set(
-        (Math.random() - 0.5) * 15,
-        (Math.random() - 0.5) * 15,
-        (Math.random() - 0.5) * 15
+      velocity.current.set(
+        (Math.random() - 0.5) * 8,
+        5 + Math.random() * 3,
+        (Math.random() - 0.5) * 8
+      );
+      angularVelocity.current.set(
+        (Math.random() - 0.5) * 20,
+        (Math.random() - 0.5) * 20,
+        (Math.random() - 0.5) * 20
       );
       if (meshRef.current) {
-        meshRef.current.position.set(position[0], 3, position[2]);
-      }
-      landed.current = false;
-    }
-  }, [isRolling, position]);
-  
-  return (
-    <mesh ref={meshRef} position={position} castShadow receiveShadow>
-      <primitive object={geometry} attach="geometry" />
-      <meshStandardMaterial 
-        color={color} 
-        metalness={0.6} 
-        roughness={0.3}
-        emissive={color}
-        emissiveIntensity={0.2}
-      />
-    </mesh>
-  );
-};
-
-const DiceBox = forwardRef<DiceBoxRef, DiceBoxProps>(({ onRoll }, ref) => {
-  const [dice, setDice] = useState<Array<{ id: number; faces: number; position: [number, number, number]; color: string }>>([]);
-  const [isRolling, setIsRolling] = useState(false);
-  const results = useRef<number[]>([]);
-  
-  const controls = useControls({
-    cameraDistance: { value: 8, min: 3, max: 15, step: 0.5 },
-    cameraHeight: { value: 5, min: 1, max: 10, step: 0.5 },
-    diceColor: { value: "#00f3ff" },
-    glowIntensity: { value: 0.3, min: 0, max: 1, step: 0.1 },
-    shadowOpacity: { value: 0.5, min: 0, max: 1, step: 0.1 },
-    environmentPreset: { 
-      value: "city", 
-      options: ["city", "sunset", "dawn", "night", "warehouse", "forest", "apartment", "studio"] 
-    },
-  });
-  
-  useImperativeHandle(ref, () => ({
-    roll: (notation: string) => {
-      const match = notation.match(/(\d*)d(\d+)/i);
-      if (!match) return;
-      
-      const count = parseInt(match[1]) || 1;
-      const faces = parseInt(match[2]);
-      
-      setIsRollin
