@@ -1,5 +1,8 @@
-import { useEffect, useRef, forwardRef, useImperativeHandle, memo } from "react";
-import DiceBoxClass from "@3d-dice/dice-box";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { OrbitControls, PerspectiveCamera, Environment, ContactShadows } from "@react-three/drei";
+import { useRef, useState, useEffect, forwardRef, useImperativeHandle, memo, Suspense } from "react";
+import * as THREE from "three";
+import { useControls } from "leva";
 import "./styles.css";
 
 interface DiceBoxProps {
@@ -10,95 +13,114 @@ export interface DiceBoxRef {
   roll: (notation: string) => void;
 }
 
-const DiceBox = forwardRef<DiceBoxRef, DiceBoxProps>(({ onRoll }, ref) => {
-  const diceBoxRef = useRef<any>(null);
-  const boxRef = useRef<HTMLDivElement>(null);
+interface DieProps {
+  position: [number, number, number];
+  faces: number;
+  onLand: (value: number) => void;
+  color: string;
+  isRolling: boolean;
+}
 
+const getDiceGeometry = (faces: number) => {
+  switch (faces) {
+    case 4: return new THREE.TetrahedronGeometry(0.5);
+    case 6: return new THREE.BoxGeometry(0.6, 0.6, 0.6);
+    case 8: return new THREE.OctahedronGeometry(0.5);
+    case 10: return new THREE.ConeGeometry(0.4, 0.8, 5);
+    case 12: return new THREE.DodecahedronGeometry(0.5);
+    case 20: return new THREE.IcosahedronGeometry(0.5);
+    case 100: return new THREE.SphereGeometry(0.5, 16, 16);
+    default: return new THREE.BoxGeometry(0.6, 0.6, 0.6);
+  }
+};
+
+const Die = ({ position, faces, onLand, color, isRolling }: DieProps) => {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const rotationVelocity = useRef(new THREE.Vector3());
+  const landed = useRef(false);
+  
+  const geometry = getDiceGeometry(faces);
+  
+  useFrame((_, delta) => {
+    if (!meshRef.current || !isRolling || landed.current) return;
+    
+    meshRef.current.rotation.x += rotationVelocity.current.x * delta;
+    meshRef.current.rotation.y += rotationVelocity.current.y * delta;
+    meshRef.current.rotation.z += rotationVelocity.current.z * delta;
+    
+    const newPosition = meshRef.current.position.clone();
+    newPosition.y -= 9.8 * delta;
+    
+    if (newPosition.y < -2) {
+      newPosition.y = -2;
+      rotationVelocity.current.set(
+        (Math.random() - 0.5) * 10,
+        (Math.random() - 0.5) * 10,
+        (Math.random() - 0.5) * 10
+      );
+      rotationVelocity.current.multiplyScalar(0.7);
+      
+      if (rotationVelocity.current.length() < 1) {
+        landed.current = true;
+        const finalValue = Math.floor(Math.random() * faces) + 1;
+        onLand(finalValue);
+      }
+    }
+    
+    meshRef.current.position.copy(newPosition);
+  });
+  
   useEffect(() => {
-    const initDiceBox = async () => {
-      if (boxRef.current) {
-        // Initialize dice box with Dice of Rolling theme using new API
-        diceBoxRef.current = new DiceBoxClass({
-          container: "#dice-box",
-          assetPath: "/assets/",
-          gravity: 3, // Reduced gravity for lighter feel, less sporadic bouncing
-          mass: 1,
-          friction: 0.8,
-          restitution: 0.5, // Reduced bounciness
-          angularDamping: 0.8,
-          linearDamping: 0.9,
-          // spinForce: 6, // Optional: control spin
-          // throwForce: 4, // Reduce throw force
-          scale: 7, // Scale up dice to make them easier to see and fit better
-          theme: "diceOfRolling",
-        });
-
-        await diceBoxRef.current.init();
-
-        // Adjust camera position for better visibility
-        if (diceBoxRef.current.scene) {
-          const camera = diceBoxRef.current.scene.activeCamera;
-          if (camera) {
-            camera.radius = 30; // Increased distance for better visibility
-            camera.beta = Math.PI / 3; // Slightly different angle
-          }
-        }
-
-        // Set up event listener for roll results
-        if (onRoll) {
-          diceBoxRef.current.onRollComplete = onRoll;
-        }
-
-        // Force initial scene render
-        if (diceBoxRef.current.scene) {
-          setTimeout(() => {
-            diceBoxRef.current.scene.render();
-          }, 100);
-        }
+    if (isRolling && !landed.current) {
+      rotationVelocity.current.set(
+        (Math.random() - 0.5) * 15,
+        (Math.random() - 0.5) * 15,
+        (Math.random() - 0.5) * 15
+      );
+      if (meshRef.current) {
+        meshRef.current.position.set(position[0], 3, position[2]);
       }
-    };
+      landed.current = false;
+    }
+  }, [isRolling, position]);
+  
+  return (
+    <mesh ref={meshRef} position={position} castShadow receiveShadow>
+      <primitive object={geometry} attach="geometry" />
+      <meshStandardMaterial 
+        color={color} 
+        metalness={0.6} 
+        roughness={0.3}
+        emissive={color}
+        emissiveIntensity={0.2}
+      />
+    </mesh>
+  );
+};
 
-    // Initialize the dice box after a short delay to ensure DOM is ready
-    const timeoutId = setTimeout(() => {
-      initDiceBox();
-    }, 100);
-
-    return () => {
-      clearTimeout(timeoutId);
-      // Cleanup if needed
-      if (diceBoxRef.current) {
-        // Add cleanup logic if available
-      }
-    };
-  }, [onRoll]);
-
-  // Exposing the roll method through the ref
+const DiceBox = forwardRef<DiceBoxRef, DiceBoxProps>(({ onRoll }, ref) => {
+  const [dice, setDice] = useState<Array<{ id: number; faces: number; position: [number, number, number]; color: string }>>([]);
+  const [isRolling, setIsRolling] = useState(false);
+  const results = useRef<number[]>([]);
+  
+  const controls = useControls({
+    cameraDistance: { value: 8, min: 3, max: 15, step: 0.5 },
+    cameraHeight: { value: 5, min: 1, max: 10, step: 0.5 },
+    diceColor: { value: "#00f3ff" },
+    glowIntensity: { value: 0.3, min: 0, max: 1, step: 0.1 },
+    shadowOpacity: { value: 0.5, min: 0, max: 1, step: 0.1 },
+    environmentPreset: { 
+      value: "city", 
+      options: ["city", "sunset", "dawn", "night", "warehouse", "forest", "apartment", "studio"] 
+    },
+  });
+  
   useImperativeHandle(ref, () => ({
     roll: (notation: string) => {
-      if (diceBoxRef.current) {
-        // Clear previous dice before rolling new ones
-        diceBoxRef.current.clear();
-
-        // Re-register the callback to ensure it's active for the next roll
-        if (onRoll) {
-          diceBoxRef.current.onRollComplete = onRoll;
-        }
-
-        // Small delay to ensure proper initialization
-        setTimeout(() => {
-          diceBoxRef.current.roll(notation);
-        }, 10);
-      } else {
-        console.warn("DiceBox not initialized yet");
-      }
-    },
-  }));
-
-  return (
-    <div className="dice-box-container">
-      <div id="dice-box" ref={boxRef} />
-    </div>
-  );
-});
-
-export default memo(DiceBox);
+      const match = notation.match(/(\d*)d(\d+)/i);
+      if (!match) return;
+      
+      const count = parseInt(match[1]) || 1;
+      const faces = parseInt(match[2]);
+      
+      setIsRollin
