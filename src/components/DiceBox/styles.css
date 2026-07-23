@@ -1,40 +1,36 @@
-/* DICE BOX CONTAINER - CYBERPUNK */
 .dice-box-container {
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
   position: relative;
-  /* Corner markers */
-  background:
-    linear-gradient(to right, var(--color-primary) 2px, transparent 2px) 0 0,
-    linear-gradient(to bottom, var(--color-primary) 2px, transparent 2px) 0 0,
-    linear-gradient(to left, var(--color-primary) 2px, transparent 2px) 100% 0,
-    linear-gradient(to bottom, var(--color-primary) 2px, transparent 2px) 100% 0,
-    linear-gradient(to right, var(--color-primary) 2px, transparent 2px) 0 100%,
-    linear-gradient(to top, var(--color-primary) 2px, transparent 2px) 0 100%,
-    linear-gradient(to left, var(--color-primary) 2px, transparent 2px) 100% 100%,
-    linear-gradient(to top, var(--color-primary) 2px, transparent 2px) 100% 100%;
-  background-size: 20px 20px;
-  background-repeat: no-repeat;
-  padding: var(--space-xs);
-  /* space for markers */
+  background: transparent;
 }
 
-#dice-box {
-  width: 100%;
-  height: 100%;
-  border: none;
-  background: transparent !important;
-  /* Let the grid show through */
-  position: relative;
-  z-index: 5;
-}
-
-#dice-box canvas {
+.dice-box-container canvas {
   width: 100% !important;
   height: 100% !important;
-  display: block;
-  outline: none;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-primary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-lg);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Leva controls customization */
+[data-leva] {
+  --leva-sizes-rootWidth: 340px;
+  --leva-colors-highlightedBg: rgba(0, 243, 255, 0.1);
+  --leva-colors-elevatedBg: rgba(5, 5, 16, 0.95);
 }

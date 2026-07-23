@@ -1,9 +1,10 @@
-/* CYBERPUNK APP LAYOUT */
+* {
+  box-sizing: border-box;
+}
 
 body {
   margin: 0;
   overflow: hidden;
-  /* Prevent scrolling on the main body */
   background: radial-gradient(circle at center, var(--color-bg-medium) 0%, var(--color-bg-dark) 100%);
 }
 
@@ -17,17 +18,13 @@ body {
   color: var(--color-text-primary);
 }
 
-/* Main Grid Layout */
 .cyber-interface {
   display: grid;
   width: 100%;
   height: 100%;
   grid-template-columns: 1fr;
-  grid-template-rows: 1fr auto;
-  /* Changed from 60% 40% to fit content */
-  grid-template-areas:
-    "dice"
-    "controls";
+  grid-template-rows: minmax(55vh, 65vh) minmax(35vh, 45vh);
+  grid-template-areas: "dice" "controls";
   background-image:
     linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
@@ -37,7 +34,6 @@ body {
   /* Ensure no scroll on container */
 }
 
-/* decorative noise/scanlines overlay */
 .cyber-interface::after {
   content: "";
   position: absolute;
@@ -46,26 +42,31 @@ body {
   width: 100%;
   height: 100%;
   background: linear-gradient(to bottom,
-      rgba(255, 255, 255, 0),
-      rgba(255, 255, 255, 0) 50%,
-      rgba(0, 0, 0, 0.1) 50%,
-      rgba(0, 0, 0, 0.1));
+      transparent 50%,
+      rgba(0, 243, 255, 0.03) 50%);
   background-size: 100% 4px;
   pointer-events: none;
   z-index: 999;
-  opacity: 0.3;
+  opacity: 0.5;
+  animation: scanlineMove 8s linear infinite;
 }
 
-/* DICE DISPLAY AREA */
+@keyframes scanlineMove {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 4px; }
+}
+
 .dice-display {
   grid-area: dice;
   position: relative;
   border-bottom: 2px solid var(--color-primary);
-  box-shadow: var(--shadow-glow-md);
-  background: radial-gradient(circle at center, rgba(0, 243, 255, 0.05) 0%, transparent 70%);
-  overflow: hidden;
-  min-height: 0;
-  /* Allow shrinking if needed */
+  box-shadow: 0 0 30px rgba(0, 243, 255, 0.3), inset 0 0 60px rgba(0, 243, 255, 0.1);
+  background: radial-gradient(circle at center, rgba(0, 243, 255, 0.08) 0%, rgba(0, 243, 255, 0.02) 40%, transparent 70%);
+  transition: all 0.3s ease;
+}
+
+.dice-display.rolling {
+  box-shadow: 0 0 50px rgba(0, 243, 255, 0.5), inset 0 0 80px rgba(0, 243, 255, 0.2);
 }
 
 .app-header {
@@ -79,52 +80,67 @@ body {
   text-align: left;
   z-index: 10;
   pointer-events: none;
+  padding: 0 var(--space-md);
 }
 
 /* Version styles removed */
 
 .glitch-title {
-  font-size: var(--font-size-3xl);
+  font-size: clamp(var(--font-size-xl), 5vw, var(--font-size-3xl));
   margin: 0;
   color: var(--color-primary);
-  text-shadow: 0 0 10px var(--color-primary);
-  background: rgba(5, 5, 16, 0.7);
-  padding: var(--space-xs) var(--space-lg);
+  text-shadow: 0 0 10px var(--color-primary), 0 0 20px var(--color-primary);
+  background: rgba(5, 5, 16, 0.85);
+  padding: var(--space-sm) var(--space-lg);
   display: inline-block;
   border: 1px solid var(--color-primary);
-  backdrop-filter: blur(4px);
-  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  backdrop-filter: blur(8px);
+  clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+  animation: glitch 3s infinite alternate-reverse;
+  letter-spacing: 0.15em;
 }
 
-/* CONTROL PANEL SIDEBAR/BOTTOM SHEET */
 .control-panel {
   grid-area: controls;
-  background: var(--color-bg-surface);
-  border-top: 1px solid var(--color-primary-dark);
-  padding: var(--space-md);
+  background: linear-gradient(180deg, rgba(10, 10, 26, 0.95) 0%, rgba(5, 5, 16, 0.98) 100%);
+  border-top: 2px solid var(--color-primary);
+  padding: var(--space-lg);
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
-  /* overflow-y: auto; REMOVED to prevent scroll behavior */
-  overflow: hidden;
-  /* Force no scroll */
+  gap: var(--space-lg);
+  overflow-y: auto;
   position: relative;
   z-index: 20;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
-  max-height: 50dvh;
-  /* Safety cap to ensure dice area stays visible */
+  backdrop-filter: blur(12px);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 243, 255, 0.2);
 }
 
-/* Webkit scrollbar hidden */
-.control-panel::-webkit-scrollbar {
-  display: none;
+.control-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
+  box-shadow: 0 0 10px var(--color-primary);
 }
 
-/* DESKTOP LAYOUT overrides */
+.system-status {
+  margin-top: auto;
+  opacity: 0.7;
+  font-size: 0.75rem;
+  text-align: center;
+  color: var(--color-primary-dark);
+  font-family: var(--font-family-mono);
+  letter-spacing: 0.1em;
+  padding: var(--space-sm);
+  border-top: 1px dashed rgba(0, 243, 255, 0.3);
+}
+
 @media (min-width: 1024px) {
   .cyber-interface {
-    grid-template-columns: 1fr 400px;
+    grid-template-columns: 1fr 420px;
     grid-template-rows: 1fr;
     grid-template-areas: "dice controls";
   }
@@ -132,50 +148,78 @@ body {
   .dice-display {
     border-bottom: none;
     border-right: 2px solid var(--color-primary);
+    box-shadow: 0 0 40px rgba(0, 243, 255, 0.2), inset 0 0 80px rgba(0, 243, 255, 0.05);
   }
 
   .control-panel {
     border-top: none;
-    border-left: 1px solid var(--color-primary-dark);
+    border-left: 2px solid var(--color-primary);
+    box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 243, 255, 0.15);
+  }
+
+  .control-panel::before {
+    top: 0;
+    left: 0;
+    right: auto;
+    bottom: 0;
+    width: 1px;
+    height: 100%;
+    background: linear-gradient(180deg, transparent, var(--color-primary), transparent);
   }
 }
 
-/* Utility classes */
-/* Utility classes */
-@media (max-width: 480px) {
-  .hidden-sm {
-    display: none !important;
+@media (min-width: 768px) and (max-width: 1023px) {
+  .cyber-interface {
+    grid-template-rows: 60% 40%;
   }
 
   .glitch-title {
-    font-size: var(--font-size-xl);
-    margin-top: var(--space-xs);
-    white-space: nowrap;
-    clip-path: none;
-    /* Remove clip path on mobile for simpler look if needed, or keep */
-    border: none;
-    /* Simplify mobile look or keep - let's keep it minimal */
-    background: transparent;
-    padding: 0;
-    text-shadow: 0 0 5px var(--color-primary);
+    font-size: var(--font-size-2xl);
   }
 }
 
-@media (min-width: 481px) {
-  .hidden-md-up {
-    display: none !important;
+@media (max-width: 767px) {
+  .cyber-interface {
+    grid-template-rows: minmax(50vh, 55vh) minmax(45vh, 50vh);
+  }
+
+  .control-panel {
+    padding: var(--space-md);
+    gap: var(--space-md);
+  }
+
+  .app-header {
+    top: var(--space-sm);
+  }
+
+  .glitch-title {
+    font-size: var(--font-size-lg);
+    padding: var(--space-xs) var(--space-md);
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
   }
 }
 
-/* Utility for falling dice hook */
-.falling-dice {
-  position: fixed;
-  z-index: 1 !important;
-  /* Background layer */
-  pointer-events: none;
-  text-shadow: 0 0 5px var(--color-primary), 0 0 10px var(--color-secondary);
-  animation: fall linear infinite;
-  /* Animation name matches keyframes in animations.css */
-  font-family: var(--font-family-mono);
-  /* Ensure consistent font */
+@media (max-width: 480px) {
+  .cyber-interface {
+    grid-template-rows: 48vh 52vh;
+  }
+
+  .control-panel {
+    padding: var(--space-sm);
+  }
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cyber-interface::after {
+    animation: none;
+  }
+
+  .glitch-title {
+    animation: none;
+  }
 }
