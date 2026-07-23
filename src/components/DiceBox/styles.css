@@ -1,4 +1,7 @@
-/* DICE BOX CONTAINER - CYBERPUNK */
+/* ========================================
+   DICE BOX CONTAINER - ENHANCED CYBERPUNK
+   ======================================== */
+
 .dice-box-container {
   width: 100%;
   height: 100%;
@@ -6,20 +9,42 @@
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  /* Corner markers */
+  /* Enhanced corner markers with glow */
   background:
-    linear-gradient(to right, var(--color-primary) 2px, transparent 2px) 0 0,
-    linear-gradient(to bottom, var(--color-primary) 2px, transparent 2px) 0 0,
-    linear-gradient(to left, var(--color-primary) 2px, transparent 2px) 100% 0,
-    linear-gradient(to bottom, var(--color-primary) 2px, transparent 2px) 100% 0,
-    linear-gradient(to right, var(--color-primary) 2px, transparent 2px) 0 100%,
-    linear-gradient(to top, var(--color-primary) 2px, transparent 2px) 0 100%,
-    linear-gradient(to left, var(--color-primary) 2px, transparent 2px) 100% 100%,
-    linear-gradient(to top, var(--color-primary) 2px, transparent 2px) 100% 100%;
-  background-size: 20px 20px;
+    linear-gradient(to right, var(--color-primary) 3px, transparent 3px) 0 0,
+    linear-gradient(to bottom, var(--color-primary) 3px, transparent 3px) 0 0,
+    linear-gradient(to left, var(--color-primary) 3px, transparent 3px) 100% 0,
+    linear-gradient(to bottom, var(--color-primary) 3px, transparent 3px) 100% 0,
+    linear-gradient(to right, var(--color-primary) 3px, transparent 3px) 0 100%,
+    linear-gradient(to top, var(--color-primary) 3px, transparent 3px) 0 100%,
+    linear-gradient(to left, var(--color-primary) 3px, transparent 3px) 100% 100%,
+    linear-gradient(to top, var(--color-primary) 3px, transparent 3px) 100% 100%;
+  background-size: 30px 30px;
   background-repeat: no-repeat;
-  padding: var(--space-xs);
-  /* space for markers */
+  padding: var(--space-md);
+  box-shadow: inset 0 0 50px rgba(0, 243, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.dice-box-container::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  border: 1px dashed rgba(0, 243, 255, 0.2);
+  pointer-events: none;
+  clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+}
+
+.dice-box-container.rolling {
+  box-shadow: inset 0 0 80px rgba(0, 243, 255, 0.2), 0 0 30px rgba(0, 243, 255, 0.1);
+}
+
+.dice-box-container.rolling::before {
+  border-color: rgba(0, 243, 255, 0.4);
+  animation: borderPulse 0.5s ease-in-out infinite;
 }
 
 #dice-box {
@@ -27,7 +52,6 @@
   height: 100%;
   border: none;
   background: transparent !important;
-  /* Let the grid show through */
   position: relative;
   z-index: 5;
 }
@@ -37,4 +61,31 @@
   height: 100% !important;
   display: block;
   outline: none;
+  filter: drop-shadow(0 0 10px rgba(0, 243, 255, 0.3));
+  transition: filter 0.3s ease;
+}
+
+#dice-box canvas:hover {
+  filter: drop-shadow(0 0 20px rgba(0, 243, 255, 0.5));
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dice-box-container {
+    padding: var(--space-sm);
+    background-size: 20px 20px;
+  }
+
+  .dice-box-container::before {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dice-box-container {
+    padding: var(--space-xs);
+  }
 }
