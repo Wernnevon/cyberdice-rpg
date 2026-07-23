@@ -1,5 +1,5 @@
 import { useCallback, useState, useRef, memo } from "react";
-import DiceBox, { DiceBoxRef } from "./components/DiceBox";
+import { DiceBox, DiceBoxRef } from "./components/DiceBox";
 import DiceControls from "./components/DiceControls";
 import RollResult from "./components/RollResult";
 import { DiceResultT, DiceDataT } from "./types";
