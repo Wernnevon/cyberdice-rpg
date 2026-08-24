@@ -153,28 +153,6 @@
     }
 }
 
-/* Falling Dice */
-@keyframes fall {
-    0% {
-        transform: translateY(-100px);
-    }
-
-    100% {
-        transform: translateY(calc(100vh + 100px));
-    }
-}
-
-/* Falling Dice - Mobile */
-@keyframes fallMobile {
-    0% {
-        transform: translateY(-30px);
-    }
-
-    100% {
-        transform: translateY(calc(100vh + 30px));
-    }
-}
-
 /* Utility Classes */
 .animate-glitch {
     animation: glitch 2s var(--transition-easing-ease-in-out) infinite;
