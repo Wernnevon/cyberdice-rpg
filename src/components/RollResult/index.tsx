@@ -1,21 +1,18 @@
-import { memo } from "react";
 import { DiceDataT } from "../../types";
 import "./styles.css";
 
 interface RollResultProps {
-    rollResult: DiceDataT;
+    rollResult: DiceDataT | null;
     isRolling?: boolean;
 }
 
 const RollResult = ({ rollResult, isRolling }: RollResultProps) => {
     const formatResult = () => {
         if (isRolling) {
-            return (
-                <span className="loading-text">&gt;&gt; CALCULATING...</span>
-            );
+            return <span className="loading-text">&gt;&gt; CALCULATING...</span>;
         }
 
-        if (!rollResult.total) {
+        if (!rollResult) {
             return ">> AWAITING SIGNAL...";
         }
 
@@ -34,15 +31,4 @@ const RollResult = ({ rollResult, isRolling }: RollResultProps) => {
     );
 };
 
-// Custom comparison function for memoization
-const areEqual = (prevProps: RollResultProps, nextProps: RollResultProps) => {
-    return (
-        prevProps.isRolling === nextProps.isRolling && // check rolling state
-        prevProps.rollResult.total === nextProps.rollResult.total &&
-        prevProps.rollResult.quantity === nextProps.rollResult.quantity &&
-        prevProps.rollResult.diceSides === nextProps.rollResult.diceSides &&
-        prevProps.rollResult.dices === nextProps.rollResult.dices
-    );
-};
-
-export default memo(RollResult, areEqual);
+export default RollResult;

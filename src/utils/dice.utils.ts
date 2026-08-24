@@ -8,7 +8,7 @@ import { DiceResultT, DiceDataT } from "../types/app.types";
 export function mountDiceResult(diceResult: DiceResultT): DiceDataT {
     const dicesSides = diceResult.rolls.map(({ value }) => value).join(", ");
     return {
-        total: diceResult.value,
+        total: diceResult.total,
         dices: dicesSides,
         diceSides: diceResult.sides,
         quantity: diceResult.qty,

@@ -1,22 +1,18 @@
-export interface DiceResultT {
-    qty: number;
-    modifier: number;
-    sides: number;
-    rolls: RollT[];
-    id: number;
-    value: number;
-}
-
+/** One die that came to rest. */
 export interface RollT {
     sides: number;
-    dieType: string;
-    groupId: number;
-    rollId: number;
-    theme: string;
-    themeColor: string;
     value: number;
 }
 
+/** The outcome of a single throw, as produced by the dice box. */
+export interface DiceResultT {
+    qty: number;
+    sides: number;
+    rolls: RollT[];
+    total: number;
+}
+
+/** The same outcome, flattened for the output panel. */
 export interface DiceDataT {
     total: number;
     dices: string;

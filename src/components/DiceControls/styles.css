@@ -202,11 +202,18 @@ label::before {
   transform: scale(0.95);
 }
 
-.dice-count-input.mobile-readonly {
-  width: 60px;
-  text-align: center;
-  cursor: default;
-  user-select: none;
+/* The stepper buttons are a touch affordance; pointer devices get the native
+   number input instead. One component, no window-width branching in JS. */
+@media (min-width: 769px) {
+  .dice-count-btn {
+    display: none;
+  }
+}
+
+.dice-count-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* Option styling */
@@ -226,6 +233,11 @@ option {
   .dice-count,
   .dice-selector {
     width: 100%;
+  }
+
+  .dice-count-input {
+    width: 60px;
+    text-align: center;
   }
 
   .roll-button {
