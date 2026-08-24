@@ -1,0 +1,169 @@
+import { describe, it, expect } from "vitest";
+import * as THREE from "three";
+import {
+  WORLD_UP,
+  createD10Geometry,
+  getDieDefinition,
+  getFaceNormals,
+  getInradius,
+  getSnapTarget,
+  readTopValue,
+  triangleNormal,
+  assignValuesToDirections,
+  getFaceLabel,
+} from "./geometry";
+
+const DIE_TYPES = [4, 6, 8, 10, 12, 20, 100] as const;
+const faceCountOf = (faces: number) => (faces === 100 ? 10 : faces);
+
+/** Deterministic PRNG (mulberry32) so a failure is always reproducible. */
+const seeded = (seed: number) => () => {
+  seed = (seed + 0x6d2b79f5) | 0;
+  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+
+const randomQuaternion = (random: () => number) =>
+  new THREE.Quaternion().setFromEuler(
+    new THREE.Euler(random() * Math.PI * 2, random() * Math.PI * 2, random() * Math.PI * 2),
+  );
+
+describe.each(DIE_TYPES)("d%i", faces => {
+  const definition = getDieDefinition(faces);
+
+  it("has exactly one readable direction per face", () => {
+    expect(definition.directions).toHaveLength(faceCountOf(faces));
+  });
+
+  it("carries the full set of values with no duplicates", () => {
+    const expected =
+      faces === 100
+        ? Array.from({ length: 10 }, (_, i) => (i + 1) * 10)
+        : Array.from({ length: faces }, (_, i) => i + 1);
+    expect([...definition.values].sort((a, b) => a - b)).toEqual(expected);
+  });
+
+  it("winds every triangle outward, so no face renders inside-out", () => {
+    const pos = definition.geometry.getAttribute("position");
+    const index = definition.geometry.getIndex();
+    const count = index ? index.count : pos.count;
+    const inward: number[] = [];
+
+    for (let i = 0; i < count; i += 3) {
+      const at = (o: number) => {
+        const k = index ? index.getX(i + o) : i + o;
+        return new THREE.Vector3(pos.getX(k), pos.getY(k), pos.getZ(k));
+      };
+      const [a, b, c] = [at(0), at(1), at(2)];
+      const centroid = a.clone().add(b).add(c).multiplyScalar(1 / 3);
+      if (triangleNormal(a, b, c).dot(centroid) <= 0) inward.push(i / 3);
+    }
+
+    expect(inward).toEqual([]);
+  });
+
+  it("keeps the numbers printed outside the solid", () => {
+    expect(definition.labelRadius).toBeGreaterThan(getInradius(definition.geometry));
+  });
+
+  it("reports the value that is actually on top, from any orientation", () => {
+    const random = seeded(faces);
+
+    for (let attempt = 0; attempt < 500; attempt++) {
+      const snapped = getSnapTarget(randomQuaternion(random), definition.directions);
+
+      const upness = definition.directions.map(dir =>
+        dir.clone().applyQuaternion(snapped.quaternion).dot(WORLD_UP),
+      );
+      const topIndex = upness.indexOf(Math.max(...upness));
+
+      // The snapped face must be genuinely up, and must be the one we report.
+      expect(upness[snapped.index]).toBeGreaterThan(0.999);
+      expect(definition.values[snapped.index]).toBe(definition.values[topIndex]);
+      expect(readTopValue(snapped.quaternion, definition)).toBe(definition.values[snapped.index]);
+    }
+  });
+});
+
+describe("opposite faces", () => {
+  it.each([6, 8, 10, 12, 20, 100] as const)("on a d%i always add up to the same total", faces => {
+    const { directions, values } = getDieDefinition(faces);
+    const sums = new Set<number>();
+
+    directions.forEach((dir, i) => {
+      const opposite = directions.findIndex((other, k) => k !== i && dir.dot(other) < -0.999);
+      expect(opposite).toBeGreaterThanOrEqual(0);
+      sums.add(values[i] + values[opposite]);
+    });
+
+    expect([...sums]).toHaveLength(1);
+  });
+
+  it("numbers a d4 sequentially, since a tetrahedron has no opposite faces", () => {
+    const { directions, values } = getDieDefinition(4);
+    directions.forEach((dir, i) => {
+      expect(directions.some((other, k) => k !== i && dir.dot(other) < -0.999)).toBe(false);
+    });
+    expect([...values].sort((a, b) => a - b)).toEqual([1, 2, 3, 4]);
+  });
+});
+
+describe("d10 trapezohedron", () => {
+  it("builds 10 planar kite faces at any scale", () => {
+    for (const scale of [0.3, 0.62, 1.4]) {
+      expect(getFaceNormals(createD10Geometry(scale))).toHaveLength(10);
+    }
+  });
+
+  it("puts every face the same distance from the centre, so it cannot be loaded", () => {
+    const geometry = createD10Geometry(0.62);
+    const distances = getFaceNormals(geometry).map(normal => {
+      const pos = geometry.getAttribute("position");
+      // Distance from the origin to this face's supporting plane.
+      let best = -Infinity;
+      for (let i = 0; i < pos.count; i++) {
+        const v = new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i));
+        best = Math.max(best, normal.dot(v));
+      }
+      return best;
+    });
+
+    const inradius = getInradius(geometry);
+    distances.forEach(d => expect(d).toBeCloseTo(inradius, 5));
+  });
+});
+
+describe("labels", () => {
+  it("reads 0 as ten on a d10", () => {
+    expect(getFaceLabel(10, 10)).toBe("0");
+    expect(getFaceLabel(10, 7)).toBe("7");
+  });
+
+  it("reads 00 as one hundred on a d100", () => {
+    expect(getFaceLabel(100, 100)).toBe("00");
+    expect(getFaceLabel(100, 30)).toBe("30");
+  });
+});
+
+describe("assignValuesToDirections", () => {
+  it("pairs opposite directions with complementary values", () => {
+    const directions = [
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(-1, 0, 0),
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, -1, 0),
+    ];
+    const values = assignValuesToDirections(directions, [1, 2, 3, 4]);
+
+    expect(values[0] + values[1]).toBe(5);
+    expect(values[2] + values[3]).toBe(5);
+  });
+});
+
+describe("definition cache", () => {
+  it("shares one geometry per die type instead of rebuilding it", () => {
+    expect(getDieDefinition(20).geometry).toBe(getDieDefinition(20).geometry);
+    expect(getDieDefinition(20).geometry).not.toBe(getDieDefinition(12).geometry);
+  });
+});
