@@ -2,6 +2,9 @@ import { describe, it, expect } from "vitest";
 import * as THREE from "three";
 import {
   WORLD_UP,
+  getFaces,
+  DieFace,
+  LabelPlacement,
   createD10Geometry,
   getDieDefinition,
   getFaceNormals,
@@ -28,6 +31,41 @@ const randomQuaternion = (random: () => number) =>
   new THREE.Quaternion().setFromEuler(
     new THREE.Euler(random() * Math.PI * 2, random() * Math.PI * 2, random() * Math.PI * 2),
   );
+
+/** The face a label is printed on, found by the direction the text looks along. */
+const faceFor = (definition: ReturnType<typeof getDieDefinition>, label: LabelPlacement) => {
+  const facing = new THREE.Vector3(0, 0, 1).applyQuaternion(label.quaternion);
+  const face = getFaces(definition.geometry).find(f => f.normal.dot(facing) > 0.999);
+  if (!face) throw new Error(`no face matches label ${label.text}`);
+  return face;
+};
+
+/** Corners of the box the glyphs occupy, generously estimated. */
+const glyphCorners = (label: LabelPlacement): THREE.Vector3[] => {
+  const right = new THREE.Vector3(1, 0, 0).applyQuaternion(label.quaternion);
+  const up = new THREE.Vector3(0, 1, 0).applyQuaternion(label.quaternion);
+  const halfWidth = label.size * 0.3 * label.text.length;
+  const halfHeight = label.size * 0.5;
+
+  return [
+    [1, 1],
+    [1, -1],
+    [-1, 1],
+    [-1, -1],
+  ].map(([sx, sy]) =>
+    label.position.clone().addScaledVector(right, sx * halfWidth).addScaledVector(up, sy * halfHeight),
+  );
+};
+
+/** Convex point-in-polygon test in the plane of the face. */
+const isInsideFace = (face: DieFace, point: THREE.Vector3): boolean =>
+  face.edges.every(([from, to]) => {
+    const inward = new THREE.Vector3()
+      .crossVectors(face.normal, new THREE.Vector3().subVectors(to, from))
+      .normalize();
+    const sign = inward.dot(new THREE.Vector3().subVectors(face.centroid, from)) > 0 ? 1 : -1;
+    return sign * inward.dot(new THREE.Vector3().subVectors(point, from)) > -1e-6;
+  });
 
 describe.each(DIE_TYPES)("d%i", faces => {
   const definition = getDieDefinition(faces);
@@ -63,8 +101,32 @@ describe.each(DIE_TYPES)("d%i", faces => {
     expect(inward).toEqual([]);
   });
 
-  it("keeps the numbers printed outside the solid", () => {
-    expect(definition.labelRadius).toBeGreaterThan(getInradius(definition.geometry));
+  it("prints a number for every readable face", () => {
+    // A d4 is read at the apex, so each of its 4 faces carries all 3 of its corners.
+    expect(definition.labels).toHaveLength(faces === 4 ? 12 : faceCountOf(faces));
+  });
+
+  it("prints the value that belongs to the direction it marks", () => {
+    definition.labels.forEach(label => {
+      expect(label.text).toBe(getFaceLabel(faces, definition.values[label.valueIndex]));
+    });
+  });
+
+  it("lays every number flat on a face", () => {
+    definition.labels.forEach(label => {
+      const facing = new THREE.Vector3(0, 0, 1).applyQuaternion(label.quaternion);
+      const face = faceFor(definition, label);
+      expect(facing.dot(face.normal)).toBeGreaterThan(0.9999);
+    });
+  });
+
+  it("keeps every number inside the outline of its face", () => {
+    definition.labels.forEach(label => {
+      const face = faceFor(definition, label);
+      glyphCorners(label).forEach(corner => {
+        expect(isInsideFace(face, corner)).toBe(true);
+      });
+    });
   });
 
   it("reports the value that is actually on top, from any orientation", () => {
@@ -165,5 +227,34 @@ describe("definition cache", () => {
   it("shares one geometry per die type instead of rebuilding it", () => {
     expect(getDieDefinition(20).geometry).toBe(getDieDefinition(20).geometry);
     expect(getDieDefinition(20).geometry).not.toBe(getDieDefinition(12).geometry);
+  });
+});
+
+describe("d4 corner numbers", () => {
+  const definition = getDieDefinition(4);
+
+  it("repeats each corner's digit on all three faces meeting there", () => {
+    definition.directions.forEach((_, valueIndex) => {
+      const marks = definition.labels.filter(label => label.valueIndex === valueIndex);
+      expect(marks).toHaveLength(3);
+      expect(new Set(marks.map(m => m.text)).size).toBe(1);
+    });
+  });
+
+  it("stands the apex digit upright on every face once that corner is up", () => {
+    definition.directions.forEach((direction, valueIndex) => {
+      // Rest the die with this corner pointing at the ceiling.
+      const resting = new THREE.Quaternion().setFromUnitVectors(direction, WORLD_UP);
+
+      definition.labels
+        .filter(label => label.valueIndex === valueIndex)
+        .forEach(label => {
+          const up = new THREE.Vector3(0, 1, 0)
+            .applyQuaternion(label.quaternion)
+            .applyQuaternion(resting);
+          // The top of the glyph leans towards the apex, not sideways or down.
+          expect(up.dot(WORLD_UP)).toBeGreaterThan(0.5);
+        });
+    });
   });
 });

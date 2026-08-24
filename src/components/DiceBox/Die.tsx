@@ -68,16 +68,6 @@ export const Die = ({
     }
   });
 
-  const faceLabels = useMemo(
-    () =>
-      definition.directions.map((dir, i) => ({
-        position: dir.clone().multiplyScalar(definition.labelRadius),
-        quaternion: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir),
-        text: definition.labels[i],
-      })),
-    [definition],
-  );
-
   return (
     <mesh ref={meshRef} castShadow receiveShadow geometry={definition.geometry}>
       <meshStandardMaterial
@@ -91,14 +81,14 @@ export const Die = ({
         <lineBasicMaterial color="#e0e0ff" />
       </lineSegments>
 
-      {faceLabels.map(label => (
-        <group key={label.text} position={label.position} quaternion={label.quaternion}>
+      {definition.labels.map((label, index) => (
+        <group key={index} position={label.position} quaternion={label.quaternion}>
           <Text
-            fontSize={definition.labelSize}
+            fontSize={label.size}
             color="#050510"
             anchorX="center"
             anchorY="middle"
-            outlineWidth={0.02}
+            outlineWidth={label.size * 0.08}
             outlineColor="#e0e0ff"
           >
             {label.text}

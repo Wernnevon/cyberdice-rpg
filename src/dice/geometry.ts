@@ -100,20 +100,87 @@ export const triangleNormal = (a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vect
     .crossVectors(new THREE.Vector3().subVectors(c, b), new THREE.Vector3().subVectors(a, b))
     .normalize();
 
-/** Unique outward face normals, merging the triangles that form one flat face. */
-export const getFaceNormals = (geometry: THREE.BufferGeometry): THREE.Vector3[] => {
-  const normals: THREE.Vector3[] = [];
+export interface DieFace {
+  normal: THREE.Vector3;
+  /** Corner vertices of the face polygon, in no particular order. */
+  vertices: THREE.Vector3[];
+  /** Boundary edges of the face polygon, interior diagonals excluded. */
+  edges: [THREE.Vector3, THREE.Vector3][];
+  centroid: THREE.Vector3;
+  /** Largest circle that fits in the face, centred on the centroid. */
+  inscribedRadius: number;
+}
+
+/** Positions are matched by value: polyhedron geometries duplicate shared corners. */
+const vertexKey = (v: THREE.Vector3) => `${v.x.toFixed(5)},${v.y.toFixed(5)},${v.z.toFixed(5)}`;
+const edgeKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+
+interface FaceGroup {
+  normal: THREE.Vector3;
+  offset: number;
+  vertices: Map<string, THREE.Vector3>;
+  edges: Map<string, number>;
+}
+
+/**
+ * Groups the triangles of a solid into its flat polygonal faces.
+ *
+ * Triangles belong to the same face when they share a normal *and* a plane
+ * offset, so parallel faces on opposite sides stay separate. An edge used by two
+ * triangles of one face is an interior diagonal, not part of the outline.
+ */
+export const getFaces = (geometry: THREE.BufferGeometry): DieFace[] => {
+  const groups: FaceGroup[] = [];
 
   forEachTriangle(geometry, (a, b, c) => {
-    const norm = triangleNormal(a, b, c);
-    if (norm.lengthSq() < 0.5) return;
-    if (!normals.some(n => n.dot(norm) > SAME_DIR_DOT)) {
-      normals.push(norm);
+    const normal = triangleNormal(a, b, c);
+    if (normal.lengthSq() < 0.5) return;
+    const offset = normal.dot(a);
+
+    let group = groups.find(g => g.normal.dot(normal) > SAME_DIR_DOT && Math.abs(g.offset - offset) < 1e-4);
+    if (!group) {
+      group = { normal, offset, vertices: new Map(), edges: new Map() };
+      groups.push(group);
+    }
+
+    const keys = [a, b, c].map(v => {
+      const key = vertexKey(v);
+      if (!group.vertices.has(key)) group.vertices.set(key, v);
+      return key;
+    });
+
+    for (let i = 0; i < 3; i++) {
+      const key = edgeKey(keys[i], keys[(i + 1) % 3]);
+      group.edges.set(key, (group.edges.get(key) ?? 0) + 1);
     }
   });
 
-  return normals;
+  return groups.map(group => {
+    const vertices = [...group.vertices.values()];
+    const centroid = vertices
+      .reduce((sum, v) => sum.add(v), new THREE.Vector3())
+      .multiplyScalar(1 / vertices.length);
+
+    const edges = [...group.edges.entries()]
+      .filter(([, count]) => count === 1)
+      .map(([key]) => {
+        const [from, to] = key.split("|").map(k => group.vertices.get(k)!);
+        return [from, to] as [THREE.Vector3, THREE.Vector3];
+      });
+
+    const inscribedRadius = edges.reduce((min, [from, to]) => {
+      const along = new THREE.Vector3().subVectors(to, from).normalize();
+      const toCentroid = new THREE.Vector3().subVectors(centroid, from);
+      return Math.min(min, toCentroid.sub(along.multiplyScalar(toCentroid.dot(along))).length());
+    }, Infinity);
+
+    return { normal: group.normal, vertices, edges, centroid, inscribedRadius };
+  });
 };
+
+/** Unique outward face normals, one per flat face. */
+export const getFaceNormals = (geometry: THREE.BufferGeometry): THREE.Vector3[] =>
+  getFaces(geometry).map(face => face.normal);
 
 /** Unique vertex directions -- used by the D4, which is read at the top vertex. */
 export const getVertexDirections = (geometry: THREE.BufferGeometry): THREE.Vector3[] => {
@@ -140,15 +207,6 @@ export const getInradius = (geometry: THREE.BufferGeometry): number => {
   });
 
   return Number.isFinite(min) ? min : 0.35;
-};
-
-export const getCircumradius = (geometry: THREE.BufferGeometry): number => {
-  const pos = geometry.getAttribute("position");
-  let max = 0;
-  for (let i = 0; i < pos.count; i++) {
-    max = Math.max(max, Math.hypot(pos.getX(i), pos.getY(i), pos.getZ(i)));
-  }
-  return max || 0.5;
 };
 
 /** Ascending face values: a d10 reads 0 as 10, a d100 reads 00 as 100. */
@@ -187,6 +245,78 @@ export const assignValuesToDirections = (directions: THREE.Vector3[], values: nu
   return assigned.map((v, i) => v ?? values[i] ?? i + 1);
 };
 
+export interface LabelPlacement {
+  position: THREE.Vector3;
+  quaternion: THREE.Quaternion;
+  size: number;
+  text: string;
+  /** Index into the die's `directions` / `values` arrays. */
+  valueIndex: number;
+}
+
+/** Lifts a number just clear of the face it is printed on. */
+const LABEL_LIFT = 0.006;
+
+/**
+ * Lays text flat on a face: +Z along the outward normal, +Y along `up`.
+ * Without an explicit up vector the glyph rolls arbitrarily in the plane, which
+ * is what leaves numbers sideways or upside down.
+ */
+const faceQuaternion = (normal: THREE.Vector3, up: THREE.Vector3): THREE.Quaternion => {
+  const y = up.clone().projectOnPlane(normal).normalize();
+  const x = new THREE.Vector3().crossVectors(y, normal).normalize();
+  return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, normal));
+};
+
+/** In-plane reference for upright text, dodging a degenerate projection. */
+const upHintFor = (normal: THREE.Vector3): THREE.Vector3 =>
+  Math.abs(normal.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
+
+/** One number per face, centred and scaled to fit within the face outline. */
+const buildFaceLabels = (faces: DieFace[], values: number[], dieFaces: number): LabelPlacement[] =>
+  faces.map((face, i) => {
+    const text = getFaceLabel(dieFaces, values[i]);
+    return {
+      position: face.centroid.clone().addScaledVector(face.normal, LABEL_LIFT),
+      quaternion: faceQuaternion(face.normal, upHintFor(face.normal)),
+      size: face.inscribedRadius * (text.length > 1 ? 0.7 : 0.95),
+      text,
+      valueIndex: i,
+    };
+  });
+
+/**
+ * A real D4 has no top face: it is read at the apex, so each face carries the
+ * digit of all three of its own corners, each rotated to read upright when that
+ * corner is the one pointing up.
+ */
+const buildCornerLabels = (
+  faces: DieFace[],
+  directions: THREE.Vector3[],
+  values: number[],
+  dieFaces: number,
+): LabelPlacement[] =>
+  faces.flatMap(face =>
+    face.vertices.map(vertex => {
+      const toCorner = new THREE.Vector3().subVectors(vertex, face.centroid);
+      const valueIndex = directions.findIndex(dir => dir.dot(vertex.clone().normalize()) > SAME_DIR_DOT);
+      const text = getFaceLabel(dieFaces, values[valueIndex]);
+
+      return {
+        // Pushed towards the corner, but only as far as the converging edges
+        // leave room for the glyph -- see the fit test in geometry.test.ts.
+        position: face.centroid
+          .clone()
+          .addScaledVector(toCorner, 0.55)
+          .addScaledVector(face.normal, LABEL_LIFT),
+        quaternion: faceQuaternion(face.normal, toCorner),
+        size: toCorner.length() * (text.length > 1 ? 0.22 : 0.32),
+        text,
+        valueIndex,
+      };
+    }),
+  );
+
 export interface DieDefinition {
   geometry: THREE.BufferGeometry;
   edges: THREE.EdgesGeometry;
@@ -194,9 +324,8 @@ export interface DieDefinition {
   directions: THREE.Vector3[];
   /** Value shown by directions[i] when it points up. Parallel array. */
   values: number[];
-  labels: string[];
-  labelRadius: number;
-  labelSize: number;
+  /** Numbers printed on the solid, already positioned and oriented. */
+  labels: LabelPlacement[];
   restHeight: number;
 }
 
@@ -209,9 +338,9 @@ export const getDieDefinition = (faces: number): DieDefinition => {
   if (cached) return cached;
 
   const geometry = createDiceGeometry(faces);
+  const polygons = getFaces(geometry);
   // The D4 has no top face -- the result is read at the vertex pointing up.
-  const directions = faces === 4 ? getVertexDirections(geometry) : getFaceNormals(geometry);
-  const inradius = getInradius(geometry);
+  const directions = faces === 4 ? getVertexDirections(geometry) : polygons.map(face => face.normal);
   const values = assignValuesToDirections(directions, getFaceValues(faces, directions.length));
 
   const definition: DieDefinition = {
@@ -219,10 +348,11 @@ export const getDieDefinition = (faces: number): DieDefinition => {
     edges: new THREE.EdgesGeometry(geometry),
     directions,
     values,
-    labels: values.map(value => getFaceLabel(faces, value)),
-    labelRadius: (faces === 4 ? getCircumradius(geometry) : inradius) + 0.02,
-    labelSize: faces === 100 ? 0.17 : 0.22,
-    restHeight: TRAY_FLOOR_Y + inradius,
+    labels:
+      faces === 4
+        ? buildCornerLabels(polygons, directions, values, faces)
+        : buildFaceLabels(polygons, values, faces),
+    restHeight: TRAY_FLOOR_Y + getInradius(geometry),
   };
 
   dieDefinitionCache.set(faces, definition);
