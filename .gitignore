@@ -1,4 +1,3 @@
-```
 # Dependencies
 node_modules/
 
@@ -83,4 +82,3 @@ dmypy.json
 # Temporary files
 *.tmp
 *~
-```

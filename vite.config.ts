@@ -5,6 +5,18 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
-    chunkSizeWarningLimit: 1500, // Aumenta o limite para 1500 kB
-  }
+    rollupOptions: {
+      output: {
+        // Split the vendors out so a change to app code does not invalidate the
+        // cached three.js payload, which dwarfs everything else here.
+        manualChunks: {
+          three: ['three'],
+          react: ['react', 'react-dom'],
+        },
+      },
+    },
+    // three.js is irreducibly ~600 kB unminified; this keeps the warning useful
+    // for the chunks we can actually control instead of silencing it outright.
+    chunkSizeWarningLimit: 700,
+  },
 })
