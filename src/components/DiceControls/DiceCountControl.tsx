@@ -23,7 +23,7 @@ export const DiceCountControl = ({ diceCount, setDiceCount }: DiceCountControlPr
             disabled={diceCount <= 1}
             aria-label="Diminuir quantidade"
         >
-            -
+            −
         </button>
         <input
             id="dice-count"

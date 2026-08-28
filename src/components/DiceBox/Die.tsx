@@ -1,64 +1,69 @@
 import { useFrame } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
-import { useEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { getDieDefinition } from "../../dice/geometry";
+import { DieRole, getDieDefinition, getSupportOffset, TRAY_FLOOR_Y } from "../../dice/geometry";
 import { createMotion, launchDie, stepDie, DieContact } from "../../dice/physics";
 
 export interface DieProps {
   faces: number;
   color: string;
-  isRolling: boolean;
+  /** Which half of a percentile pair this is. Only meaningful on a d100. */
+  role?: DieRole;
   dieIndex: number;
   glowIntensity: number;
-  /** Bumped on every throw to re-launch the die. */
+  /** Bumped on every throw. Part of the key, so each throw mounts a fresh die. */
   rollId: number;
   /** Reads the live positions of every die in the tray, for collisions. */
   getContacts: () => (DieContact | undefined)[];
   /** Reports this die's position back to the tray after each step. */
-  publishContact: (dieIndex: number, contact: DieContact) => void;
+  publishContact: (dieIndex: number, position: THREE.Vector3, velocity: THREE.Vector3) => void;
   onLand: (value: number, dieIndex: number) => void;
 }
 
-/** One die: owns its physics state and draws the numbered solid. */
-export const Die = ({
+/**
+ * One die: owns its physics state and draws the numbered solid.
+ *
+ * Memoised, and deliberately unaware of the roll state. The panel flipping from
+ * "rolling" to "done" re-renders the tree on the very frame the last die stops;
+ * with the die subscribed to that flag, every face label re-rendered at exactly
+ * the moment the animation had to look smoothest.
+ */
+export const Die = memo(function Die({
   faces,
   color,
-  isRolling,
+  role,
   dieIndex,
   glowIntensity,
-  rollId,
   getContacts,
   publishContact,
   onLand,
-}: DieProps) => {
+}: DieProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const motion = useRef(createMotion());
-  const definition = useMemo(() => getDieDefinition(faces), [faces]);
+  const definition = useMemo(() => getDieDefinition(faces, role), [faces, role]);
 
   useEffect(() => {
-    if (!isRolling || rollId <= 0) return;
-
     const launched = launchDie(motion.current, dieIndex);
     meshRef.current?.position.copy(launched.position);
     meshRef.current?.quaternion.copy(launched.quaternion);
-  }, [isRolling, rollId, dieIndex]);
+  }, [dieIndex]);
 
   useFrame((_, delta) => {
-    if (!meshRef.current || !isRolling || motion.current.landed) return;
+    if (!meshRef.current || motion.current.landed) return;
 
     const landedIndex = stepDie(motion.current, {
       delta,
-      floorLevel: definition.restHeight,
+      // Recomputed every frame from the current orientation: a die landing on a
+      // corner has to stop higher than one landing flat on a face.
+      floorLevel: TRAY_FLOOR_Y + getSupportOffset(definition.vertices, motion.current.quaternion),
+      restLevel: definition.restHeight,
       directions: definition.directions,
       index: dieIndex,
       neighbours: getContacts(),
     });
 
-    publishContact(dieIndex, {
-      position: motion.current.position.clone(),
-      velocity: motion.current.velocity.clone(),
-    });
+    publishContact(dieIndex, motion.current.position, motion.current.velocity);
 
     meshRef.current.position.copy(motion.current.position);
     meshRef.current.quaternion.copy(motion.current.quaternion);
@@ -67,6 +72,27 @@ export const Die = ({
       onLand(definition.values[landedIndex], dieIndex);
     }
   });
+
+  // Kept out of the render path: troika builds a text mesh per label, and there
+  // are up to a hundred of them in a tray full of d20s.
+  const labels = useMemo(
+    () =>
+      definition.labels.map((label, index) => (
+        <group key={index} position={label.position} quaternion={label.quaternion}>
+          <Text
+            fontSize={label.size}
+            color="#050510"
+            anchorX="center"
+            anchorY="middle"
+            outlineWidth={label.size * 0.08}
+            outlineColor="#e0e0ff"
+          >
+            {label.text}
+          </Text>
+        </group>
+      )),
+    [definition],
+  );
 
   return (
     <mesh ref={meshRef} castShadow receiveShadow geometry={definition.geometry}>
@@ -81,20 +107,7 @@ export const Die = ({
         <lineBasicMaterial color="#e0e0ff" />
       </lineSegments>
 
-      {definition.labels.map((label, index) => (
-        <group key={index} position={label.position} quaternion={label.quaternion}>
-          <Text
-            fontSize={label.size}
-            color="#050510"
-            anchorX="center"
-            anchorY="middle"
-            outlineWidth={label.size * 0.08}
-            outlineColor="#e0e0ff"
-          >
-            {label.text}
-          </Text>
-        </group>
-      ))}
+      {labels}
     </mesh>
   );
-};
+});

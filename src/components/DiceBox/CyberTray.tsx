@@ -1,98 +1,178 @@
 import * as THREE from "three";
+import { Environment, Grid, Lightformer, MeshReflectorMaterial } from "@react-three/drei";
+import { getFloorMarkingsTexture } from "./textures";
 
-const INNER_RADIUS = 3.68;
-const OUTER_SIZE = 8.8;
-const WALL_HEIGHT = 0.8;
-const RIVET_OFFSET = 4.2;
+/* Sized off PHYSICS.trayRadius (2.88): the wall the dice bounce off is the wall
+   you can see. trayRadius = WALL_RADIUS minus the largest die circumradius. */
+const FLOOR_RADIUS = 3.42;
+const WALL_RADIUS = 3.5;
+const FLOOR_Y = 0.05;
+const WALL_TOP = 0.85;
 
-/** The tray the dice are thrown into: floor, neon rings, wall and frame. */
+const BRACKET_REACH = 4.25;
+const BRACKET_ARM = 1.7;
+const BRACKET_BAR = 0.26;
+
+/** Corners of the square footprint, as (x, z) sign pairs. */
+const CORNERS = [
+  [1, 1],
+  [1, -1],
+  [-1, 1],
+  [-1, -1],
+] as const;
+
+/** Vertical fins around the outside of the wall, for machined bulk. */
+const FIN_COUNT = 24;
+const FINS = Array.from({ length: FIN_COUNT }, (_, i) => (i / FIN_COUNT) * Math.PI * 2);
+
+const DARK_METAL = { color: "#0c1220", metalness: 0.95, roughness: 0.28 } as const;
+
+/**
+ * The arena the dice are thrown into.
+ *
+ * The floor does the aesthetic work, because the camera looks down on it: a
+ * near-black reflective disc carrying painted instrument markings, ringed by a
+ * neon tube. Everything else -- plinth, fins, brackets -- is dark metal that
+ * exists to catch the rim light and give the disc somewhere to sit.
+ */
 export const CyberTray = () => (
-  <group position={[0, 0, 0]}>
-    {/* Deep Void Floor Base */}
-    <mesh position={[0, 0, 0]} receiveShadow>
-      <cylinderGeometry args={[INNER_RADIUS, INNER_RADIUS, 0.1, 64]} />
-      <meshStandardMaterial
-        color="#0a0a1a"
-        roughness={0.45}
-        metalness={0.5}
-        emissive="#00f3ff"
-        emissiveIntensity={0.06}
+  <group>
+    {/* The void the arena floats over. */}
+    <Grid
+      position={[0, -0.62, 0]}
+      infiniteGrid
+      cellSize={0.7}
+      cellThickness={0.5}
+      cellColor="#0d2233"
+      sectionSize={3.5}
+      sectionThickness={1}
+      sectionColor="#005f6b"
+      fadeDistance={34}
+      fadeStrength={1.5}
+    />
+
+    {/* Plinth: slightly tapered so the arena reads as a machined puck. Its top
+        face stops just under FLOOR_Y so it cannot cover the floor disc. */}
+    <mesh position={[0, -0.29, 0]} castShadow receiveShadow>
+      <cylinderGeometry args={[WALL_RADIUS, WALL_RADIUS - 0.22, 0.62, 64]} />
+      <meshStandardMaterial {...DARK_METAL} />
+    </mesh>
+
+    {/* Reflective floor. Dark and rough enough that it holds the neon
+        reflections without turning into a mirror. Kept at 512 with a light
+        blur: it is a faint sheen, and it is re-rendered from scratch every
+        frame, which is cost the throw animation cannot spare. */}
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, FLOOR_Y, 0]} receiveShadow>
+      <circleGeometry args={[FLOOR_RADIUS, 96]} />
+      <MeshReflectorMaterial
+        mirror={0.3}
+        resolution={512}
+        mixBlur={1}
+        mixStrength={4}
+        blur={[180, 60]}
+        depthScale={2.2}
+        minDepthThreshold={0.4}
+        maxDepthThreshold={1.3}
+        color="#0a1120"
+        metalness={0.7}
+        roughness={0.7}
+        emissiveMap={getFloorMarkingsTexture()}
+        emissive="#ffffff"
+        emissiveIntensity={1.5}
       />
     </mesh>
 
-    {/* Neon Circuit Rings on Floor */}
-    {[
-      { radius: [1.5, 1.55], color: "#00f3ff", intensity: 0.9 },
-      { radius: [2.8, 2.86], color: "#ff00ff", intensity: 0.8 },
-      { radius: [3.4, 3.44], color: "#00f3ff", intensity: 0.5 },
-    ].map(({ radius, color, intensity }) => (
-      <mesh key={color + radius[0]} position={[0, 0.051, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <ringGeometry args={[radius[0], radius[1], 64]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={intensity} />
-      </mesh>
-    ))}
 
-    {/* Inner Circular Brushed Alloy Ring Wall */}
-    <mesh position={[0, 0.4, 0]} castShadow receiveShadow>
-      <cylinderGeometry args={[3.85, 3.85, WALL_HEIGHT, 64, 1, true]} />
+
+    {/* Inner wall. */}
+    <mesh position={[0, (FLOOR_Y + WALL_TOP) / 2, 0]} castShadow receiveShadow>
+      <cylinderGeometry args={[WALL_RADIUS, WALL_RADIUS, WALL_TOP - FLOOR_Y, 64, 1, true]} />
+      {/* Deliberately lighter and less metallic than the rest of the hardware:
+          at this camera angle the inner wall is a big surface, and in dark metal
+          it read as a hole rather than as a wall. */}
       <meshStandardMaterial
-        color="#141428"
-        metalness={0.9}
-        roughness={0.25}
+        color="#243c5c"
+        metalness={0.45}
+        roughness={0.55}
         side={THREE.DoubleSide}
-        emissive="#00a0a8"
-        emissiveIntensity={0.18}
+        emissive="#0b4d63"
+        emissiveIntensity={0.55}
       />
     </mesh>
 
-    {/* Top Neon Rim Lip */}
-    <mesh position={[0, 0.8, 0]} rotation={[-Math.PI / 2, 0, 0]} castShadow>
-      <ringGeometry args={[3.75, 4.0, 64]} />
-      <meshStandardMaterial color="#00f3ff" metalness={0.6} roughness={0.2} emissive="#00f3ff" emissiveIntensity={0.7} />
-    </mesh>
-
-    {/* Outer Square Black Anodized Frame */}
-    {[
-      { position: [0, 0.4, -OUTER_SIZE / 2], args: [OUTER_SIZE + 0.4, WALL_HEIGHT, 0.4] },
-      { position: [0, 0.4, OUTER_SIZE / 2], args: [OUTER_SIZE + 0.4, WALL_HEIGHT, 0.4] },
-      { position: [-OUTER_SIZE / 2, 0.4, 0], args: [0.4, WALL_HEIGHT, OUTER_SIZE] },
-      { position: [OUTER_SIZE / 2, 0.4, 0], args: [0.4, WALL_HEIGHT, OUTER_SIZE] },
-    ].map(({ position, args }) => (
-      <mesh key={position.join()} position={position as [number, number, number]} castShadow receiveShadow>
-        <boxGeometry args={args as [number, number, number]} />
-        <meshStandardMaterial color="#050510" metalness={0.9} roughness={0.3} />
+    {/* Fins around the outside. */}
+    {FINS.map(angle => (
+      <mesh
+        key={angle}
+        position={[Math.cos(angle) * (WALL_RADIUS + 0.06), 0.32, Math.sin(angle) * (WALL_RADIUS + 0.06)]}
+        rotation={[0, -angle, 0]}
+        castShadow
+      >
+        <boxGeometry args={[0.14, 0.72, 0.08]} />
+        <meshStandardMaterial {...DARK_METAL} roughness={0.4} />
       </mesh>
     ))}
 
-    {/* Corner Screw Rivets */}
-    {[
-      [-RIVET_OFFSET, RIVET_OFFSET],
-      [RIVET_OFFSET, RIVET_OFFSET],
-      [-RIVET_OFFSET, -RIVET_OFFSET],
-      [RIVET_OFFSET, -RIVET_OFFSET],
-    ].map(([cx, cz]) => (
-      <mesh key={`${cx},${cz}`} position={[cx, 0.81, cz]} castShadow>
-        <cylinderGeometry args={[0.15, 0.15, 0.04, 16]} />
-        <meshStandardMaterial color="#80f9ff" metalness={0.95} roughness={0.15} emissive="#00f3ff" emissiveIntensity={0.4} />
-      </mesh>
+    {/* Machined cap on top of the wall, and the neon tube seated in it. */}
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, WALL_TOP, 0]} castShadow>
+      <ringGeometry args={[WALL_RADIUS, WALL_RADIUS + 0.26, 96]} />
+      <meshStandardMaterial {...DARK_METAL} side={THREE.DoubleSide} />
+    </mesh>
+
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, WALL_TOP + 0.015, 0]}>
+      <torusGeometry args={[WALL_RADIUS + 0.06, 0.032, 10, 128]} />
+      <meshBasicMaterial color="#8ff7ff" toneMapped={false} />
+    </mesh>
+
+    {/* Corner brackets: two arms and a lit stud per corner. */}
+    {CORNERS.map(([sx, sz]) => (
+      <group key={`${sx},${sz}`} position={[sx * BRACKET_REACH, 0.12, sz * BRACKET_REACH]}>
+        <mesh position={[(-sx * BRACKET_ARM) / 2, 0, 0]} castShadow receiveShadow>
+          <boxGeometry args={[BRACKET_ARM, 0.26, BRACKET_BAR]} />
+          <meshStandardMaterial {...DARK_METAL} />
+        </mesh>
+        <mesh position={[0, 0, (-sz * BRACKET_ARM) / 2]} castShadow receiveShadow>
+          <boxGeometry args={[BRACKET_BAR, 0.26, BRACKET_ARM]} />
+          <meshStandardMaterial {...DARK_METAL} />
+        </mesh>
+        <mesh position={[0, 0.14, 0]}>
+          <cylinderGeometry args={[0.085, 0.085, 0.04, 20]} />
+          <meshBasicMaterial color="#8ff7ff" toneMapped={false} />
+        </mesh>
+      </group>
     ))}
   </group>
 );
 
-/** Neon key/fill lighting rig matching the app palette. */
+/**
+ * Lighting rig.
+ *
+ * The Lightformers are what the metal actually reflects -- without an
+ * environment, every metallic surface in the tray renders as flat black.
+ */
 export const CyberLights = () => (
   <>
-    <ambientLight intensity={0.8} />
-    <hemisphereLight args={["#00f3ff", "#ff00ff", 0.6]} />
+    <ambientLight intensity={0.34} />
+    <hemisphereLight args={["#0088aa", "#33001f", 0.35]} />
+
     <directionalLight
-      position={[10, 15, 8]}
-      intensity={1.6}
-      color="#e0e0ff"
+      position={[6, 13, 5]}
+      intensity={1.1}
+      color="#dfe6ff"
       castShadow
       shadow-mapSize-width={1024}
       shadow-mapSize-height={1024}
+      shadow-bias={-0.0005}
     />
-    <pointLight position={[-6, 6, -6]} intensity={1.6} color="#ff00ff" />
-    <pointLight position={[6, 6, 6]} intensity={1.6} color="#00f3ff" />
+    {/* Sits just above the floor and washes the inner wall from inside. */}
+    <pointLight position={[0, 0.7, 0]} intensity={12} distance={9} decay={2} color="#7fe9ff" />
+    <pointLight position={[-6, 3.5, -4]} intensity={26} distance={22} decay={2} color="#ff00ff" />
+    <pointLight position={[6, 3.5, 4]} intensity={26} distance={22} decay={2} color="#00f3ff" />
+
+    <Environment resolution={128} frames={1}>
+      <Lightformer form="rect" intensity={2.2} color="#00f3ff" position={[-6, 4, -4]} scale={[10, 5, 1]} />
+      <Lightformer form="rect" intensity={1.6} color="#ff00ff" position={[6, 3, 5]} scale={[10, 5, 1]} />
+      <Lightformer form="ring" intensity={1.4} color="#ffffff" position={[0, 9, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={7} />
+    </Environment>
   </>
 );

@@ -15,11 +15,16 @@ export const OPPOSITE_DIR_DOT = -0.999;
  * kite is only planar when the ring offset satisfies h2 = h / (5 + 2*sqrt(5)),
  * which holds for any ring radius -- otherwise the solid ends up with 20 slanted
  * faces and no well-defined "top face" to read a result from.
+ *
+ * The apex height to ring radius ratio is what sets the silhouette, and it is
+ * not fixed by the maths: the strict dual of a uniform pentagonal antiprism has
+ * h/r = 1.81, which is far pointier than any die you can buy. A physical d10 is
+ * squashed to about as tall as it is wide, so h/r sits just over 1.
  */
 export const createD10Geometry = (scale = 0.55): THREE.BufferGeometry => {
   const h = 0.95 * scale;
   const h2 = h / (5 + 2 * Math.sqrt(5));
-  const r = 0.72 * scale;
+  const r = h / 1.05;
 
   const vertices: number[] = [
     0, h, 0,    // 0: Top Apex
@@ -61,16 +66,25 @@ export const createD10Geometry = (scale = 0.55): THREE.BufferGeometry => {
   return geom;
 };
 
+/**
+ * Overall size of the solids, applied to every die type at once.
+ *
+ * PHYSICS.trayRadius and PHYSICS.dieSpacing are both derived from the size of
+ * the dice, so they have to be revisited whenever this changes.
+ */
+export const DIE_SCALE = 0.8;
+
 export const createDiceGeometry = (faces: number): THREE.BufferGeometry => {
+  const s = DIE_SCALE;
   switch (faces) {
-    case 4: return new THREE.TetrahedronGeometry(0.62);
-    case 6: return new THREE.BoxGeometry(0.65, 0.65, 0.65);
-    case 8: return new THREE.OctahedronGeometry(0.6);
-    case 10: return createD10Geometry(0.62);
-    case 12: return new THREE.DodecahedronGeometry(0.52);
-    case 20: return new THREE.IcosahedronGeometry(0.55);
-    case 100: return createD10Geometry(0.62);
-    default: return new THREE.BoxGeometry(0.65, 0.65, 0.65);
+    case 4: return new THREE.TetrahedronGeometry(0.62 * s);
+    case 6: return new THREE.BoxGeometry(0.65 * s, 0.65 * s, 0.65 * s);
+    case 8: return new THREE.OctahedronGeometry(0.6 * s);
+    case 10: return createD10Geometry(0.62 * s);
+    case 12: return new THREE.DodecahedronGeometry(0.52 * s);
+    case 20: return new THREE.IcosahedronGeometry(0.55 * s);
+    case 100: return createD10Geometry(0.62 * s);
+    default: return new THREE.BoxGeometry(0.65 * s, 0.65 * s, 0.65 * s);
   }
 };
 
@@ -209,14 +223,61 @@ export const getInradius = (geometry: THREE.BufferGeometry): number => {
   return Number.isFinite(min) ? min : 0.35;
 };
 
-/** Ascending face values: a d10 reads 0 as 10, a d100 reads 00 as 100. */
-export const getFaceValues = (faces: number, count: number): number[] => {
-  if (faces === 100) return Array.from({ length: count }, (_, i) => (i + 1) * 10);
-  return Array.from({ length: count }, (_, i) => i + 1);
+/** The solid's distinct corner points, in local space. */
+export const getVertices = (geometry: THREE.BufferGeometry): THREE.Vector3[] => {
+  const pos = geometry.getAttribute("position");
+  const vertices: THREE.Vector3[] = [];
+
+  for (let i = 0; i < pos.count; i++) {
+    const v = new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i));
+    if (!vertices.some(existing => existing.distanceToSquared(v) < 1e-8)) {
+      vertices.push(v);
+    }
+  }
+  return vertices;
 };
 
-export const getFaceLabel = (faces: number, value: number): string => {
-  if (faces === 100) return value === 100 ? "00" : `${value}`;
+const supportScratch = new THREE.Vector3();
+
+/**
+ * How far the die's lowest corner hangs below its centre at a given orientation.
+ *
+ * The centre only sits an inradius above the floor when a face is flat on it. A
+ * tumbling die touches down on a corner, which reaches a good deal further --
+ * three times as far on a d4 -- so clamping against the inradius alone lets the
+ * corners sink through the floor mid-bounce.
+ */
+export const getSupportOffset = (
+  vertices: THREE.Vector3[],
+  quaternion: THREE.Quaternion,
+): number => {
+  let lowest = 0;
+  for (const vertex of vertices) {
+    const y = supportScratch.copy(vertex).applyQuaternion(quaternion).y;
+    if (y < lowest) lowest = y;
+  }
+  return -lowest;
+};
+
+/**
+ * Which half of a percentile pair a die is. A d100 is not one solid but two
+ * ten-sided dice thrown together -- 00..90 and 0..9 -- exactly as it is rolled
+ * at the table. Ignored for every other die type.
+ */
+export type DieRole = "tens" | "units";
+
+/** Ascending face values. A d10 reads 0 as 10; a percentile pair reads 00+0 as 100. */
+export const getFaceValues = (faces: number, count: number, role: DieRole = "tens"): number[] => {
+  if (faces === 100 && role === "tens") return Array.from({ length: count }, (_, i) => i * 10);
+  return Array.from({ length: count }, (_, i) => (faces === 100 ? i : i + 1));
+};
+
+/** Combines a landed percentile pair into one 1..100 roll. 00 with 0 reads as 100. */
+export const percentileValue = (tens: number, units: number): number => tens + units || 100;
+
+export const getFaceLabel = (faces: number, value: number, role: DieRole = "tens"): string => {
+  if (faces === 100 && role === "tens") return value === 0 ? "00" : `${value}`;
+  if (faces === 100) return `${value}`;
   if (faces === 10) return value === 10 ? "0" : `${value}`;
   return `${value}`;
 };
@@ -273,9 +334,14 @@ const upHintFor = (normal: THREE.Vector3): THREE.Vector3 =>
   Math.abs(normal.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
 
 /** One number per face, centred and scaled to fit within the face outline. */
-const buildFaceLabels = (faces: DieFace[], values: number[], dieFaces: number): LabelPlacement[] =>
+const buildFaceLabels = (
+  faces: DieFace[],
+  values: number[],
+  dieFaces: number,
+  role: DieRole,
+): LabelPlacement[] =>
   faces.map((face, i) => {
-    const text = getFaceLabel(dieFaces, values[i]);
+    const text = getFaceLabel(dieFaces, values[i], role);
     return {
       position: face.centroid.clone().addScaledVector(face.normal, LABEL_LIFT),
       quaternion: faceQuaternion(face.normal, upHintFor(face.normal)),
@@ -326,22 +392,27 @@ export interface DieDefinition {
   values: number[];
   /** Numbers printed on the solid, already positioned and oriented. */
   labels: LabelPlacement[];
+  /** Corner points, for finding the lowest one while the die tumbles. */
+  vertices: THREE.Vector3[];
   restHeight: number;
 }
 
 // Geometries are expensive and immutable, so they are built once per die type and
 // shared by every mesh instead of being re-created on each React render.
-const dieDefinitionCache = new Map<number, DieDefinition>();
+const dieDefinitionCache = new Map<string, DieDefinition>();
 
-export const getDieDefinition = (faces: number): DieDefinition => {
-  const cached = dieDefinitionCache.get(faces);
+export const getDieDefinition = (faces: number, role: DieRole = "tens"): DieDefinition => {
+  // The two halves of a percentile pair share a solid but carry different
+  // numbers, so the role is part of the cache key.
+  const key = `${faces}:${faces === 100 ? role : ""}`;
+  const cached = dieDefinitionCache.get(key);
   if (cached) return cached;
 
   const geometry = createDiceGeometry(faces);
   const polygons = getFaces(geometry);
   // The D4 has no top face -- the result is read at the vertex pointing up.
   const directions = faces === 4 ? getVertexDirections(geometry) : polygons.map(face => face.normal);
-  const values = assignValuesToDirections(directions, getFaceValues(faces, directions.length));
+  const values = assignValuesToDirections(directions, getFaceValues(faces, directions.length, role));
 
   const definition: DieDefinition = {
     geometry,
@@ -351,11 +422,12 @@ export const getDieDefinition = (faces: number): DieDefinition => {
     labels:
       faces === 4
         ? buildCornerLabels(polygons, directions, values, faces)
-        : buildFaceLabels(polygons, values, faces),
+        : buildFaceLabels(polygons, values, faces, role),
+    vertices: getVertices(geometry),
     restHeight: TRAY_FLOOR_Y + getInradius(geometry),
   };
 
-  dieDefinitionCache.set(faces, definition);
+  dieDefinitionCache.set(key, definition);
   return definition;
 };
 

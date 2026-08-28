@@ -28,14 +28,14 @@ function App() {
             <main className="cyber-interface">
                 <section className="dice-display">
                     <header className="app-header">
-                        <h1 className="glitch-title" data-text="CYBERDICE">CYBERDICE_v3.0</h1>
+                        <h1 className="glitch-title">CYBERDICE_v3.0</h1>
                     </header>
-                    <DiceBox ref={diceBoxRef} isRolling={isRolling} onRoll={handleRoll} />
+                    <DiceBox ref={diceBoxRef} onRoll={handleRoll} />
                 </section>
 
                 <aside className="control-panel">
                     <RollResult rollResult={rollResult} isRolling={isRolling} />
-                    <DiceControls onRoll={handleDiceRoll} />
+                    <DiceControls onRoll={handleDiceRoll} isRolling={isRolling} />
 
                     <div className="system-status">
                         SYSTEM: ONLINE // CONNECTION: SECURE

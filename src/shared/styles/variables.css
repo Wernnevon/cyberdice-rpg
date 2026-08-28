@@ -41,6 +41,12 @@
     --color-border: #00f3ff;
     --color-border-secondary: #ff00ff;
     --color-divider: rgba(0, 243, 255, 0.2);
+
+    /* Panel surfaces - one ramp, so every card reads as the same material */
+    --color-panel: rgba(9, 14, 26, 0.92);
+    --color-panel-raised: rgba(14, 22, 38, 0.92);
+    --color-hairline: rgba(0, 243, 255, 0.18);
+    --color-hairline-strong: rgba(0, 243, 255, 0.45);
 }
 
 /* SHADOWS - Multi-layer neon glow */
@@ -111,7 +117,7 @@
 :root {
     --font-family-base: 'Rajdhani', sans-serif;
     --font-family-heading: 'Orbitron', sans-serif;
-    --font-family-mono: 'Courier New', monospace;
+    --font-family-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Fira Mono', Menlo, Consolas, monospace;
 }
 
 /* FONT SIZES */

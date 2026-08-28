@@ -15,7 +15,8 @@ export interface DiceResultT {
 /** The same outcome, flattened for the output panel. */
 export interface DiceDataT {
     total: number;
-    dices: string;
+    /** Every die's landed value, in throw order. */
+    values: number[];
     diceSides: number;
     quantity: number;
 }

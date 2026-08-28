@@ -8,11 +8,16 @@ export const PHYSICS = {
   gravity: 28,
   /** Clamp on frame time, so a stalled tab cannot tunnel a die through the floor. */
   maxDelta: 0.033,
-  /** Centre-to-centre distance kept between two dice. */
-  dieSpacing: 0.92,
+  /** Centre-to-centre distance kept between two dice. Scales with DIE_SCALE. */
+  dieSpacing: 0.74,
   dieRestitution: 0.6,
-  /** How far from the tray centre a die may travel before hitting the wall. */
-  trayRadius: 3.25,
+  /**
+   * How far from the tray centre a die's centre may travel before hitting the
+   * wall. It is the tray's inner wall (3.5 in CyberTray) minus the largest die
+   * circumradius (0.5, the d4 at DIE_SCALE), so a die stops flush against the
+   * wall instead of poking through it.
+   */
+  trayRadius: 3.0,
   wallBounce: 1.6,
   floorRestitution: 0.4,
   floorFriction: 0.65,
@@ -23,7 +28,12 @@ export const PHYSICS = {
   snapRate: 14,
   settleSpeed: 0.08,
   settleAngularSpeed: 0.25,
-  settleAngle: 0.08,
+  /**
+   * How close to its resting orientation a die must be before it is called
+   * settled. The last frame snaps the remaining angle away, so this is the size
+   * of that snap: at 0.08 it was a visible ~4 degree pop at the end of a throw.
+   */
+  settleAngle: 0.02,
 } as const;
 
 /** Everything that makes one die move. Mutated in place each frame. */
@@ -44,8 +54,19 @@ export interface DieContact {
 
 export interface StepParams {
   delta: number;
-  /** Height of the die centre when it rests on the tray floor. */
+  /**
+   * Height of the die centre when its lowest point touches the tray floor. The
+   * caller recomputes it per frame from the die's orientation, so a corner-first
+   * landing is caught at the corner rather than at the resting face.
+   */
   floorLevel: number;
+  /**
+   * Height of the die centre once it lies flat on a face. The final snap rotates
+   * the die onto that face in one step, so the height it was clamped to for its
+   * old orientation has to be corrected at the same time -- otherwise the die
+   * comes to rest hanging fractionally above the floor.
+   */
+  restLevel?: number;
   /** Local-space directions that can point up, from the die definition. */
   directions: THREE.Vector3[];
   index: number;
@@ -91,7 +112,7 @@ const spinBy = (quaternion: THREE.Quaternion, angularVelocity: THREE.Vector3, de
  * the number on screen and the number in the score the same number.
  */
 export const stepDie = (motion: DieMotion, params: StepParams): number | null => {
-  const { floorLevel, directions, index, neighbours, random = Math.random } = params;
+  const { floorLevel, restLevel, directions, index, neighbours, random = Math.random } = params;
   if (motion.landed) return null;
 
   const delta = Math.min(params.delta, PHYSICS.maxDelta);
@@ -140,7 +161,14 @@ export const stepDie = (motion: DieMotion, params: StepParams): number | null =>
     }
   }
 
-  if (position.y > floorLevel) {
+  // A die that is already down and is rotating onto its resting face pulls its
+  // own floor out from under itself: floorLevel is measured from whichever
+  // corner hangs lowest, so tipping from a corner onto a face drops it by most
+  // of a circumradius -- three times over on a d4 -- far faster than gravity can
+  // follow. Treating that as flight aborted the settle mid-slerp and bounced the
+  // die instead, which is the stutter at the end of a throw. Only real upward
+  // motion counts as taking off.
+  if (position.y > floorLevel && (!motion.grounded || velocity.y > 0)) {
     motion.grounded = false;
     angularVelocity.multiplyScalar(Math.max(0, 1 - PHYSICS.airAngularDamping * delta));
     return null;
@@ -181,6 +209,7 @@ export const stepDie = (motion: DieMotion, params: StepParams): number | null =>
   velocity.set(0, 0, 0);
   angularVelocity.set(0, 0, 0);
   motion.quaternion.copy(target.quaternion);
+  position.y = restLevel ?? floorLevel;
   motion.landed = true;
   return target.index;
 };

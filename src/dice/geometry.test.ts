@@ -14,6 +14,7 @@ import {
   triangleNormal,
   assignValuesToDirections,
   getFaceLabel,
+  percentileValue,
 } from "./geometry";
 
 const DIE_TYPES = [4, 6, 8, 10, 12, 20, 100] as const;
@@ -75,9 +76,10 @@ describe.each(DIE_TYPES)("d%i", faces => {
   });
 
   it("carries the full set of values with no duplicates", () => {
+    // A d100 defaults to the tens half of the percentile pair: 00, 10, ... 90.
     const expected =
       faces === 100
-        ? Array.from({ length: 10 }, (_, i) => (i + 1) * 10)
+        ? Array.from({ length: 10 }, (_, i) => i * 10)
         : Array.from({ length: faces }, (_, i) => i + 1);
     expect([...definition.values].sort((a, b) => a - b)).toEqual(expected);
   });
@@ -202,9 +204,14 @@ describe("labels", () => {
     expect(getFaceLabel(10, 7)).toBe("7");
   });
 
-  it("reads 00 as one hundred on a d100", () => {
-    expect(getFaceLabel(100, 100)).toBe("00");
-    expect(getFaceLabel(100, 30)).toBe("30");
+  it("prints the tens half of a percentile pair as 00..90", () => {
+    expect(getFaceLabel(100, 0, "tens")).toBe("00");
+    expect(getFaceLabel(100, 30, "tens")).toBe("30");
+  });
+
+  it("prints the units half of a percentile pair as 0..9", () => {
+    expect(getFaceLabel(100, 0, "units")).toBe("0");
+    expect(getFaceLabel(100, 7, "units")).toBe("7");
   });
 });
 
@@ -256,5 +263,30 @@ describe("d4 corner numbers", () => {
           expect(up.dot(WORLD_UP)).toBeGreaterThan(0.5);
         });
     });
+  });
+});
+
+describe("percentile pair", () => {
+  it("carries 00..90 on the tens die and 0..9 on the units die", () => {
+    expect([...getDieDefinition(100, "tens").values].sort((a, b) => a - b)).toEqual([
+      0, 10, 20, 30, 40, 50, 60, 70, 80, 90,
+    ]);
+    expect([...getDieDefinition(100, "units").values].sort((a, b) => a - b)).toEqual([
+      0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+    ]);
+  });
+
+  it("reads 00 with 0 as one hundred, not as zero", () => {
+    expect(percentileValue(0, 0)).toBe(100);
+  });
+
+  it("covers exactly 1..100 over every combination of the pair", () => {
+    const tens = getDieDefinition(100, "tens").values;
+    const units = getDieDefinition(100, "units").values;
+    const seen = tens.flatMap(t => units.map(u => percentileValue(t, u)));
+
+    expect(new Set(seen).size).toBe(100);
+    expect(Math.min(...seen)).toBe(1);
+    expect(Math.max(...seen)).toBe(100);
   });
 });

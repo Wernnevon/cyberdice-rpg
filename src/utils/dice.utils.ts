@@ -6,10 +6,9 @@ import { DiceResultT, DiceDataT } from "../types/app.types";
  * @returns Formatted dice data for display
  */
 export function mountDiceResult(diceResult: DiceResultT): DiceDataT {
-    const dicesSides = diceResult.rolls.map(({ value }) => value).join(", ");
     return {
         total: diceResult.total,
-        dices: dicesSides,
+        values: diceResult.rolls.map(({ value }) => value),
         diceSides: diceResult.sides,
         quantity: diceResult.qty,
     };
