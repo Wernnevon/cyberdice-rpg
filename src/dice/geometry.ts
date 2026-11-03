@@ -237,28 +237,6 @@ export const getVertices = (geometry: THREE.BufferGeometry): THREE.Vector3[] => 
   return vertices;
 };
 
-const supportScratch = new THREE.Vector3();
-
-/**
- * How far the die's lowest corner hangs below its centre at a given orientation.
- *
- * The centre only sits an inradius above the floor when a face is flat on it. A
- * tumbling die touches down on a corner, which reaches a good deal further --
- * three times as far on a d4 -- so clamping against the inradius alone lets the
- * corners sink through the floor mid-bounce.
- */
-export const getSupportOffset = (
-  vertices: THREE.Vector3[],
-  quaternion: THREE.Quaternion,
-): number => {
-  let lowest = 0;
-  for (const vertex of vertices) {
-    const y = supportScratch.copy(vertex).applyQuaternion(quaternion).y;
-    if (y < lowest) lowest = y;
-  }
-  return -lowest;
-};
-
 /**
  * Which half of a percentile pair a die is. A d100 is not one solid but two
  * ten-sided dice thrown together -- 00..90 and 0..9 -- exactly as it is rolled
@@ -394,6 +372,8 @@ export interface DieDefinition {
   labels: LabelPlacement[];
   /** Corner points, for finding the lowest one while the die tumbles. */
   vertices: THREE.Vector3[];
+  /** Distance from the centre to the furthest corner. */
+  radius: number;
   restHeight: number;
 }
 
@@ -409,6 +389,7 @@ export const getDieDefinition = (faces: number, role: DieRole = "tens"): DieDefi
   if (cached) return cached;
 
   const geometry = createDiceGeometry(faces);
+  const vertices = getVertices(geometry);
   const polygons = getFaces(geometry);
   // The D4 has no top face -- the result is read at the vertex pointing up.
   const directions = faces === 4 ? getVertexDirections(geometry) : polygons.map(face => face.normal);
@@ -423,7 +404,8 @@ export const getDieDefinition = (faces: number, role: DieRole = "tens"): DieDefi
       faces === 4
         ? buildCornerLabels(polygons, directions, values, faces)
         : buildFaceLabels(polygons, values, faces, role),
-    vertices: getVertices(geometry),
+    vertices,
+    radius: Math.max(...vertices.map(v => v.length())),
     restHeight: TRAY_FLOOR_Y + getInradius(geometry),
   };
 

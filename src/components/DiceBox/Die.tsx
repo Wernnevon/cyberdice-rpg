@@ -2,7 +2,7 @@ import { useFrame } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
 import { memo, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { DieRole, getDieDefinition, getSupportOffset, TRAY_FLOOR_Y } from "../../dice/geometry";
+import { DieRole, getDieDefinition, TRAY_FLOOR_Y } from "../../dice/geometry";
 import { createMotion, launchDie, stepDie, DieContact } from "../../dice/physics";
 
 export interface DieProps {
@@ -54,11 +54,10 @@ export const Die = memo(function Die({
 
     const landedIndex = stepDie(motion.current, {
       delta,
-      // Recomputed every frame from the current orientation: a die landing on a
-      // corner has to stop higher than one landing flat on a face.
-      floorLevel: TRAY_FLOOR_Y + getSupportOffset(definition.vertices, motion.current.quaternion),
-      restLevel: definition.restHeight,
+      trayFloor: TRAY_FLOOR_Y,
       directions: definition.directions,
+      vertices: definition.vertices,
+      radius: definition.radius,
       index: dieIndex,
       neighbours: getContacts(),
     });

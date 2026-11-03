@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getDieDefinition, WORLD_UP } from "./geometry";
+import { getDieDefinition, TRAY_FLOOR_Y, WORLD_UP } from "./geometry";
 import { createMotion, launchDie, stepDie, PHYSICS, DieMotion, DieContact } from "./physics";
 
 const DIE_TYPES = [4, 6, 8, 10, 12, 20, 100] as const;
@@ -30,8 +30,10 @@ const rollOnce = (faces: number, seed: number): RollOutcome | null => {
   for (let frame = 1; frame <= MAX_FRAMES; frame++) {
     const landedIndex = stepDie(motion, {
       delta: FRAME,
-      floorLevel: definition.restHeight,
+      trayFloor: TRAY_FLOOR_Y,
       directions: definition.directions,
+      vertices: definition.vertices,
+      radius: definition.radius,
       index: 0,
       neighbours: [],
       random,
@@ -94,6 +96,39 @@ describe.each(DIE_TYPES)("a rolling d%i", faces => {
   });
 });
 
+/**
+ * The dice come to rest by tumbling under contact impulses, so what they land
+ * on is an emergent property of that simulation rather than something drawn.
+ * A tweak to friction or damping could quietly bias the results, which for a
+ * dice roller is the worst regression there is.
+ */
+describe("fairness", () => {
+  it.each([4, 6, 20] as const)("rolls a d%i evenly across its faces", faces => {
+    const definition = getDieDefinition(faces);
+    const rolls = faces * 300;
+    const counts = new Map<number, number>();
+
+    for (let seed = 0; seed < rolls; seed++) {
+      const outcome = rollOnce(faces, seed * 31 + faces * 977);
+      if (!outcome) continue;
+      counts.set(outcome.value, (counts.get(outcome.value) ?? 0) + 1);
+    }
+
+    expect(counts.size).toBe(definition.values.length);
+
+    // Pearson's chi-squared against a uniform die. The bound is the 99.9th
+    // percentile for the degrees of freedom, so a fair die trips it once in a
+    // thousand runs while a visibly loaded one trips it every time.
+    const expected = rolls / definition.values.length;
+    const chiSquared = [...counts.values()].reduce(
+      (sum, observed) => sum + (observed - expected) ** 2 / expected,
+      0,
+    );
+    const bound = { 4: 16.3, 6: 20.5, 20: 43.8 }[faces];
+    expect(chiSquared).toBeLessThan(bound);
+  });
+});
+
 describe("a handful of dice thrown together", () => {
   const faces = 6;
   const definition = getDieDefinition(faces);
@@ -113,8 +148,10 @@ describe("a handful of dice thrown together", () => {
       motions.forEach((motion, index) => {
         const result = stepDie(motion, {
           delta: FRAME,
-          floorLevel: definition.restHeight,
+          trayFloor: TRAY_FLOOR_Y,
           directions: definition.directions,
+          vertices: definition.vertices,
+          radius: definition.radius,
           index,
           neighbours,
           random,
@@ -154,8 +191,10 @@ describe("stepDie", () => {
     const before = motion.position.clone();
     const result = stepDie(motion, {
       delta: FRAME,
-      floorLevel: definition.restHeight,
+      trayFloor: TRAY_FLOOR_Y,
       directions: definition.directions,
+      vertices: definition.vertices,
+      radius: definition.radius,
       index: 0,
       neighbours: [],
     });
@@ -172,8 +211,10 @@ describe("stepDie", () => {
 
     stepDie(motion, {
       delta: 5,
-      floorLevel: definition.restHeight,
+      trayFloor: TRAY_FLOOR_Y,
       directions: definition.directions,
+      vertices: definition.vertices,
+      radius: definition.radius,
       index: 0,
       neighbours: [],
       random: seeded(2),
@@ -189,8 +230,10 @@ describe("stepDie", () => {
     for (let i = 0; i < 120; i++) {
       stepDie(motion, {
         delta: FRAME,
-        floorLevel: definition.restHeight,
+        trayFloor: TRAY_FLOOR_Y,
         directions: definition.directions,
+        vertices: definition.vertices,
+        radius: definition.radius,
         index: 0,
         neighbours: [],
         random: seeded(i),
