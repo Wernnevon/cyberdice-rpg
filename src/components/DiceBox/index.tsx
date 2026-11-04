@@ -1,18 +1,20 @@
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
-import { useRef, useState, forwardRef, useImperativeHandle, Suspense, useCallback } from "react";
+import { useRef, useState, forwardRef, useImperativeHandle, Suspense, useCallback, useEffect, useLayoutEffect } from "react";
 import { Leva } from "leva";
 import { DiceResultT } from "../../types";
-import { parseNotation, Notation } from "../../dice/notation";
-import { DieRole, percentileValue } from "../../dice/geometry";
+import { parseNotation, Notation, SUPPORTED_FACES } from "../../dice/notation";
+import { DieRole, getDieDefinition, percentileValue } from "../../dice/geometry";
 import * as THREE from "three";
-import { DieContact } from "../../dice/physics";
+import { DiceSimulation, initPhysics } from "../../dice/simulation";
 import { CyberTray, CyberLights } from "./CyberTray";
 import { Die } from "./Die";
 import { preloadDieFont } from "./dieFont";
 
-// Started at import time, so the glyphs are ready long before the first throw.
+// Started at import time, so the glyphs and the physics engine are both ready
+// long before the first throw.
 preloadDieFont();
+initPhysics();
 import "./styles.css";
 
 interface DiceBoxProps {
@@ -63,28 +65,38 @@ const buildDice = (parsed: Notation): DieSpec[] => {
 const DiceBoxScene = forwardRef<DiceBoxRef, DiceBoxProps>(({ onRoll }, ref) => {
   const [dice, setDice] = useState<DieSpec[]>([]);
   const [rollId, setRollId] = useState(0);
-  const landedValues = useRef<Map<number, number>>(new Map());
-  const contacts = useRef<(DieContact | undefined)[]>([]);
+  const simulation = useRef<DiceSimulation | null>(null);
+  const meshes = useRef<(THREE.Mesh | null)[]>([]);
+  /** Whether the current throw is still waiting to be reported. */
+  const pending = useRef(false);
 
-  const getContacts = useCallback(() => contacts.current, []);
-
-  // Copied into vectors owned by the tray rather than cloned: this runs once per
-  // die per frame, and cloning two Vector3s each time was pure garbage.
-  const publishContact = useCallback((index: number, position: THREE.Vector3, velocity: THREE.Vector3) => {
-    const contact = (contacts.current[index] ??= {
-      position: new THREE.Vector3(),
-      velocity: new THREE.Vector3(),
+  useEffect(() => {
+    let disposed = false;
+    initPhysics().then(() => {
+      if (disposed) return;
+      const sim = new DiceSimulation();
+      // A throw nobody sees, so the engine's first hull building and first
+      // steps happen now rather than stalling the first real throw.
+      sim.throw(SUPPORTED_FACES.map(faces => getDieDefinition(faces)));
+      for (let i = 0; i < 10; i++) sim.step(1 / 60);
+      sim.throw([]);
+      simulation.current = sim;
     });
-    contact.position.copy(position);
-    contact.velocity.copy(velocity);
+    return () => {
+      disposed = true;
+      simulation.current?.free();
+      simulation.current = null;
+    };
+  }, []);
+
+  const registerMesh = useCallback((index: number, mesh: THREE.Mesh | null) => {
+    meshes.current[index] = mesh;
   }, []);
 
   const roll = useCallback((notation: string) => {
     const parsed = parseNotation(notation);
-    if (!parsed) return false;
+    if (!parsed || !simulation.current) return false;
 
-    landedValues.current = new Map();
-    contacts.current = [];
     setDice(buildDice(parsed));
     setRollId(prev => prev + 1);
     return true;
@@ -92,31 +104,50 @@ const DiceBoxScene = forwardRef<DiceBoxRef, DiceBoxProps>(({ onRoll }, ref) => {
 
   useImperativeHandle(ref, () => ({ roll }), [roll]);
 
-  const handleLand = useCallback(
-    (value: number, index: number) => {
-      landedValues.current.set(index, value);
-      if (landedValues.current.size < dice.length || !onRoll) return;
+  // Throws once the dice for this roll are mounted. Layout, not passive, so
+  // the dice are already posed at the throw before the frame paints -- not
+  // still lying where the last throw left them.
+  useLayoutEffect(() => {
+    const sim = simulation.current;
+    if (rollId === 0 || !sim) return;
+    sim.throw(dice.map(die => getDieDefinition(die.faces, die.role)));
+    meshes.current.forEach((mesh, index) => mesh && sim.pose(index, mesh));
+    pending.current = true;
+  }, [rollId, dice]);
 
-      const landed = dice.map((_, i) => landedValues.current.get(i) ?? value);
+  useFrame((_, delta) => {
+    const sim = simulation.current;
+    if (!sim || sim.dice.length === 0) return;
 
-      // A percentile pair is one roll, not two: the tens and units solids that
-      // landed together combine into a single 1..100.
-      const rolls = dice[0].role
-        ? Array.from({ length: dice.length / 2 }, (_, p) => ({
-            sides: 100,
-            value: percentileValue(landed[p * 2], landed[p * 2 + 1]),
-          }))
-        : landed.map((v, i) => ({ sides: dice[i].faces, value: v }));
+    // Keeps stepping after the result is in, so a die knocked by a later
+    // settler still moves -- the reported numbers are already locked.
+    const settled = sim.step(delta);
+    meshes.current.forEach((mesh, index) => mesh && sim.pose(index, mesh));
 
-      onRoll({
-        qty: rolls.length,
-        sides: dice[0].faces,
-        rolls,
-        total: rolls.reduce((sum, r) => sum + r.value, 0),
-      });
-    },
-    [dice, onRoll],
-  );
+    if (!settled || !pending.current) return;
+    pending.current = false;
+    report(sim.values);
+  });
+
+  const report = (landed: number[]) => {
+    if (!onRoll) return;
+
+    // A percentile pair is one roll, not two: the tens and units solids that
+    // landed together combine into a single 1..100.
+    const rolls = dice[0].role
+      ? Array.from({ length: dice.length / 2 }, (_, p) => ({
+          sides: 100,
+          value: percentileValue(landed[p * 2], landed[p * 2 + 1]),
+        }))
+      : landed.map((v, i) => ({ sides: dice[i].faces, value: v }));
+
+    onRoll({
+      qty: rolls.length,
+      sides: dice[0].faces,
+      rolls,
+      total: rolls.reduce((sum, r) => sum + r.value, 0),
+    });
+  };
 
   return (
     <>
@@ -147,10 +178,7 @@ const DiceBoxScene = forwardRef<DiceBoxRef, DiceBoxProps>(({ onRoll }, ref) => {
             color={die.color}
             role={die.role}
             glowIntensity={0.8}
-            rollId={rollId}
-            getContacts={getContacts}
-            publishContact={publishContact}
-            onLand={handleLand}
+            registerMesh={registerMesh}
           />
         ))}
       </Suspense>

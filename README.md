@@ -4,7 +4,8 @@ Rolador de dados 3D para RPG de mesa, com visual cyberpunk. React + TypeScript +
 
 ## 🎲 Funcionalidades
 
-- Dados 3D com física própria: gravidade, quique, colisão entre dados e parede circular da bandeja
+- Física de corpos rígidos com o Rapier: os dados são arremessados de um lado da bandeja, quicam, colidem entre si e com a parede e param sozinhos sobre uma face
+- Dado "preso" (inclinado na parede ou deitado em cima de outro) recebe um empurrãozinho, como numa mesa de verdade
 - Suporte a d4, d6, d8, d10, d12, d20 e d100, até 10 dados por rolagem
 - **O resultado é lido da face que parou virada para cima** — o número da tela é o número da conta
 - Numeração autêntica: faces opostas sempre somam o mesmo total (7 no d6, 21 no d20...)
@@ -39,7 +40,7 @@ npm run lint        # ESLint
 src/
 ├── dice/                    # domínio: matemática pura, sem React
 │   ├── geometry.ts          # sólidos, normais, numeração das faces, leitura do topo
-│   ├── physics.ts           # integração do movimento de um dado por frame
+│   ├── simulation.ts        # mundo do Rapier: bandeja, arremesso e leitura do resultado
 │   └── notation.ts          # parser de "3d20"
 ├── components/
 │   ├── DiceBox/             # cena 3D
@@ -47,6 +48,7 @@ src/
 │   │   ├── Die.tsx          # um dado: estado físico + malha numerada
 │   │   └── CyberTray.tsx    # bandeja e iluminação
 │   ├── DiceControls/        # seleção de quantidade e tipo
+│   ├── RollHistory/         # últimas rolagens
 │   └── RollResult/          # painel de saída
 ├── shared/styles/           # design system (tokens de cor, espaçamento, tipografia)
 ├── types/                   # tipos da aplicação
@@ -61,4 +63,5 @@ e coberto pela suíte. Os componentes só desenham o resultado dessas funções.
 - React 18 com TypeScript (strict)
 - Vite
 - three.js via @react-three/fiber e @react-three/drei
+- Rapier (@dimforge/rapier3d-compat) para a física
 - Vitest e ESLint
