@@ -12,7 +12,7 @@ export const PHYSICS = {
   throwHeight: 4.2,
   /** Horizontal and upward speed they are thrown with. */
   throwForce: 10,
-  throwLift: 5,
+  throwLift: 3,
   /** Tumble they are thrown with, rad/s on each axis. */
   spinForce: 24,
   /** Clamp on frame time, so a stalled tab cannot tunnel a die through the floor. */
@@ -20,6 +20,8 @@ export const PHYSICS = {
   /** Centre-to-centre distance kept between two dice. Scales with DIE_SCALE. */
   dieSpacing: 0.74,
   dieRestitution: 0.6,
+  /** Spin lost per second while two dice are grinding against each other. */
+  dieContactDamping: 3,
   /**
    * How far from the tray centre a die's centre may travel before hitting the
    * wall. It is the tray's inner wall (3.5 in CyberTray) minus the largest die
@@ -98,6 +100,8 @@ export const PHYSICS = {
   restingFrames: 18,
   /** Fraction of the leftover motion removed on each of those frames. */
   restingDecay: 0.26,
+  /** Substeps a die may sit still but tilted before it is let fall flat (~0.6 s). */
+  stallSubsteps: 144,
 } as const;
 
 /** Everything that makes one die move. Mutated in place each frame. */
@@ -110,6 +114,8 @@ export interface DieMotion {
   landed: boolean;
   /** Frames spent so far bleeding off the last of the motion. */
   resting: number;
+  /** Substeps spent nearly still but not yet flat. */
+  stalled: number;
 }
 
 /** The slice of a neighbouring die needed to resolve a collision against it. */
@@ -141,18 +147,32 @@ export const createMotion = (): DieMotion => ({
   grounded: false,
   landed: false,
   resting: 0,
+  stalled: 0,
 });
+
+/** 0 for a touch below the bounce threshold, rising to 1 for a solid hit. */
+const impactScale = (closingSpeed: number): number =>
+  closingSpeed <= PHYSICS.bounceThreshold ? 0 : Math.min(1, closingSpeed / 3);
+
+/** Successive dice are spaced by this angle, so no two launch on top of each other. */
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
 /** Throws the die back in from above with a fresh tumble. */
 export const launchDie = (motion: DieMotion, dieIndex: number, random: Random = Math.random): DieMotion => {
   motion.landed = false;
   motion.grounded = false;
   motion.resting = 0;
+  motion.stalled = 0;
   const { throwForce: force, spinForce: spin } = PHYSICS;
+  // Spread round a ring rather than stacked: stacking each extra die higher put
+  // a ten-die throw nine units up, out of the camera's view, and left the dice
+  // falling onto one another for seconds.
+  const angle = dieIndex * GOLDEN_ANGLE + random() * 0.5;
+  const reach = Math.min(PHYSICS.trayRadius - 0.6, 0.5 + 0.35 * Math.sqrt(dieIndex));
   motion.position.set(
-    (random() - 0.5) * 2,
-    PHYSICS.throwHeight + dieIndex * 0.4,
-    (random() - 0.5) * 2,
+    Math.cos(angle) * reach + (random() - 0.5) * 0.4,
+    PHYSICS.throwHeight + random() * 0.3,
+    Math.sin(angle) * reach + (random() - 0.5) * 0.4,
   );
   motion.velocity.set(
     (random() - 0.5) * force,
@@ -383,8 +403,16 @@ const simulate = (motion: DieMotion, params: StepParams, delta: number): void =>
     const dist = diff.length();
     if (dist >= PHYSICS.dieSpacing || dist <= 0.001) return;
 
-    const overlap = PHYSICS.dieSpacing - dist;
     const normal = diff.multiplyScalar(1 / dist);
+    // The push is sideways only. Along the full 3D normal a die leaning on its
+    // neighbour was held up off the floor -- where nothing damps it -- and could
+    // spin there, or hover pinned against the wall, for ever. Sideways, gravity
+    // always gets the last word and every die ends up on the floor.
+    normal.y = 0;
+    if (normal.lengthSq() < 1e-6) normal.set(Math.cos(index), 0, Math.sin(index));
+    normal.normalize();
+    const overlap = PHYSICS.dieSpacing - dist;
+    angularVelocity.multiplyScalar(Math.max(0, 1 - PHYSICS.dieContactDamping * delta));
 
     // Separate dice positions so they never overlap
     position.addScaledVector(normal, overlap * 0.5);
@@ -392,8 +420,12 @@ const simulate = (motion: DieMotion, params: StepParams, delta: number): void =>
     const vNormal = velocity.clone().sub(other.velocity).dot(normal);
     if (vNormal < 0) {
       velocity.addScaledVector(normal, -(1 + PHYSICS.dieRestitution) * vNormal * 0.5);
-      angularVelocity.x += (random() - 0.5) * 6;
-      angularVelocity.z += (random() - 0.5) * 6;
+      // The tumble scales with how hard they met. A flat kick fired on every
+      // touch, so two dice resting against each other kept knocking each other
+      // over and a full tray could fail to settle at all.
+      const kick = 6 * impactScale(-vNormal);
+      angularVelocity.x += (random() - 0.5) * kick;
+      angularVelocity.z += (random() - 0.5) * kick;
     }
   });
 
@@ -410,8 +442,9 @@ const simulate = (motion: DieMotion, params: StepParams, delta: number): void =>
     if (vDot > 0) {
       velocity.x -= PHYSICS.wallBounce * vDot * normalX;
       velocity.z -= PHYSICS.wallBounce * vDot * normalZ;
-      angularVelocity.x += (random() - 0.5) * 8;
-      angularVelocity.z += (random() - 0.5) * 8;
+      const kick = 8 * impactScale(vDot);
+      angularVelocity.x += (random() - 0.5) * kick;
+      angularVelocity.z += (random() - 0.5) * kick;
     }
   }
 
@@ -520,11 +553,14 @@ const simulate = (motion: DieMotion, params: StepParams, delta: number): void =>
   // lying a few degrees off from ever falling flat.
   angularVelocity.y *= Math.max(0, 1 - PHYSICS.spinFriction * delta);
 
-  if (
-    tilt <= PHYSICS.settleAngle &&
-    velocity.length() <= PHYSICS.settleSpeed &&
-    angularVelocity.length() <= PHYSICS.settleAngularSpeed
-  ) {
+  const still =
+    velocity.length() <= PHYSICS.settleSpeed && angularVelocity.length() <= PHYSICS.settleAngularSpeed;
+  // Still, but leaning: usually against the tray wall, which stops the die
+  // rolling the last few degrees flat. Left alone it crept over for seconds,
+  // so after a moment it is let fall onto the face it is already leaning to.
+  motion.stalled = still ? motion.stalled + 1 : 0;
+
+  if (still && (tilt <= PHYSICS.settleAngle || motion.stalled > PHYSICS.stallSubsteps)) {
     motion.resting = 1;
   }
 };

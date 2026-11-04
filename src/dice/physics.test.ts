@@ -134,12 +134,13 @@ describe("a handful of dice thrown together", () => {
   const definition = getDieDefinition(faces);
   const count = 5;
 
-  const rollGroup = (seed: number) => {
+  const rollGroup = (seed: number, size = count) => {
     const random = seeded(seed);
-    const motions = Array.from({ length: count }, (_, i) => launchDie(createMotion(), i, random));
-    const landed = new Array<number | null>(count).fill(null);
+    const motions = Array.from({ length: size }, (_, i) => launchDie(createMotion(), i, random));
+    const landed = new Array<number | null>(size).fill(null);
 
-    for (let frame = 0; frame < MAX_FRAMES && landed.some(v => v === null); frame++) {
+    let frame = 0;
+    for (; frame < MAX_FRAMES && landed.some(v => v === null); frame++) {
       const neighbours: DieContact[] = motions.map(m => ({
         position: m.position.clone(),
         velocity: m.velocity.clone(),
@@ -159,12 +160,22 @@ describe("a handful of dice thrown together", () => {
         if (result !== null) landed[index] = definition.values[result];
       });
     }
-    return { landed, motions };
+    return { landed, motions, frames: frame };
   };
 
   it("lands all of them", () => {
     for (let seed = 0; seed < 20; seed++) {
       expect(rollGroup(seed).landed.every(v => v !== null)).toBe(true);
+    }
+  });
+
+  it("settles a full tray of ten without any die getting stuck", () => {
+    // Dice used to wedge against each other or the wall and spin or hover there
+    // for ever; one throw in a hundred and fifty never finished.
+    for (let seed = 0; seed < 150; seed++) {
+      const { landed, frames } = rollGroup(seed * 31 + 7, 10);
+      expect(landed.every(v => v !== null)).toBe(true);
+      expect(frames).toBeLessThan(360);
     }
   });
 
