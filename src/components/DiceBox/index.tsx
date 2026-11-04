@@ -9,6 +9,10 @@ import * as THREE from "three";
 import { DieContact } from "../../dice/physics";
 import { CyberTray, CyberLights } from "./CyberTray";
 import { Die } from "./Die";
+import { preloadDieFont } from "./dieFont";
+
+// Started at import time, so the glyphs are ready long before the first throw.
+preloadDieFont();
 import "./styles.css";
 
 interface DiceBoxProps {
@@ -137,7 +141,7 @@ const DiceBoxScene = forwardRef<DiceBoxRef, DiceBoxProps>(({ onRoll }, ref) => {
       <Suspense fallback={null}>
         {dice.map((die, index) => (
           <Die
-            key={`${rollId}-${index}`}
+            key={`${die.faces}-${die.role ?? ""}-${index}`}
             dieIndex={index}
             faces={die.faces}
             color={die.color}
