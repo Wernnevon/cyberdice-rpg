@@ -10,6 +10,9 @@ Rolador de dados 3D para RPG de mesa, com visual cyberpunk. React + TypeScript +
 - **O resultado é lido da face que parou virada para cima** — o número da tela é o número da conta
 - Numeração autêntica: faces opostas sempre somam o mesmo total (7 no d6, 21 no d20...)
 - D10 e D100 são trapezoedros pentagonais de verdade, com 10 faces planas
+- Histórico das últimas 8 rolagens
+- Crítico (face máxima) em amarelo e falha (1) em vermelho, no resultado e no histórico
+- Atalho: **Espaço** rola os dados
 
 ## ▶️ Como usar
 
@@ -18,8 +21,9 @@ npm install
 npm run dev
 ```
 
-A aplicação sobe em `http://localhost:5173`. Escolha a quantidade e o tipo de dado no painel
-lateral e clique em **EXECUTE**. O resultado aparece no painel `[ ● OUTPUT ]`.
+A aplicação sobe em `http://localhost:5173`. Escolha o tipo e a quantidade de dados no painel
+lateral e clique em **ROLL** (ou aperte **Espaço**). O resultado aparece no painel **OUTPUT**,
+e as rolagens anteriores ficam no **HISTORY** logo abaixo.
 
 ## 🛠️ Desenvolvimento
 
