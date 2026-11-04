@@ -104,6 +104,39 @@ describe("a full tray", () => {
     }
   });
 
+  it("settles the biggest throw, ten percentile pairs, with every die kept in", () => {
+    // Twenty dice crowd the tray, and a cocked one past the time limit used to
+    // be nudged on every step until it left the tray at thousands of units/s.
+    for (let seed = 0; seed < 40; seed++) {
+      sim.throw(
+        Array.from({ length: 20 }, (_, i) => getDieDefinition(100, i % 2 ? "units" : "tens")),
+        seeded(seed * 31 + 7),
+      );
+      let frames = 0;
+      while (!sim.step(FRAME) && frames < MAX_FRAMES) frames++;
+      expect(frames).toBeLessThan(10 / FRAME);
+      sim.dice.forEach(die => {
+        const t = die.body.translation();
+        expect(Math.hypot(t.x, t.z)).toBeLessThan(SIM.wallRadius);
+        expect(t.y).toBeLessThan(2);
+      });
+    }
+  });
+
+  it("releases the dice clear of each other", () => {
+    // Overlapping hulls are prised apart on the first step, which flung the
+    // dice about like a kick nobody gave.
+    sim.throw(Array.from({ length: 10 }, () => getDieDefinition(4)), seeded(3));
+    const spots = sim.dice.map(d => d.body.translation());
+    const reach = 2 * getDieDefinition(4).radius;
+    for (let i = 0; i < spots.length; i++) {
+      for (let j = i + 1; j < spots.length; j++) {
+        const gap = Math.hypot(spots[i].x - spots[j].x, spots[i].y - spots[j].y, spots[i].z - spots[j].z);
+        expect(gap).toBeGreaterThan(reach);
+      }
+    }
+  });
+
   it("never leaves two dice on the same spot", () => {
     for (let seed = 0; seed < 20; seed++) {
       throwDice(6, 10, seed);

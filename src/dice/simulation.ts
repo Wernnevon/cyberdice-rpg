@@ -23,13 +23,18 @@ export const SIM = {
 
   /** Inner radius of the tray wall, matching CyberTray's WALL_RADIUS. */
   wallRadius: 3.5,
-  /** The wall reaches well above the visible rim, so no die can fly out. */
-  wallHeight: 4,
+  /**
+   * The wall reaches well above the visible rim, so no die can fly out --
+   * including the top row of a ten-pair percentile throw, released ~9 up.
+   */
+  wallHeight: 12,
   wallSegments: 32,
 
-  /** Height the hand releases the dice from, and the upward flick it gives them. */
-  throwHeight: 2.4,
-  throwLift: 2.5,
+  /** Height the hand releases the dice from, and how far out from the middle. */
+  throwHeight: 2.6,
+  throwReach: 2.1,
+  /** Dice released side by side; further ones sit in rows above. */
+  diceAcross: 3,
 
   dieFriction: 0.4,
   /**
@@ -57,8 +62,10 @@ export const SIM = {
   cockedTilt: 0.2,
   /** A die resting this far above the floor is lying on another die. */
   stackedHeight: 0.15,
-  /** After this long a throw is nudged, so nothing can hang for ever. */
-  timeout: 8,
+  /** After this long a cocked die is read as it lies rather than nudged. */
+  timeout: 6,
+  /** And after this much longer, a die still moving is read anyway. */
+  graceTime: 3,
 } as const;
 
 export interface SimDie {
@@ -135,29 +142,38 @@ export class DiceSimulation {
     this.accumulator = 0;
     this.elapsed = 0;
 
-    const side = random() * Math.PI * 2;
+    // From the side nearest the camera, so the dice fly away into the tray
+    // the way a player's own throw does, rather than at the viewer.
+    const side = Math.PI / 2 + (random() - 0.5) * 1.4;
     const inward = new THREE.Vector3(-Math.cos(side), 0, -Math.sin(side));
     const across = new THREE.Vector3(-inward.z, 0, inward.x);
-    const speed = 7 + random() * 3;
+    const speed = 5 + random() * 2.5;
+
+    // Spaced so no two hulls start out overlapping. They used to be bunched
+    // within half a die of each other, and the engine prising them apart on
+    // the first step flung them about like a kick nobody gave.
+    const spacing = 2 * Math.max(...definitions.map(d => d.radius)) + 0.1;
 
     this.dice = definitions.map((definition, index) => {
-      // Dice beyond the first spread out round the hand, not stacked up.
-      const ring = index === 0 ? 0 : 0.45 + 0.12 * index;
-      const angle = index * 2.4;
+      const row = Math.floor(index / SIM.diceAcross);
+      const inRow = Math.min(SIM.diceAcross, definitions.length - row * SIM.diceAcross);
+      const column = (index % SIM.diceAcross) - (inRow - 1) / 2;
       const start = inward
         .clone()
-        .multiplyScalar(-2.3 + Math.cos(angle) * ring * 0.5)
-        .addScaledVector(across, Math.sin(angle) * ring);
-      const aim = inward.clone().multiplyScalar(speed).addScaledVector(across, (random() - 0.5) * 3);
+        .multiplyScalar(-SIM.throwReach)
+        .addScaledVector(across, column * spacing);
+      const aim = inward.clone().multiplyScalar(speed).addScaledVector(across, (random() - 0.5) * 2);
+      const height = SIM.throwHeight + row * spacing + random() * 0.2;
 
       randomOrientation(quaternion, random);
-      const spin = randomAxis(random).multiplyScalar(14 + random() * 12);
+      const spin = randomAxis(random).multiplyScalar(10 + random() * 10);
 
       const body = this.world.createRigidBody(
         RAPIER.RigidBodyDesc.dynamic()
-          .setTranslation(start.x, SIM.throwHeight + random() * 0.6, start.z)
+          .setTranslation(start.x, height, start.z)
           .setRotation({ x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w })
-          .setLinvel(aim.x, SIM.throwLift + random() * 1.5, aim.z)
+          // Already on the way down: released, not launched off the floor.
+          .setLinvel(aim.x, -1 - random() * 1.5, aim.z)
           .setAngvel({ x: spin.x, y: spin.y, z: spin.z })
           .setLinearDamping(SIM.linearDamping)
           .setAngularDamping(SIM.angularDamping)
@@ -201,17 +217,23 @@ export class DiceSimulation {
       (length(body.linvel()) < SIM.stillSpeed && length(body.angvel()) < SIM.stillSpin);
     die.still = still ? die.still + SIM.step : 0;
 
-    const timedOut = this.elapsed > SIM.timeout;
-    if (die.still < SIM.stillTime && !timedOut) return;
+    // Past the hard limit a die is read wherever it is, still or not, so a
+    // throw always finishes.
+    const abandoned = this.elapsed > SIM.timeout + SIM.graceTime;
+    if (die.still < SIM.stillTime && !abandoned) return;
 
     const r = body.rotation();
     quaternion.set(r.x, r.y, r.z, r.w);
     const target = getSnapTarget(quaternion, die.definition.directions);
 
     // Cocked: tilted against the wall, or lying on top of another die. Either
-    // way it is not a result a table would accept.
+    // way it is not a result a table would accept -- until the throw has gone
+    // on long enough, after which it is read as it lies. Nudging only a die
+    // that has come to rest matters: past the limit the nudge used to fire on
+    // every step, and the impulses piled up until a die left for orbit.
     const raised = body.translation().y - die.definition.restHeight > SIM.stackedHeight;
-    if (raised || quaternion.angleTo(target.quaternion) > SIM.cockedTilt) {
+    const cocked = raised || quaternion.angleTo(target.quaternion) > SIM.cockedTilt;
+    if (cocked && this.elapsed <= SIM.timeout) {
       this.nudge(die);
       return;
     }
