@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SUPPORTED_FACES } from "../../dice/notation";
 import { DiceCountControl } from "./DiceCountControl";
 import "./styles.css";
@@ -12,6 +12,22 @@ interface DiceControlsProps {
 const DiceControls = ({ onRoll, isRolling }: DiceControlsProps) => {
     const [faces, setFaces] = useState<number>(20);
     const [diceCount, setDiceCount] = useState(1);
+    const notation = `${diceCount}d${faces}`;
+
+    // Space throws from anywhere on the page. A focused button or field keeps
+    // its own Space, so the keyboard user pressing a die-type button does not
+    // also throw.
+    useEffect(() => {
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.code !== "Space" || event.repeat || isRolling) return;
+            const target = event.target as HTMLElement | null;
+            if (target?.closest("button, input, select, textarea, [contenteditable]")) return;
+            event.preventDefault();
+            onRoll(notation);
+        };
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, [notation, isRolling, onRoll]);
 
     return (
         <div className="dice-controls">
@@ -39,11 +55,15 @@ const DiceControls = ({ onRoll, isRolling }: DiceControlsProps) => {
 
             <button
                 className="roll-button"
-                onClick={() => onRoll(`${diceCount}d${faces}`)}
+                onClick={() => onRoll(notation)}
                 disabled={isRolling}
+                aria-keyshortcuts="Space"
             >
-                {isRolling ? "Rolling" : `Roll ${diceCount}d${faces}`}
+                {isRolling ? "Rolling" : `Roll ${notation}`}
             </button>
+            <p className="roll-hint" aria-hidden="true">
+                or press <kbd>Space</kbd>
+            </p>
         </div>
     );
 };

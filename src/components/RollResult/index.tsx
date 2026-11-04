@@ -1,10 +1,16 @@
 import { DiceDataT } from "../../types";
+import { dieMark } from "../../utils";
 import "./styles.css";
 
 interface RollResultProps {
     rollResult: DiceDataT | null;
     isRolling?: boolean;
 }
+
+const totalClass = ({ values, diceSides }: DiceDataT) => {
+    const mark = values.length === 1 ? dieMark(values[0], diceSides) : null;
+    return `roll-result__total-value${mark ? ` roll-result__total-value--${mark}` : ""}`;
+};
 
 /** The HUD readout: one big total, with the individual dice below it. */
 const RollResult = ({ rollResult, isRolling }: RollResultProps) => {
@@ -33,15 +39,22 @@ const RollResult = ({ rollResult, isRolling }: RollResultProps) => {
                 <div className="roll-result__body">
                     <div className="roll-result__total">
                         <span className="roll-result__total-label">Total</span>
-                        <strong className="roll-result__total-value">{rollResult.total}</strong>
+                        <strong className={totalClass(rollResult)}>{rollResult.total}</strong>
                     </div>
 
                     <ul className="roll-result__dice">
-                        {rollResult.values.map((value, index) => (
-                            <li key={index} className="roll-result__die">
-                                {value}
-                            </li>
-                        ))}
+                        {rollResult.values.map((value, index) => {
+                            const mark = dieMark(value, rollResult.diceSides);
+                            return (
+                                <li
+                                    key={index}
+                                    className={`roll-result__die${mark ? ` roll-result__die--${mark}` : ""}`}
+                                    title={mark === "crit" ? "Critical" : mark === "fumble" ? "Fumble" : undefined}
+                                >
+                                    {value}
+                                </li>
+                            );
+                        })}
                     </ul>
                 </div>
             )}

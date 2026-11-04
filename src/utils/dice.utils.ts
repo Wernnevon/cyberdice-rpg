@@ -13,3 +13,7 @@ export function mountDiceResult(diceResult: DiceResultT): DiceDataT {
         quantity: diceResult.qty,
     };
 }
+
+/** A die showing its highest face is a critical; one showing a 1 is a fumble. */
+export const dieMark = (value: number, sides: number): "crit" | "fumble" | null =>
+    value === sides ? "crit" : value === 1 ? "fumble" : null;

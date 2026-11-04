@@ -186,3 +186,27 @@
     display: none;
   }
 }
+
+.roll-hint {
+  margin: calc(var(--space-sm) * -1) 0 0;
+  text-align: center;
+  font-family: var(--font-family-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.roll-hint kbd {
+  padding: 0 0.35rem;
+  font-family: inherit;
+  color: var(--color-primary);
+  border: 1px solid var(--color-hairline-strong);
+}
+
+/* No keyboard to press on a touch screen. */
+@media (hover: none) {
+  .roll-hint {
+    display: none;
+  }
+}

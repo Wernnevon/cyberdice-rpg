@@ -1,1 +1,1 @@
-export { mountDiceResult } from './dice.utils';
+export { mountDiceResult, dieMark } from './dice.utils';
