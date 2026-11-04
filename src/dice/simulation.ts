@@ -27,14 +27,23 @@ export const SIM = {
   wallHeight: 4,
   wallSegments: 32,
 
-  dieFriction: 0.45,
-  dieRestitution: 0.35,
-  floorFriction: 0.6,
-  floorRestitution: 0.3,
-  wallRestitution: 0.5,
-  /** A little air and rolling resistance, so dice stop rolling round the tray. */
-  linearDamping: 0.15,
-  angularDamping: 0.35,
+  /** Height the hand releases the dice from, and the upward flick it gives them. */
+  throwHeight: 2.4,
+  throwLift: 2.5,
+
+  dieFriction: 0.4,
+  /**
+   * Lively on purpose. Rapier averages the two surfaces' values, and at 0.3 a
+   * die landed with a thud and barely left the floor again -- it read as a
+   * brick rather than as a die on a hard tray.
+   */
+  dieRestitution: 0.55,
+  floorFriction: 0.55,
+  floorRestitution: 0.6,
+  wallRestitution: 0.65,
+  /** Barely any: a die should tumble on its own corners, not through syrup. */
+  linearDamping: 0.03,
+  angularDamping: 0.1,
 
   /** Below these speeds a die counts as still. */
   stillSpeed: 0.05,
@@ -146,9 +155,9 @@ export class DiceSimulation {
 
       const body = this.world.createRigidBody(
         RAPIER.RigidBodyDesc.dynamic()
-          .setTranslation(start.x, 1.6 + random() * 0.6, start.z)
+          .setTranslation(start.x, SIM.throwHeight + random() * 0.6, start.z)
           .setRotation({ x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w })
-          .setLinvel(aim.x, -1 + random() * 2, aim.z)
+          .setLinvel(aim.x, SIM.throwLift + random() * 1.5, aim.z)
           .setAngvel({ x: spin.x, y: spin.y, z: spin.z })
           .setLinearDamping(SIM.linearDamping)
           .setAngularDamping(SIM.angularDamping)

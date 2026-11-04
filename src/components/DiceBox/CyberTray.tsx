@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { Environment, Grid, Lightformer, MeshReflectorMaterial } from "@react-three/drei";
+import { Environment, Grid, Lightformer } from "@react-three/drei";
 import { getFloorMarkingsTexture } from "./textures";
 
 /* Sized off PHYSICS.trayRadius (2.88): the wall the dice bounce off is the wall
@@ -58,24 +58,16 @@ export const CyberTray = () => (
       <meshStandardMaterial {...DARK_METAL} />
     </mesh>
 
-    {/* Reflective floor. Dark and rough enough that it holds the neon
-        reflections without turning into a mirror. Kept at 512 with a light
-        blur: it is a faint sheen, and it is re-rendered from scratch every
-        frame, which is cost the throw animation cannot spare. */}
+    {/* The tray floor. It used to be a MeshReflectorMaterial, whose blurred,
+        depth-scaled mirror smeared a ghost of each die off to one side --
+        it read as dice sinking through the floor -- and re-rendered the whole
+        scene every frame. The dice's own shadows ground them instead. */}
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, FLOOR_Y, 0]} receiveShadow>
       <circleGeometry args={[FLOOR_RADIUS, 96]} />
-      <MeshReflectorMaterial
-        mirror={0.3}
-        resolution={512}
-        mixBlur={1}
-        mixStrength={4}
-        blur={[180, 60]}
-        depthScale={2.2}
-        minDepthThreshold={0.4}
-        maxDepthThreshold={1.3}
+      <meshStandardMaterial
         color="#0a1120"
-        metalness={0.7}
-        roughness={0.7}
+        metalness={0.6}
+        roughness={0.45}
         emissiveMap={getFloorMarkingsTexture()}
         emissive="#ffffff"
         emissiveIntensity={1.5}
