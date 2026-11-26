@@ -20,8 +20,9 @@ const memory = (initial: Record<string, string> = {}) => {
 
 test('SND-01.2 gain grows with impact from the floor gain to a cap of 1', () => {
   assert.equal(impactGain(MIN_IMPACT), FLOOR_GAIN);
-  const mid = impactGain((MIN_IMPACT + MAX_IMPACT) / 2)!;
-  assert.ok(mid > FLOOR_GAIN && mid < 1, `mid gain ${mid}`);
+  // proportional: halfway in impact is halfway in gain
+  assert.ok(Math.abs(impactGain((MIN_IMPACT + MAX_IMPACT) / 2)! - (FLOOR_GAIN + 1) / 2) < 1e-9);
+  assert.ok(Math.abs(impactGain(MIN_IMPACT + (MAX_IMPACT - MIN_IMPACT) / 4)! - (FLOOR_GAIN + (1 - FLOOR_GAIN) / 4)) < 1e-9);
   assert.ok(impactGain(MIN_IMPACT + 1)! < impactGain(MIN_IMPACT + 2)!, 'monotonic');
   assert.equal(impactGain(MAX_IMPACT), 1);
   assert.equal(impactGain(MAX_IMPACT * 10), 1);
