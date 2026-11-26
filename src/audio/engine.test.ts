@@ -2,10 +2,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Roll } from '../types/dice';
-import { MIN_IMPACT, WINDOW_MS } from '../utils/sound.ts';
+import { MIN_IMPACT, PER_WINDOW, WINDOW_MS } from '../utils/sound.ts';
 import { createSoundEngine } from './engine.ts';
 
-type Played = { kind: 'sample' | 'tone'; gain: number };
+type Played = { kind: 'sample' | 'tone'; gain: number; note?: string };
 
 /** Minimal Web Audio stand-in that records what reaches the speakers. */
 function fakeAudio() {
@@ -41,7 +41,15 @@ function fakeAudio() {
       return src;
     },
     createOscillator() {
-      const osc = { type: 'sine', frequency: param(), connect: (t: unknown) => t, start: () => played.push({ kind: 'tone', gain: 1 }), stop() {} };
+      let freq = 0;
+      const osc = {
+        type: 'sine',
+        frequency: { ...param(), setValueAtTime: (f: number) => void (freq ||= f) },
+        connect: (t: unknown) => t,
+        // a note = wave, pitch and start time: what a listener can tell apart
+        start: (at = 0) => played.push({ kind: 'tone', gain: 1, note: `${osc.type}@${freq}Hz+${at}s` }),
+        stop() {},
+      };
       return osc;
     },
   };
@@ -133,4 +141,49 @@ test('SND-05.2 the first gesture unlocks audio so the first roll is heard', asyn
   assert.ok(played.some((p) => p.kind === 'sample') && played.some((p) => p.kind === 'tone'));
   engine.unlock();
   assert.equal(created(), 1, 'later gestures reuse the same context');
+});
+
+const notes = (played: Played[]) => played.filter((p) => p.kind === 'tone').map((p) => p.note!);
+
+/** The notes one result sound plays, from a fresh engine. */
+async function soundOf(d20: number) {
+  const { engine, played } = setup();
+  engine.unlock();
+  await engine.ready;
+  engine.reveal(roll('x', d20));
+  return notes(played);
+}
+
+test('SND-01.4 the engine drops impacts beyond the per-window limit', async () => {
+  const { engine, played } = setup();
+  engine.unlock();
+  await engine.ready;
+  for (let i = 0; i < PER_WINDOW + 3; i++) engine.impact(MIN_IMPACT * 4, 500);
+  assert.equal(played.filter((p) => p.kind === 'sample').length, PER_WINDOW);
+});
+
+test('SND-02.1 one reveal plays its sound once, with no note doubled', async () => {
+  const played = await soundOf(12);
+  assert.ok(played.length > 0);
+  assert.equal(new Set(played).size, played.length, `doubled notes: ${played.join(', ')}`);
+});
+
+test('SND-03.1 a natural 20 plays the crit sound instead of the plain reveal', async () => {
+  const reveal = (await soundOf(12)).join('|');
+  const crit = (await soundOf(20)).join('|');
+  assert.ok(crit.length > 0);
+  assert.notEqual(crit, reveal);
+  assert.ok(!crit.includes(reveal), 'the plain reveal also played');
+  assert.equal(new Set(crit.split('|')).size, crit.split('|').length, 'crit played once');
+});
+
+test('SND-03.2 a natural 1 plays the fail sound instead of the plain reveal', async () => {
+  const reveal = (await soundOf(12)).join('|');
+  const fail = (await soundOf(1)).join('|');
+  const crit = (await soundOf(20)).join('|');
+  assert.ok(fail.length > 0);
+  assert.notEqual(fail, reveal);
+  assert.notEqual(fail, crit);
+  assert.ok(!fail.includes(reveal), 'the plain reveal also played');
+  assert.equal(new Set(fail.split('|')).size, fail.split('|').length, 'fail played once');
 });
