@@ -28,7 +28,7 @@ const store = (() => {
 })();
 
 function Layout() {
-  const { roll, result, state } = useRoll();
+  const { roll, result, state, shake: holdDice, throwShake, cancelShake } = useRoll();
   const [view, setView] = useState<View>('table');
   const [counts, setCounts] = useState<Counts>({ 20: 1 });
   const [mod, setMod] = useState(0);
@@ -59,7 +59,13 @@ function Layout() {
     if (n && !rolling && roll(n)) setView('table');
   };
   const [shakeWanted] = useState(() => loadFlag(store, SHAKE_KEY));
-  const shake = useShake(() => doRoll(), shakeWanted, () => canShakeRoll(view, rolling, !!notation));
+  const shake = useShake(
+    { start: () => holdDice(notation), roll: throwShake, cancel: cancelShake },
+    shakeWanted,
+    () => canShakeRoll(view, rolling, !!notation),
+  );
+  const shaking = !!state.shaking;
+  useEffect(() => sound.setHolding(shaking), [shaking]);
   const toggleShake = async () => {
     if (shake.on) {
       shake.disable();
@@ -103,7 +109,7 @@ function Layout() {
         <div className={s.scene}>
           <DiceScene />
         </div>
-        <Result roll={result} rolling={rolling} ready={!!notation} />
+        <Result roll={result} rolling={rolling} shaking={shaking} ready={!!notation} />
       </main>
 
       <Tray

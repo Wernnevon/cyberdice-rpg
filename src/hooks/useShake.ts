@@ -1,19 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
 import { shakeRestore } from '../utils/prefs';
-import { createShakeHandler } from '../utils/shakeGesture';
+import { createShakeHandler, shakeImpulse } from '../utils/shakeGesture';
 import { sound } from '../audio/engine';
 
 type IOSMotion = typeof DeviceMotionEvent & { requestPermission?: () => Promise<'granted' | 'denied'> };
 
+/** Each rattle step pushes the held dice: a `push` event whose detail is the impulse (SHA-02.1). */
+export const shakeBus = new EventTarget();
+
+type Gesture = { start: () => void; roll: () => void; cancel: () => void };
+
 /**
- * Shake rattles the dice, and they are thrown when the shaking stops (SPL-05).
- * `wanted`: the saved choice, read once at start. `canRoll`: false while dice move or another view shows.
+ * Shake holds and rattles the dice, and they are thrown when the shaking stops (SPL-05, SHA).
+ * `wanted`: the saved choice, read once at start. `canRoll`: false with no dice, while dice move, or on another view.
  */
-export function useShake(onShake: () => void, wanted = false, canRoll: () => boolean = () => true) {
-  const cb = useRef(onShake);
+export function useShake(gesture: Gesture, wanted: boolean, canRoll: () => boolean) {
+  const cb = useRef(gesture);
   const can = useRef(canRoll);
   useEffect(() => {
-    cb.current = onShake;
+    cb.current = gesture;
     can.current = canRoll;
   });
   const supported = typeof window !== 'undefined' && 'DeviceMotionEvent' in window;
@@ -28,7 +33,15 @@ export function useShake(onShake: () => void, wanted = false, canRoll: () => boo
   const listening = on || pending;
   useEffect(() => {
     if (!listening) return;
-    const step = createShakeHandler(sound.rattle, () => cb.current(), () => can.current());
+    const step = createShakeHandler(
+      (now, force) => {
+        sound.rattle(now);
+        shakeBus.dispatchEvent(new CustomEvent('push', { detail: shakeImpulse(force) }));
+      },
+      () => cb.current.roll(),
+      () => can.current(),
+      { start: () => cb.current.start(), cancel: () => cb.current.cancel() },
+    );
     const handle = (e: DeviceMotionEvent) => {
       const a = e.acceleration ?? e.accelerationIncludingGravity;
       if (!a) return;

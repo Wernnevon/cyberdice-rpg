@@ -80,7 +80,7 @@ Phase 1 (rules): T1, T2, T3, T4, independent. Phase 2 (wiring): T5 after T1, T2,
 **Tests**: none (rules in T1-T4; the wiring in the walk)
 **Gate**: build
 **Done when**: the build passes; a synthetic weak shake in the browser shows the ready screen after it ends.
-**Status**: Pending
+**Status**: ✅ Complete
 
 ### T6: Dice held, pushed and thrown in 3D
 
