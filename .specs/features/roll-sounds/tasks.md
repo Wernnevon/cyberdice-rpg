@@ -138,7 +138,7 @@ Proof: `npm run build >/dev/null && node -e "const n = new Set(require('fs').rea
 
 ## Handoff
 
-**Dispatched:** none
+**Dispatched:** Verifier (validate.md) over HEAD 06b0f65, 2026-11-25 - returned (FAIL, 7 findings)
 **Settled mid-build:** none
 **Walked:** 2026-11-25, Chrome on `HTTP=1 npx vite --port 5174`, start state: fresh page, `localStorage` cleared.
 - SND-01/SND-02: tap anywhere (unlock), add d6, d6, d8 to the default d20, tap ROLAR!. Result 28 after 2.0 s; 23 impact samples and 2 reveal tones reached Web Audio (counted by wrapping `AudioBufferSourceNode`/`OscillatorNode.start`).
