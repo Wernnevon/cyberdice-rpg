@@ -42,6 +42,16 @@ test('SND-01.4 impacts beyond the per-window limit are dropped', () => {
   assert.equal(allow(1000 + WINDOW_MS), true);
 });
 
+test('SND-01.4 no 100 ms span holds more than the limit, even across a window edge', () => {
+  const allow = createLimiter();
+  const times = [0, ...Array(PER_WINDOW - 1).fill(WINDOW_MS - 1), ...Array(PER_WINDOW).fill(WINDOW_MS)];
+  const played = times.filter((t) => allow(t));
+  for (const t of played) {
+    const inSpan = played.filter((u) => u >= t && u < t + WINDOW_MS).length;
+    assert.ok(inSpan <= PER_WINDOW, `${inSpan} plays within ${WINDOW_MS} ms starting at ${t}`);
+  }
+});
+
 test('SND-02.2 no kept natural 20 or 1 on a d20 picks the plain reveal', () => {
   assert.equal(revealSound(roll([{ sides: 20, value: 12 }, { sides: 6, value: 6 }])), 'reveal');
   // a 1 or max on other dice is not a crit or fail

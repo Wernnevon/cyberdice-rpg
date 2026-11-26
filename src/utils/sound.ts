@@ -14,16 +14,14 @@ export function impactGain(impact: number): number | null {
   return FLOOR_GAIN + (1 - FLOOR_GAIN) * t;
 }
 
-/** Fixed-window limiter: allow(now) is true for at most `limit` calls per window. */
+/** Sliding-window limiter: allow(now) is true for at most `limit` plays in any `windowMs` span. */
 export function createLimiter(limit = PER_WINDOW, windowMs = WINDOW_MS) {
-  let start = -Infinity;
-  let count = 0;
+  const plays: number[] = [];
   return (now: number) => {
-    if (now - start >= windowMs) {
-      start = now;
-      count = 0;
-    }
-    return count++ < limit;
+    while (plays.length && now - plays[0] >= windowMs) plays.shift();
+    if (plays.length >= limit) return false;
+    plays.push(now);
+    return true;
   };
 }
 
