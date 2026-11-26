@@ -47,7 +47,7 @@ Phase 1 (rules): T1, T2, T3, T4, independent. Phase 2 (wiring): T5 after T1, T2,
 **Tests**: unit
 **Gate**: quick
 **Done when**: C10 passes and the SPL-04.1 tests still pass.
-**Status**: Pending
+**Status**: ✅ Complete
 
 ### T3: Gesture start, cancel, force and impulse
 
