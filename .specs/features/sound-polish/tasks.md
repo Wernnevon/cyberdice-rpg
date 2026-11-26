@@ -163,7 +163,7 @@ Proof: run unit | SPL-05.5
 
 ## Handoff
 
-**Dispatched:** none
+**Dispatched:** Verifier (validate.md) over HEAD 4fed448, 2026-11-26 - returned (FAIL, 4 findings)
 **Settled mid-build:** none
 **Walked:** 2026-11-26, headless Chrome 390x844 over CDP on `HTTP=1 npx vite --port 5174`, start state: fresh profile; Web Audio instrumented by wrapping `AudioBufferSourceNode.start` (playback rate, whoosh = the 0.35 s noise buffer) and `OscillatorNode.start`.
 - SPL-02/SPL-04 (T6): add d4, d6, d6 to the default d20, tap the roll button. One whoosh; 16 impacts with rates d20 0.82-0.87, d6 1.21-1.30, d4 1.40-1.49; reveal 4 oscillator voices (2 notes x 2).
