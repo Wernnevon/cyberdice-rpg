@@ -447,3 +447,16 @@ test('SPL-05.5 while sound is off the shake plays no rattle and still rolls', as
   assert.equal(rolls, 1);
   assert.deepEqual(played, []);
 });
+
+test('SHA-02.2 while dice are held no impact sound plays; the rattle and the whoosh still do', async () => {
+  const { engine, played } = await ready(() => 0.5);
+  engine.setHolding(true);
+  assert.equal(engine.impact(MIN_IMPACT * 4, 0, 6, 2), null);
+  assert.equal(engine.impact(MIN_IMPACT * 100, WINDOW_MS, 20, 1), null);
+  assert.equal(samples(played).length, 0, 'no impact while holding');
+  assert.ok(engine.rattle(1000), 'the rattle plays while holding');
+  assert.equal(engine.launch('t'), true, 'the throw whoosh plays');
+  assert.equal(samples(played).length, 2, 'rattle and whoosh only');
+  engine.setHolding(false);
+  assert.ok(engine.impact(MIN_IMPACT * 4, 5000, 6, 2) !== null, 'thrown dice sound again');
+});

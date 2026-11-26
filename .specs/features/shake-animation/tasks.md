@@ -69,7 +69,7 @@ Phase 1 (rules): T1, T2, T3, T4, independent. Phase 2 (wiring): T5 after T1, T2,
 **Tests**: unit (fake AudioContext)
 **Gate**: quick
 **Done when**: C7 passes.
-**Status**: Pending
+**Status**: ✅ Complete
 
 ### T5: Wire the shake phase into the app
 

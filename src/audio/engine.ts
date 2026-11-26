@@ -55,6 +55,7 @@ export function createSoundEngine({ createContext, fetchBytes, navigator, random
   let lastRattle = -Infinity;
   let noise: AudioBuffer | null = null;
   let muted = false;
+  let holding = false; // dice held while shaking: their contacts are silent (SHA-02.2)
   let lastReveal: string | null = null;
   const allow = createLimiter();
   let resolveReady: () => void = () => {};
@@ -118,9 +119,13 @@ export function createSoundEngine({ createContext, fetchBytes, navigator, random
       muted = value;
     },
 
+    setHolding(value: boolean) {
+      holding = value;
+    },
+
     /** Impact = die speed at contact (m/s), for a die of `sides` in a roll of `dice` dice. Returns the gain played, or null. */
     impact(speed: number, now: number, sides: DieSpec['sides'], dice: number) {
-      if (muted || !ctx || !impactBus || !buffers.length) return null;
+      if (muted || holding || !ctx || !impactBus || !buffers.length) return null;
       const g = impactGain(speed);
       if (g === null || !allow(now)) return null;
       const gain = g * crowdGain(dice);
