@@ -4,6 +4,7 @@ import { ConvexHullCollider, RigidBody, type RapierRigidBody } from '@react-thre
 import type { DieSpec } from '../types/dice';
 import { getDie, labelTexture, readValue } from '../utils/geometry';
 import { sound } from '../audio/engine';
+import { contactImpact } from '../utils/sound';
 
 const FLAT = 0.95; // cos(~18°): below this the die is resting on an edge/corner -> reroll
 const FALLBACK_MS = 10000; // read anyway if the body never comes to rest
@@ -81,7 +82,17 @@ export function Die({ spec, index, arena, onSettle }: Props) {
       restitution={0.3}
       friction={0.6}
       onSleep={() => settle()}
-      onCollisionEnter={() => sound.impact(lastSpeed.current, performance.now())}
+      onCollisionEnter={({ other }) => {
+        const self = body.current;
+        if (!self) return;
+        const o = other.rigidBody;
+        const v = o?.linvel();
+        const speed = contactImpact(
+          { handle: self.handle, speed: lastSpeed.current },
+          o && v && o.isDynamic() ? { handle: o.handle, speed: Math.hypot(v.x, v.y, v.z) } : null,
+        );
+        if (speed !== null) sound.impact(speed, performance.now());
+      }}
     >
       <ConvexHullCollider args={[def.hull]} />
       <mesh geometry={def.geometry} castShadow>

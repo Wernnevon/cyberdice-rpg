@@ -88,6 +88,7 @@ As an iPhone player, the app respects my silent switch, never misses the first s
 
 - **Crit and fail replace the reveal sound.** One sound per result keeps the moment clean. Agent default; correct it if both should play.
 - **Crit and fail follow the d20 rule already used by History** (kept natural 20 or 1 on a d20), not "max or min on any die". Agent default, consistent with the app.
+- **Impact force is measured as die speed (m/s)** just before contact. Rapier's contact force also fires while a die merely rests, so it cannot tell a hit from weight. A die-die hit counts once, at the faster die's speed.
 - **Impact tuning** (minimum force, floor gain, maximum force, per-window limit) is calibrated by ear on a phone and lives in named constants.
 - **Saving the mute choice is the first data the app stores on the device.** The user chose it ("Botão no topo, lembra a escolha"); recorded as AD-001.
 Open questions: none

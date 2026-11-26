@@ -14,6 +14,19 @@ export function impactGain(impact: number): number | null {
   return FLOOR_GAIN + (1 - FLOOR_GAIN) * t;
 }
 
+type Body = { handle: number; speed: number };
+
+/**
+ * Speed to sound for one side of a contact, or null when the other side plays it.
+ * Rapier reports a die-die hit to both dice: only the lower handle plays, at the faster speed.
+ * `other` is null for the table and walls.
+ */
+export function contactImpact(self: Body, other: Body | null): number | null {
+  if (!other) return self.speed;
+  if (self.handle > other.handle) return null;
+  return Math.max(self.speed, other.speed);
+}
+
 /** Sliding-window limiter: allow(now) is true for at most `limit` plays in any `windowMs` span. */
 export function createLimiter(limit = PER_WINDOW, windowMs = WINDOW_MS) {
   const plays: number[] = [];

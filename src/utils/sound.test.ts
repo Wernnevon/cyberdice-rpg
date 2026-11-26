@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Roll } from '../types/dice';
-import { createLimiter, FLOOR_GAIN, impactGain, loadMuted, MAX_IMPACT, MIN_IMPACT, PER_WINDOW, revealSound, saveMuted, WINDOW_MS } from './sound.ts';
+import { contactImpact, createLimiter, FLOOR_GAIN, impactGain, loadMuted, MAX_IMPACT, MIN_IMPACT, PER_WINDOW, revealSound, saveMuted, WINDOW_MS } from './sound.ts';
 
 const roll = (dice: { sides: Roll['dice'][number]['sides']; value: number; kept?: boolean }[]): Roll => ({
   id: 'r',
@@ -90,4 +90,16 @@ test('SND-04.4 missing or unreadable storage starts with sound on', () => {
   const throwing = { getItem: () => { throw new Error('SecurityError'); }, setItem: () => { throw new Error('QuotaExceeded'); } };
   assert.equal(loadMuted(throwing), false);
   assert.doesNotThrow(() => saveMuted(throwing, true));
+});
+
+test('SND-01.1 a die-die hit sounds once, at the faster die speed', () => {
+  const a = { handle: 3, speed: 2 };
+  const b = { handle: 7, speed: 9 };
+  // Rapier reports the contact to both dice
+  const heard = [contactImpact(a, b), contactImpact(b, a)].filter((x) => x !== null);
+  assert.deepEqual(heard, [9]);
+});
+
+test('SND-01.1 a die hitting the table or a wall sounds at its own speed', () => {
+  assert.equal(contactImpact({ handle: 3, speed: 5 }, null), 5);
 });
