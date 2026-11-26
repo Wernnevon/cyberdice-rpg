@@ -28,6 +28,7 @@ Phase 1 (assets): T1. Phase 2 (rules and engine): T2, then T3. Phase 3 (wiring):
 **Tests**: none (assets and config; C16 proves the precache)
 **Gate**: build
 **Done when**: the build's service worker precaches all four `.m4a` files.
+**Status**: ✅ Complete
 
 ### T2: Sound rules
 
