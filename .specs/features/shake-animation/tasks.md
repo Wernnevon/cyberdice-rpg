@@ -149,10 +149,11 @@ Proof: run unit | SHA-04.3
 
 **Dispatched:** Verifier (validate.md) over HEAD f6f5933, 2026-11-26 - returned (FAIL, 5 findings)
 **Settled mid-build:** none
-**Walked:** 2026-11-26, headless Chrome 390x844 over CDP on `npx vite --host --port 5173` (HTTPS, cert ignored), fresh profile, Web Audio instrumented (sample playback rates, whoosh, oscillators).
+**Walked:** 2026-11-26 (re-walked after the verifier fixes at 783ef56), headless Chrome 390x844 over CDP on `npx vite --host --port 5173` (HTTPS, cert ignored), fresh profile, Web Audio instrumented (sample playback rates, whoosh, oscillators).
 - SHA-01.1/01.3/01.4 (C3, C4): add d6, d6, d8 to the default d20, tap "Agitar para rolar: desligado", synthetic `devicemotion` alternating 20/2 m/s² for 40 steps. `walk/shaking-1.png`: four dice (2 d6, d8, d20) inside the bottom strip, fully in frame; `main` text is empty (no result, no "ROLANDO…", no ready hint).
-- SHA-02.2: during the shake only rattle clicks (rates 1.45-1.72) reached Web Audio; no impact-rate samples until the throw.
-- SHA-03.1 (C8): calm for 25 steps -> "ROLANDO…", dice spread toward the top; after 4 s `walk/landed.png` shows RESULTADO 26 = 3 + 6 + 8 + 9 from the same four dice; one whoosh, 4 reveal voices.
+- SHA-02.2 (C7 wiring, `sound.setHolding` in App): while held, Web Audio got 11 samples, all rattle-rate (1.47-1.74), 0 impact-rate samples and no whoosh; impact samples (0.81-1.32) start only after the throw.
+- SHA-03.1 (C8): calm for 25 steps -> one whoosh, dice thrown toward the top; after 4 s `main` reads "RESULTADO! 20 2d6 + 1d8 + 1d20 = 3 + 1 + 5 + 11" and `walk/landed.png` shows that same 20 = 3 + 1 + 5 + 11 with four dice. That the thrown dice are the held ones (same roll and die ids) is proven by C9, not by the picture.
 - SHA-04.2 (T5): weak shake (10/2 m/s²) then calm -> text during: empty; after: "PRONTO PRA ROLAR!".
+- SHA-04.3 (verifier F1, in the browser): strong shake, tap ROLAR! mid-shake, keep sending calm samples -> 0 impacts while held, 1 whoosh, and the button roll lands: "RESULTADO! 5 2d6 + 1d8 + 1d20 = 1 + 1 + 2 + 1".
 - First walk found held dice flying up to the camera, huge and cropped; fixed in T6 with a low spawn, a smaller upward push and an invisible lid.
 - Not walked: feel on the user's phone (real accelerometer, push strength).

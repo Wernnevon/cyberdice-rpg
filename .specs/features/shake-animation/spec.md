@@ -1,6 +1,6 @@
 # Shake Animation
 
-**Status:** Approved
+**Status:** Done
 **Approved**: 2026-11-26 - user: "aprovo a spec"
 **Scope:** Large
 
@@ -67,10 +67,10 @@ As a player who shook the phone lightly or by accident, nothing is rolled.
 
 | ID | Story | Status |
 | --- | --- | --- |
-| SHA-01 | Dice appear shaking | Pending |
-| SHA-02 | Shaking follows the phone | Pending |
-| SHA-03 | Thrown from the hand | Pending |
-| SHA-04 | Weak shake leaves no trace | Pending |
+| SHA-01 | Dice appear shaking | Done |
+| SHA-02 | Shaking follows the phone | Done |
+| SHA-03 | Thrown from the hand | Done |
+| SHA-04 | Weak shake leaves no trace | Done |
 
 ## Assumptions & Open Questions
 
