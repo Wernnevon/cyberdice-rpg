@@ -30,15 +30,49 @@ export function createShakeGesture() {
   };
 }
 
-/** Shake can roll only on the table view, and not while the dice of a roll still move. */
-export const canShakeRoll = (view: string, rolling: boolean) => view === 'table' && !rolling;
+/** Shake can roll only on the table view, with a valid roll set up, and not while the dice of a roll still move. */
+export const canShakeRoll = (view: string, rolling: boolean, hasRoll: boolean) => view === 'table' && !rolling && hasRoll;
 
-/** Motion handler: feeds the gesture and turns its steps into a rattle click or a roll. */
-export function createShakeHandler(rattle: (now: number) => void, roll: () => void, canRoll: () => boolean) {
+// ponytail: push size per rattle step (physics impulse units), tuned on a phone
+export const MIN_IMPULSE = 0.4;
+export const MAX_IMPULSE = 2.4;
+
+/** Push for the held dice: grows with the motion force from the rattle threshold to 2x the roll threshold (SHA-02.1). */
+export function shakeImpulse(force: number) {
+  const t = Math.min(1, Math.max(0, (force - RATTLE_THRESHOLD) / (2 * ROLL_THRESHOLD - RATTLE_THRESHOLD)));
+  return MIN_IMPULSE + (MAX_IMPULSE - MIN_IMPULSE) * t;
+}
+
+type GestureEvents = { start?: () => void; cancel?: () => void };
+
+/**
+ * Motion handler: feeds the gesture and turns its steps into calls. `start` on the first rattle of a
+ * gesture, `rattle` on each rattle step with its force, `roll` on release after a strong shake, and
+ * `cancel` when a started gesture ends with no roll (weak shake, or it can no longer roll).
+ */
+export function createShakeHandler(
+  rattle: (now: number, force: number) => void,
+  roll: () => void,
+  canRoll: () => boolean,
+  { start, cancel }: GestureEvents = {},
+) {
   const gesture = createShakeGesture();
+  let active = false;
+  let lastRattle = 0;
   return (force: number, now: number) => {
-    const step = gesture(force, now, canRoll());
-    if (step === 'rattle') rattle(now);
-    else if (step === 'roll') roll();
+    const allowed = canRoll();
+    const step = gesture(force, now, allowed);
+    if (step === 'rattle') {
+      if (!active) start?.();
+      active = true;
+      lastRattle = now;
+      rattle(now, force);
+    } else if (step === 'roll') {
+      active = false;
+      roll();
+    } else if (active && (!allowed || (force <= RATTLE_THRESHOLD && now - lastRattle >= CALM_MS))) {
+      active = false;
+      cancel?.();
+    }
   };
 }

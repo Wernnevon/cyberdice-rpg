@@ -52,13 +52,13 @@ Phase 1 (rules): T1, T2, T3, T4, independent. Phase 2 (wiring): T5 after T1, T2,
 ### T3: Gesture start, cancel, force and impulse
 
 **What**: `createShakeHandler` reports `start` and `cancel` and passes the force to `rattle`; `canShakeRoll(view, rolling, hasRoll)`; `shakeImpulse(force)`.
-**Where**: `src/utils/shakeGesture.ts`, `src/utils/shakeGesture.test.ts`
+**Where**: `src/utils/shakeGesture.ts`, `src/utils/shakeGesture.test.ts`, `src/App.tsx` (passes `hasRoll`, so the build stays green; the no-dice rattle fix lands here)
 **Depends on**: none
 **Requirements**: SHA-01, SHA-02, SHA-04
 **Tests**: unit
 **Gate**: quick
 **Done when**: C5, C6, C13 pass and the SPL-05 tests still pass.
-**Status**: Pending
+**Status**: ✅ Complete
 
 ### T4: Silent contacts while holding
 
