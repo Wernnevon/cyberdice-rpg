@@ -49,7 +49,7 @@ function Table() {
         <shadowMaterial opacity={0.35} />
       </mesh>
       {active?.dice.map((d, i) => (
-        <Die key={d.id} spec={d} index={i} arena={{ w: aw, h: ah }} onSettle={onSettle} />
+        <Die key={d.id} spec={d} index={i} count={active.dice.length} arena={{ w: aw, h: ah }} onSettle={onSettle} />
       ))}
     </>
   );

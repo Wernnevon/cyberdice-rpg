@@ -77,13 +77,13 @@ Phase 1 (rules): T1, T2. Phase 2 (engine): T3, then T4, then T5, all after T1. P
 ### T6: Wire impacts and whoosh into the roll
 
 **What**: `Die` passes its sides and the roll's dice count to `sound.impact`; `useRoll`'s `roll()` calls `sound.launch` for every started roll, so button and shake both whoosh.
-**Where**: `src/components/Die.tsx`, `src/hooks/useRoll.tsx`
+**Where**: `src/components/Die.tsx`, `src/components/DiceScene.tsx` (passes the dice count), `src/hooks/useRoll.tsx`
 **Depends on**: T4, T5
 **Requirements**: SPL-02, SPL-03, SPL-04
 **Tests**: none (rules in T1, playback in T4/T5; the wiring in the walk)
 **Gate**: build
 **Done when**: a roll in the browser plays one whoosh and pitched impacts.
-**Status**: Pending
+**Status**: ✅ Complete
 
 ### T7: Shake rattles, then rolls
 

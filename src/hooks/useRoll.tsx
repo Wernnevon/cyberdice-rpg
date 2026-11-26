@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useReducer, type ReactNode } from 'react';
 import type { ActiveRoll, State } from '../types/dice';
 import { parse, resolve, spawn, uid } from '../utils/dice';
+import { sound } from '../audio/engine';
 
 const HISTORY_LIMIT = 50;
 
@@ -32,7 +33,9 @@ function useRollState() {
   const roll = useCallback((notation: string) => {
     const expr = parse(notation);
     if (!expr) return false;
-    dispatch({ type: 'roll', active: { id: uid(), notation, expr, dice: spawn(expr), values: {} } });
+    const id = uid();
+    dispatch({ type: 'roll', active: { id, notation, expr, dice: spawn(expr), values: {} } });
+    sound.launch(id); // every roll, button or shake
     return true;
   }, []);
   const settle = useCallback(

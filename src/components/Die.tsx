@@ -17,9 +17,9 @@ const REST_S = 0.15;
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 const spin = () => [rand(-15, 15), rand(-15, 15), rand(-15, 15)] as [number, number, number];
 
-type Props = { spec: DieSpec; index: number; arena: { w: number; h: number }; onSettle: (dieId: string, value: number) => void };
+type Props = { spec: DieSpec; index: number; count: number; arena: { w: number; h: number }; onSettle: (dieId: string, value: number) => void };
 
-export function Die({ spec, index, arena, onSettle }: Props) {
+export function Die({ spec, index, count, arena, onSettle }: Props) {
   const def = useMemo(() => getDie(spec.sides, spec.role), [spec.sides, spec.role]);
   const body = useRef<RapierRigidBody>(null);
   const done = useRef(false);
@@ -91,7 +91,7 @@ export function Die({ spec, index, arena, onSettle }: Props) {
           { handle: self.handle, speed: lastSpeed.current },
           o && v && o.isDynamic() ? { handle: o.handle, speed: Math.hypot(v.x, v.y, v.z) } : null,
         );
-        if (speed !== null) sound.impact(speed, performance.now());
+        if (speed !== null) sound.impact(speed, performance.now(), spec.sides, count);
       }}
     >
       <ConvexHullCollider args={[def.hull]} />
