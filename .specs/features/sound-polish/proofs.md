@@ -1,6 +1,6 @@
 # sound-polish proofs
 
-**HEAD**: 8da0db4
+**HEAD**: a370ea1
 **Tree**: clean
 **Shell**: /bin/sh
 **Result**: 18 pass, 0 fail
@@ -34,7 +34,7 @@
 # Subtest: SPL-04.1 an invalid notation starts no roll and launches nothing
 ok 54 - SPL-04.1 an invalid notation starts no roll and launches nothing
   ---
-  duration_ms: 0.47354
+  duration_ms: 0.301375
   type: 'test'
   ...
 1..54
@@ -45,5 +45,5 @@ ok 54 - SPL-04.1 an invalid notation starts no roll and launches nothing
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 240.535253
+# duration_ms 249.380116
 ```
