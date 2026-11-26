@@ -39,7 +39,7 @@ Phase 1 (rules): T1, T2. Phase 2 (engine): T3, then T4, then T5, all after T1. P
 **Tests**: unit
 **Gate**: quick
 **Done when**: C13, C14, C15, C16 pass.
-**Status**: Pending
+**Status**: ✅ Complete
 
 ### T3: Cyberpunk tones
 
