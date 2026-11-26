@@ -114,7 +114,7 @@ Phase 1 (rules): T1, T2, T3, T4, independent. Phase 2 (wiring): T5 after T1, T2,
 **Tests**: none (physics in the browser; screenshots in the walk)
 **Gate**: build
 **Done when**: walk screenshots show held dice away from the bottom edge, at the side the synthetic shake pushes them to, and a diagonal shake moves them diagonally.
-**Status**: Pending
+**Status**: ✅ Complete
 
 ## Test Coverage Matrix
 
@@ -191,5 +191,6 @@ Proof: walk
 - SHA-03.1 (C8): calm for 25 steps -> one whoosh, dice thrown toward the top; after 4 s `main` reads "RESULTADO! 20 2d6 + 1d8 + 1d20 = 3 + 1 + 5 + 11" and `walk/landed.png` shows that same 20 = 3 + 1 + 5 + 11 with four dice. That the thrown dice are the held ones (same roll and die ids) is proven by C9, not by the picture.
 - SHA-04.2 (T5): weak shake (10/2 m/s²) then calm -> text during: empty; after: "PRONTO PRA ROLAR!".
 - SHA-04.3 (verifier F1, in the browser): strong shake, tap ROLAR! mid-shake, keep sending calm samples -> 0 impacts while held, 1 whoosh, and the button roll lands: "RESULTADO! 5 2d6 + 1d8 + 1d20 = 1 + 1 + 2 + 1".
+- SHA-05 (C14, C17), after T8: same setup (2 d6, d8, d20, shake on). 45 samples of acceleration (-20, 0) m/s², i.e. the phone braking after moving right -> `walk/push-right.png`: all four dice on the right side of the table against its right edge, d20 moving with the lighter dice. Then 45 samples of (14, -14) -> `walk/push-diag.png`: the four dice crossed the table diagonally to the top-left corner. `main` text empty throughout; 24 rattle-rate samples, no impacts, no whoosh while held. Held dice stayed below the lid, fully in frame.
 - First walk found held dice flying up to the camera, huge and cropped; fixed in T6 with a low spawn, a smaller upward push and an invisible lid.
 - Not walked: feel on the user's phone (real accelerometer, push strength).

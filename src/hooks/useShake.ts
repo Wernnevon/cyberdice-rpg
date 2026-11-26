@@ -5,7 +5,8 @@ import { sound } from '../audio/engine';
 
 type IOSMotion = typeof DeviceMotionEvent & { requestPermission?: () => Promise<'granted' | 'denied'> };
 
-/** Each rattle step pushes the held dice: a `push` event whose detail is the impulse (SHA-02.1). */
+/** Each rattle step pushes the held dice: a `push` event with the speed change and its table direction (SHA-02.1, SHA-05). */
+export type ShakePush = { impulse: number; dir: { x: number; z: number } };
 export const shakeBus = new EventTarget();
 
 type Gesture = { start: () => void; roll: () => void; cancel: () => void };
@@ -34,9 +35,9 @@ export function useShake(gesture: Gesture, wanted: boolean, canRoll: () => boole
   useEffect(() => {
     if (!listening) return;
     const step = createShakeHandler(
-      (now, impulse) => {
+      (now, impulse, dir) => {
         sound.rattle(now);
-        shakeBus.dispatchEvent(new CustomEvent('push', { detail: impulse }));
+        shakeBus.dispatchEvent(new CustomEvent<ShakePush>('push', { detail: { impulse, dir } }));
       },
       () => cb.current.roll(),
       () => can.current(),

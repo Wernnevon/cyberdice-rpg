@@ -4,7 +4,8 @@ import { ConvexHullCollider, RigidBody, type RapierRigidBody } from '@react-thre
 import type { DieSpec } from '../types/dice';
 import { getDie, labelTexture, readValue } from '../utils/geometry';
 import { sound } from '../audio/engine';
-import { shakeBus } from '../hooks/useShake';
+import { shakeBus, type ShakePush } from '../hooks/useShake';
+import { MAX_IMPULSE } from '../utils/shakeGesture';
 import { contactImpact } from '../utils/sound';
 
 const FLAT = 0.95; // cos(~18°): below this the die is resting on an edge/corner -> reroll
@@ -20,7 +21,9 @@ const spin = () => [rand(-15, 15), rand(-15, 15), rand(-15, 15)] as [number, num
 // ponytail: holding area knobs (world units) — the throw already starts from this strip
 export const HOLD_DEPTH = 2.2; // strip along the bottom edge
 export const HOLD_SPREAD = 1 / 3; // half-width as a share of the table width
-export const HOLD_LID = 2.4; // invisible lid: held dice stay low, away from the camera
+export const HOLD_LID = 2.4; // invisible lid over the table: held dice stay low, away from the camera
+const PUSH_GAP_MS = 50; // the phone reports ~60 samples/s; one push per die per gap
+const PUSH_SPREAD = 0.25; // per-die wobble around the shake direction
 
 /** `hold`: in the bottom strip, pushed by the shake, never read. `thrown`: flies to the top and is read. */
 export type Phase = 'hold' | 'thrown';
@@ -45,15 +48,25 @@ export function Die({ spec, index, count, phase, arena, onSettle }: Props) {
   }));
   const thrown = phase === 'thrown';
 
-  // Held: each rattle step pushes the die, harder for a harder shake (SHA-02.1)
+  // Held: each rattle step pushes the die along the shake, harder for a harder shake (SHA-02.1, SHA-05)
   useEffect(() => {
     if (thrown) return;
+    let last = -Infinity;
     const push = (e: Event) => {
       const b = body.current;
-      const i = (e as CustomEvent<number>).detail;
-      if (!b) return;
-      b.applyImpulse({ x: rand(-i, i), y: rand(0.15, 0.5) * i, z: rand(-i, i) / 2 }, true);
-      b.applyTorqueImpulse({ x: rand(-i, i) / 4, y: rand(-i, i) / 4, z: rand(-i, i) / 4 }, true);
+      const now = performance.now();
+      if (!b || now - last < PUSH_GAP_MS) return;
+      last = now;
+      const { impulse: i, dir } = (e as CustomEvent<ShakePush>).detail;
+      const m = b.mass(); // impulse = mass x speed change: every die moves alike
+      const dx = dir.x + rand(-PUSH_SPREAD, PUSH_SPREAD);
+      const dz = dir.z + rand(-PUSH_SPREAD, PUSH_SPREAD);
+      b.applyImpulse({ x: dx * i * m, y: rand(0.05, 0.2) * i * m, z: dz * i * m }, true);
+      b.applyTorqueImpulse({ x: rand(-i, i) * m * 0.1, y: rand(-i, i) * m * 0.1, z: rand(-i, i) * m * 0.1 }, true);
+      // ponytail: a steady one-way shake would add up forever; cap the sideways speed
+      const v = b.linvel();
+      const side = Math.hypot(v.x, v.z);
+      if (side > MAX_IMPULSE) b.setLinvel({ x: (v.x / side) * MAX_IMPULSE, y: v.y, z: (v.z / side) * MAX_IMPULSE }, true);
     };
     shakeBus.addEventListener('push', push);
     return () => shakeBus.removeEventListener('push', push);
