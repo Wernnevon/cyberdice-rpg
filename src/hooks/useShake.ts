@@ -20,8 +20,11 @@ export function useShake(onShake: () => void, wanted = false) {
   // iOS, saved as on, waiting for the first tap: show it on; tapping the toggle itself turns it off.
   const [pending, setPending] = useState(restore === 'first-tap');
 
+  // Listen while pending too: where motion access was already granted (Chrome keeps it per site),
+  // events flow without a new prompt, so the restored choice works before any tap.
+  const listening = on || pending;
   useEffect(() => {
-    if (!on) return;
+    if (!listening) return;
     let last = 0;
     const handle = (e: DeviceMotionEvent) => {
       const a = e.acceleration ?? e.accelerationIncludingGravity;
@@ -36,7 +39,7 @@ export function useShake(onShake: () => void, wanted = false) {
     };
     window.addEventListener('devicemotion', handle);
     return () => window.removeEventListener('devicemotion', handle);
-  }, [on]);
+  }, [listening]);
 
   /** Must be called from a user gesture (iOS permission prompt). */
   const enable = async () => {
@@ -69,5 +72,5 @@ export function useShake(onShake: () => void, wanted = false) {
     setPending(false);
   };
 
-  return { supported, on: on || pending, enable, disable };
+  return { supported, on: listening, enable, disable };
 }
