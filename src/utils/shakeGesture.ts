@@ -35,9 +35,24 @@ export function createShakeGesture() {
 /** Shake can roll only on the table view, with a valid roll set up, and not while the dice of a roll still move. */
 export const canShakeRoll = (view: string, rolling: boolean, notation: string) => view === 'table' && !rolling && !!parse(notation);
 
-// ponytail: push size per rattle step (physics impulse units), tuned on a phone
-export const MIN_IMPULSE = 0.4;
-export const MAX_IMPULSE = 2.4;
+// ponytail: push size per rattle step, as a speed change in m/s (any die mass), tuned on a phone
+export const MIN_IMPULSE = 1.5;
+export const MAX_IMPULSE = 8;
+const NO_DIRECTION = 0.05; // m/s² of screen-plane motion below which the direction is noise
+
+/**
+ * Table direction of a push from the phone's acceleration (device x = screen right, y = screen top).
+ * The dice keep going the way the phone was moving, so they fly against its acceleration, as in a real
+ * box. Table: +x is screen right, -z is screen top. Random when the motion has no screen-plane part.
+ */
+export function pushDirection(ax: number, ay: number, random: () => number) {
+  const n = Math.hypot(ax, ay);
+  if (n < NO_DIRECTION) {
+    const a = random() * 2 * Math.PI;
+    return { x: Math.cos(a), z: Math.sin(a) };
+  }
+  return { x: -ax / n, z: ay / n };
+}
 
 /** Push for the held dice: grows with the motion force from the rattle threshold to 2x the roll threshold (SHA-02.1). */
 export function shakeImpulse(force: number) {
@@ -49,26 +64,28 @@ type GestureEvents = { start?: () => void; cancel?: () => void };
 
 /**
  * Motion handler: feeds the gesture and turns its steps into calls. `start` on the first rattle of a
- * gesture, `rattle` on each rattle step with the push for the held dice (`shakeImpulse` of its force), `roll` on release after a strong shake, and
+ * gesture, `rattle` on each rattle step with the push for the held dice (`shakeImpulse` of its force, along
+ * `pushDirection` of the motion's screen-plane parts), `roll` on release after a strong shake, and
  * `cancel` when a started gesture ends with no roll (weak shake, or it can no longer roll).
  */
 export function createShakeHandler(
-  rattle: (now: number, impulse: number) => void,
+  rattle: (now: number, impulse: number, dir: { x: number; z: number }) => void,
   roll: () => void,
   canRoll: () => boolean,
   { start, cancel }: GestureEvents = {},
+  random: () => number = Math.random,
 ) {
   const gesture = createShakeGesture();
   let active = false;
   let lastRattle = 0;
-  return (force: number, now: number) => {
+  return (force: number, now: number, ax: number, ay: number) => {
     const allowed = canRoll();
     const step = gesture(force, now, allowed);
     if (step === 'rattle') {
       if (!active) start?.();
       active = true;
       lastRattle = now;
-      rattle(now, shakeImpulse(force));
+      rattle(now, shakeImpulse(force), pushDirection(ax, ay, random));
     } else if (step === 'roll') {
       active = false;
       roll();

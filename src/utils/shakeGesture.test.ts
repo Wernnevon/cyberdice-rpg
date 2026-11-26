@@ -1,7 +1,7 @@
-// Derived from .specs/features/sound-polish/spec.md (SPL-05) and shake-animation/spec.md (SHA-01.5, SHA-02.1, SHA-04). Run: npm test
+// Derived from .specs/features/sound-polish/spec.md (SPL-05) and shake-animation/spec.md (SHA-01.5, SHA-02.1, SHA-04, SHA-05). Run: npm test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CALM_MS, canShakeRoll, createShakeGesture, createShakeHandler, MAX_IMPULSE, MIN_IMPULSE, RATTLE_THRESHOLD, ROLL_THRESHOLD, shakeImpulse } from './shakeGesture.ts';
+import { CALM_MS, canShakeRoll, createShakeGesture, createShakeHandler, MAX_IMPULSE, MIN_IMPULSE, pushDirection, RATTLE_THRESHOLD, ROLL_THRESHOLD, shakeImpulse } from './shakeGesture.ts';
 
 const WEAK = (RATTLE_THRESHOLD + ROLL_THRESHOLD) / 2; // rattles, never rolls
 const STRONG = ROLL_THRESHOLD + 1;
@@ -54,12 +54,12 @@ test('SPL-05.1 the motion handler plays a rattle click for each rattling step, a
   const clicks: number[] = [];
   let rolls = 0;
   const handle = createShakeHandler((t) => clicks.push(t), () => rolls++, () => true);
-  handle(WEAK, 0);
-  handle(STRONG, 50);
-  handle(CALM, 100);
+  handle(WEAK, 0, 0, 0);
+  handle(STRONG, 50, 0, 0);
+  handle(CALM, 100, 0, 0);
   assert.deepEqual(clicks, [0, 50]);
   assert.equal(rolls, 0);
-  handle(CALM, 50 + CALM_MS);
+  handle(CALM, 50 + CALM_MS, 0, 0);
   assert.equal(rolls, 1);
   assert.deepEqual(clicks, [0, 50], 'no click while calm');
 });
@@ -73,8 +73,8 @@ test('SPL-05.4 shake can roll only on the table view while no dice move', () => 
   const clicks: number[] = [];
   let rolls = 0;
   const handle = createShakeHandler((t) => clicks.push(t), () => rolls++, () => canShakeRoll('history', false, '1d20'));
-  handle(STRONG, 0);
-  handle(CALM, CALM_MS + 10);
+  handle(STRONG, 0, 0, 0);
+  handle(CALM, CALM_MS + 10, 0, 0);
   assert.deepEqual(clicks, []);
   assert.equal(rolls, 0);
 });
@@ -94,20 +94,20 @@ test('SHA-01.5 with no valid roll set up, shaking starts nothing and rattles not
   assert.equal(canShakeRoll('table', false, '10d4+10d6+10d8+1d10'), false, 'over the dice cap: not a valid roll');
   assert.equal(canShakeRoll('table', false, '10d4+10d6+10d8'), true, 'at the cap');
   const { calls, handle } = recorder(() => canShakeRoll('table', false, '10d4+10d6+10d8+1d10'));
-  handle(STRONG, 0);
-  handle(WEAK, 50);
-  handle(CALM, 50 + CALM_MS);
+  handle(STRONG, 0, 0, 0);
+  handle(WEAK, 50, 0, 0);
+  handle(CALM, 50 + CALM_MS, 0, 0);
   assert.deepEqual(calls, []);
 });
 
 test('SHA-01.5 a strong shake reports start once, then rattles with the force, then rolls', () => {
   const { calls, handle } = recorder();
-  handle(WEAK, 0);
-  handle(STRONG, 50);
-  handle(CALM, 50 + CALM_MS);
+  handle(WEAK, 0, 0, 0);
+  handle(STRONG, 50, 0, 0);
+  handle(CALM, 50 + CALM_MS, 0, 0);
   assert.deepEqual(calls, ['start', `rattle@0:${shakeImpulse(WEAK)}`, `rattle@50:${shakeImpulse(STRONG)}`, 'roll']);
   // the next gesture starts again
-  handle(STRONG, 1000);
+  handle(STRONG, 1000, 0, 0);
   assert.deepEqual(calls.slice(4), ['start', `rattle@1000:${shakeImpulse(STRONG)}`]);
 });
 
@@ -128,33 +128,72 @@ test('SHA-02.1 the push grows with the force, from the minimum at the rattle thr
 test('SHA-02.1 each rattle step hands the held dice a push that grows with the force', () => {
   const pushes: number[] = [];
   const handle = createShakeHandler((_t, i) => pushes.push(i), () => {}, () => true);
-  handle(WEAK, 0);
-  handle(STRONG, 20);
-  handle(2 * ROLL_THRESHOLD + 5, 40);
+  handle(WEAK, 0, 0, 0);
+  handle(STRONG, 20, 0, 0);
+  handle(2 * ROLL_THRESHOLD + 5, 40, 0, 0);
   assert.deepEqual(pushes, [shakeImpulse(WEAK), shakeImpulse(STRONG), MAX_IMPULSE]);
   assert.ok(pushes[0] < pushes[1] && pushes[1] < pushes[2]);
 });
 
 test('SHA-04.1 a weak shake reports cancel once when it ends, and no roll', () => {
   const { calls, handle } = recorder();
-  handle(WEAK, 0);
-  handle(WEAK, 50);
-  handle(CALM, 100);
-  handle(CALM, 50 + CALM_MS - 1);
+  handle(WEAK, 0, 0, 0);
+  handle(WEAK, 50, 0, 0);
+  handle(CALM, 100, 0, 0);
+  handle(CALM, 50 + CALM_MS - 1, 0, 0);
   assert.deepEqual(calls, ['start', `rattle@0:${shakeImpulse(WEAK)}`, `rattle@50:${shakeImpulse(WEAK)}`], 'not over yet');
-  handle(CALM, 50 + CALM_MS);
-  handle(CALM, 2000);
+  handle(CALM, 50 + CALM_MS, 0, 0);
+  handle(CALM, 2000, 0, 0);
   assert.deepEqual(calls.slice(3), ['cancel']);
 });
 
 test('SHA-04.3 a view change or a button roll mid-shake reports cancel, and no later roll', () => {
   let can = true;
   const { calls, handle } = recorder(() => can);
-  handle(STRONG, 0);
+  handle(STRONG, 0, 0, 0);
   can = false; // the user opened the history, or tapped ROLAR! (dice now rolling)
-  handle(STRONG, 50);
-  handle(CALM, 400);
+  handle(STRONG, 50, 0, 0);
+  handle(CALM, 400, 0, 0);
   can = true;
-  handle(CALM, 900);
+  handle(CALM, 900, 0, 0);
   assert.deepEqual(calls, ['start', `rattle@0:${shakeImpulse(STRONG)}`, 'cancel']);
+});
+
+const near = (a: number, b: number) => Math.abs(a - b) < 1e-9;
+
+test('SHA-05.2 the push follows the phone: side-to-side, up-down and mixed, as a unit direction on the table', () => {
+  const rnd = () => 0.123;
+  // table: +x is screen right, -z is screen top. The dice keep going the way the phone was moving,
+  // so they fly against the phone's acceleration (as in a real box).
+  const right = pushDirection(-9, 0, rnd); // phone braking after moving right
+  assert.ok(near(right.x, 1) && near(right.z, 0), `right: ${JSON.stringify(right)}`);
+  const left = pushDirection(9, 0, rnd);
+  assert.ok(near(left.x, -1) && near(left.z, 0), `left: ${JSON.stringify(left)}`);
+  const top = pushDirection(0, -9, rnd); // phone braking after moving up
+  assert.ok(near(top.x, 0) && near(top.z, -1), `top: ${JSON.stringify(top)}`);
+  const bottom = pushDirection(0, 9, rnd);
+  assert.ok(near(bottom.x, 0) && near(bottom.z, 1), `bottom: ${JSON.stringify(bottom)}`);
+  const diag = pushDirection(-6, -6, rnd); // up-right diagonal
+  assert.ok(near(diag.x, Math.SQRT1_2) && near(diag.z, -Math.SQRT1_2), `diagonal: ${JSON.stringify(diag)}`);
+  const mixed = pushDirection(-3, 9, rnd);
+  assert.ok(near(Math.hypot(mixed.x, mixed.z), 1), 'unit length');
+  // phone pushed left and up (braking): dice fly right and down the screen, three times more down than right
+  assert.ok(mixed.x > 0 && mixed.z > 0, `mixed: ${JSON.stringify(mixed)}`);
+  assert.ok(near(mixed.z / mixed.x, 3), 'keeps the mix of the two parts');
+  // the handler hands each rattle step this direction with its push size
+  const pushes: unknown[] = [];
+  const handle = createShakeHandler((_t, i, d) => pushes.push([i, d]), () => {}, () => true);
+  handle(STRONG, 0, -6, -6);
+  assert.deepEqual(pushes, [[shakeImpulse(STRONG), pushDirection(-6, -6, rnd)]]);
+});
+
+test('SHA-05.3 with no side-to-side or up-down motion the push takes a random table direction', () => {
+  const a = pushDirection(0, 0, () => 0);
+  const b = pushDirection(0, 0, () => 0.25);
+  const c = pushDirection(0, 0, () => 0.5);
+  for (const d of [a, b, c]) assert.ok(near(Math.hypot(d.x, d.z), 1), 'unit length');
+  assert.ok(!(near(a.x, b.x) && near(a.z, b.z)) && !(near(b.x, c.x) && near(b.z, c.z)), 'depends on the random draw');
+  // tiny noise counts as no direction too
+  const n = pushDirection(1e-6, -1e-6, () => 0.25);
+  assert.ok(near(n.x, b.x) && near(n.z, b.z));
 });

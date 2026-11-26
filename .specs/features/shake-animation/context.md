@@ -42,6 +42,12 @@ While the user shakes the phone (shake-to-roll, sound-polish SPL-05), the dice o
 
 - Keep the current rattle; physics contacts between dice during the shake are silent so the noise does not double (user picked: "Só o chacoalhar atual (Recomendado)").
 
+### Round 4 (after testing on the phone, 2026-11-26)
+
+- Problem: "o balançado dele enquanto agito ficou muito curto era legar ele sair batendo nas laterais do celular..."
+- Area: the dice move over the whole table and hit all four edges of the screen (user picked: "Mesa inteira (Recomendado)").
+- Direction: "deve seguir o agito se eu misturar lado com cima e baixo os dados deve seguir esse agito" - the dice follow the shake in the screen plane, side-to-side, up-down and any mix of the two.
+
 ---
 
 ## Deferred Ideas

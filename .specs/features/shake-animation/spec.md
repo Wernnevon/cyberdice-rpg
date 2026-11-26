@@ -1,6 +1,7 @@
 # Shake Animation
 
-**Status:** Done
+**Status:** Changed (SHA-05 added)
+**Approved**: 2026-11-26 - user: "aprovo" (SHA-05 change)
 **Approved**: 2026-11-26 - user: "aprovo a spec"
 **Scope:** Large
 
@@ -63,6 +64,17 @@ As a player who shook the phone lightly or by accident, nothing is rolled.
 2. WHEN the shake gesture ends with no roll THE SYSTEM SHALL show the ready screen with the same dice selection, and not the result that was on screen before the shake.
 3. WHEN the roll button is tapped or the view changes while dice are being shaken THE SYSTEM SHALL drop the shaken dice; the button's roll replaces them.
 
+### SHA-05 Shaken inside the phone (P1) - added 2026-11-26
+
+As a player, the dice fly across the whole screen and bang into its edges, following the way I shake the phone. Replaces the bottom holding area of SHA-01.1 and SHA-01.3 (user, after testing on the phone: "o balançado dele enquanto agito ficou muito curto era legar ele sair batendo nas laterais do celular...").
+
+**Acceptance criteria**
+
+1. WHILE the dice are being shaken THE SYSTEM SHALL let them move over the whole table and bounce off its four edges, below a low invisible lid.
+2. WHEN a rattle step arrives THE SYSTEM SHALL push the held dice along the screen-plane direction of the phone's motion, combining its side-to-side and up-down parts, so a diagonal shake pushes them diagonally.
+3. WHEN a rattle step has no side-to-side or up-down part THE SYSTEM SHALL push the held dice in a random screen-plane direction.
+4. WHEN a rattle step arrives THE SYSTEM SHALL change each held die's speed by the push size of SHA-02.1, whatever the die's mass.
+
 ## Requirement Traceability
 
 | ID | Story | Status |
@@ -71,6 +83,7 @@ As a player who shook the phone lightly or by accident, nothing is rolled.
 | SHA-02 | Shaking follows the phone | Done |
 | SHA-03 | Thrown from the hand | Done |
 | SHA-04 | Weak shake leaves no trace | Done |
+| SHA-05 | Shaken inside the phone (replaces the holding area of SHA-01.1, SHA-01.3) | Pending |
 
 ## Assumptions & Open Questions
 
@@ -92,6 +105,8 @@ Open questions: none
 | Weak shake | Dice disappear without rolling | "Os dados somem (Recomendado)" |
 | After a weak shake | Ready screen, previous result only in history | "Mesa pronta (Recomendado)" |
 | Sound | Current rattle only; contacts silent while shaking | "Só o chacoalhar atual (Recomendado)" |
+| Area (round 4) | Whole table, dice hit the four screen edges | "Mesa inteira (Recomendado)" |
+| Direction (round 4) | Dice follow the shake, side-to-side, up-down or mixed | "deve seguir o agito se eu misturar lado com cima e baixo os dados deve seguir esse agito" |
 
 ## Sources
 

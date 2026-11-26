@@ -47,7 +47,7 @@ export function useShake(gesture: Gesture, wanted: boolean, canRoll: () => boole
       if (!a) return;
       const g = e.acceleration ? 0 : 9.8;
       const force = Math.hypot(a.x ?? 0, a.y ?? 0, a.z ?? 0) - g;
-      step(force, performance.now());
+      step(force, performance.now(), a.x ?? 0, a.y ?? 0);
     };
     window.addEventListener('devicemotion', handle);
     return () => window.removeEventListener('devicemotion', handle);

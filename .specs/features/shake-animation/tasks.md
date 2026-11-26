@@ -1,7 +1,8 @@
 # Shake Animation Tasks
 
 **Spec:** `.specs/features/shake-animation/spec.md`
-**Status:** Approved
+**Status:** Changed (T7, T8 added for SHA-05)
+**Approved**: 2026-11-26 - user: "aprovo" (SHA-05 change)
 **Approved**: 2026-11-26 - user: "aprovo as tasks, pode mandar ver"
 
 **Build**: `npm run build && npm run lint`
@@ -93,6 +94,28 @@ Phase 1 (rules): T1, T2, T3, T4, independent. Phase 2 (wiring): T5 after T1, T2,
 **Done when**: the walk's screenshots show the dice in the bottom area while shaking and spread over the table after the throw.
 **Status**: ✅ Complete
 
+### T7: Push direction from the phone's motion
+
+**What**: `shakeGesture.ts` gains `pushDirection(ax, ay, random)`: the unit screen-plane vector of the phone's motion (side-to-side `ax`, up-down `ay`), random when both are zero; `createShakeHandler` takes `ax`, `ay` per sample and hands `rattle` the direction with the push size. The push size becomes a speed change (m/s), tuned up so dice cross the table.
+**Where**: `src/utils/shakeGesture.ts`, `src/utils/shakeGesture.test.ts`, `src/hooks/useShake.ts` (passes the motion's x/y, required by the new handler signature)
+**Depends on**: T3
+**Requirements**: SHA-05
+**Tests**: unit
+**Gate**: quick
+**Done when**: C15, C16 pass and the SHA-01.5, SHA-02.1, SHA-04 and SPL-05 tests still pass.
+**Status**: ✅ Complete
+
+### T8: Dice loose on the whole table, pushed along the shake
+
+**What**: `DiceScene` drops the bottom box and puts a low lid over the whole table while dice are held; `Die` applies each push along the given direction as a speed change scaled by its mass, with a little per-die spread; `useShake` passes the motion's `x`/`y` to the handler.
+**Where**: `src/components/DiceScene.tsx`, `src/components/Die.tsx`, `src/hooks/useShake.ts`
+**Depends on**: T7
+**Requirements**: SHA-05
+**Tests**: none (physics in the browser; screenshots in the walk)
+**Gate**: build
+**Done when**: walk screenshots show held dice away from the bottom edge, at the side the synthetic shake pushes them to, and a diagonal shake moves them diagonally.
+**Status**: Pending
+
 ## Test Coverage Matrix
 
 | Requirement | Criteria | Test type | Task |
@@ -101,6 +124,7 @@ Phase 1 (rules): T1, T2, T3, T4, independent. Phase 2 (wiring): T5 after T1, T2,
 | SHA-02 | 1, 2 | unit | T3, T4 |
 | SHA-03 | 2, 3 unit; 1 walk | unit, walk | T1, T2, T6 |
 | SHA-04 | 1, 2, 3 | unit | T1, T3 |
+| SHA-05 | 2, 3 unit; 1, 4 walk | unit, walk | T7, T8 |
 
 ## Checks
 
@@ -144,6 +168,18 @@ Proof: run unit | SHA-04.2
 
 **C13** - The button or a view change drops the held dice (SHA-04, AC 3)
 Proof: run unit | SHA-04.3
+
+**C14** - Held dice move over the whole table and bounce off its four edges, under a low lid (SHA-05, AC 1)
+Proof: walk
+
+**C15** - The push follows the phone's screen-plane motion, diagonals included (SHA-05, AC 2)
+Proof: run unit | SHA-05.2
+
+**C16** - No screen-plane motion: a random direction (SHA-05, AC 3)
+Proof: run unit | SHA-05.3
+
+**C17** - Each push changes a die's speed by the push size, whatever its mass (SHA-05, AC 4)
+Proof: walk
 
 ## Handoff
 
