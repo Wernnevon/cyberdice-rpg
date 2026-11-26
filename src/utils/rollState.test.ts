@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import type { ActiveRoll } from '../types/dice';
 import { parse, spawn, uid } from './dice.ts';
 import { initialRollState, rollReducer, type RollState } from './rollState.ts';
+import { throwHeld } from './startRoll.ts';
 
 const make = (notation: string): ActiveRoll => {
   const expr = parse(notation)!;
@@ -104,4 +105,18 @@ test('SHA-04.3 the cancel that follows a button roll mid-shake keeps the button 
   assert.equal(s.active, button, 'the button roll stays on the table');
   s = rollReducer(s, { type: 'settled', rollId: button.id, dieId: button.dice[0].id, value: 17 });
   assert.equal(s.history[0].id, button.id, 'and lands in the history');
+});
+
+test('SHA-03.2 throwing the held dice launches their roll id and keeps their die ids', () => {
+  const held = make('2d6+1d20');
+  let s = rollReducer(initialRollState, { type: 'shake', roll: held });
+  const launched: string[] = [];
+  const action = throwHeld(s.shaking, (id) => launched.push(id));
+  assert.ok(action);
+  s = rollReducer(s, action);
+  assert.deepEqual(launched, [held.id]);
+  assert.equal(s.active!.id, held.id);
+  assert.deepEqual(s.active!.dice.map((d) => d.id), held.dice.map((d) => d.id));
+  assert.equal(throwHeld(s.shaking, (id) => launched.push(id)), null, 'nothing held: no throw, no whoosh');
+  assert.equal(launched.length, 1);
 });

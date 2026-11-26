@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useReducer, type ReactNode } from 'react';
 import { initialRollState, rollReducer } from '../utils/rollState';
-import { buildRoll, startRoll, throwRoll } from '../utils/startRoll';
+import { buildRoll, startRoll, throwHeld } from '../utils/startRoll';
 import { sound } from '../audio/engine';
 
 function useRollState() {
@@ -28,9 +28,8 @@ function useRollState() {
   const shaking = state.shaking;
   /** Throws the held dice, with one whoosh. */
   const throwShake = useCallback(() => {
-    if (!shaking) return;
-    throwRoll(shaking, sound.launch);
-    dispatch({ type: 'throw' });
+    const action = throwHeld(shaking, sound.launch);
+    if (action) dispatch(action);
   }, [shaking]);
   const cancelShake = useCallback(() => dispatch({ type: 'cancelShake' }), []);
 

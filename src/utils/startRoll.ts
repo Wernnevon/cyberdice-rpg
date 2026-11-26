@@ -19,3 +19,10 @@ export function startRoll(notation: string, launch: (rollId: string) => void): A
   const roll = buildRoll(notation);
   return roll && throwRoll(roll, launch);
 }
+
+/** Throws the held dice (SHA-03): one whoosh with their roll id, and the action that makes them the roll. */
+export function throwHeld(held: ActiveRoll | null, launch: (rollId: string) => void): { type: 'throw' } | null {
+  if (!held) return null;
+  throwRoll(held, launch);
+  return { type: 'throw' };
+}
