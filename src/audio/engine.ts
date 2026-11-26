@@ -20,6 +20,10 @@ type Deps = {
 // ponytail: tuned by ear on a phone; DETUNE spreads the voices into a thick "supersaw".
 const DETUNE = 12; // cents, ± per voice
 const DUCK = 0.3; // impact level while a result sound plays
+export const RATTLE_GAP_MS = 55; // minimum gap between rattle clicks
+const RATTLE_GAIN = 0.25;
+const RATTLE_PITCH = 1.6; // small, light clicks
+const WHOOSH_S = 0.35;
 const TONES: Record<RevealSound, { wave: OscillatorType; notes: [number, number, number, number?][] }> = {
   reveal: { wave: 'sawtooth', notes: [[659, 0, 0.1], [988, 0.07, 0.28]] },
   crit: {
@@ -47,6 +51,9 @@ export function createSoundEngine({ createContext, fetchBytes, navigator, random
   let impactBus: GainNode | null = null;
   let buffers: AudioBuffer[] = [];
   let lastSample: number | null = null;
+  let lastLaunch: string | null = null;
+  let lastRattle = -Infinity;
+  let noise: AudioBuffer | null = null;
   let muted = false;
   let lastReveal: string | null = null;
   const allow = createLimiter();
@@ -126,6 +133,47 @@ export function createSoundEngine({ createContext, fetchBytes, navigator, random
       src.connect(vol).connect(impactBus);
       src.start();
       return gain;
+    },
+
+    /** Rattle click while the phone is shaken; at most one per RATTLE_GAP_MS. Returns whether it played. */
+    rattle(now: number) {
+      if (muted || !ctx || !impactBus || !buffers.length || now - lastRattle < RATTLE_GAP_MS) return false;
+      lastRattle = now;
+      lastSample = nextSample(buffers.length, lastSample, random);
+      const src = ctx.createBufferSource();
+      src.buffer = buffers[lastSample];
+      src.playbackRate.value = RATTLE_PITCH * (0.9 + random() * 0.2);
+      const vol = ctx.createGain();
+      vol.gain.value = RATTLE_GAIN * (0.6 + random() * 0.4);
+      src.connect(vol).connect(impactBus);
+      src.start();
+      return true;
+    },
+
+    /** Launch whoosh (filtered noise sweep), once per roll id. Returns whether it played. */
+    launch(rollId: string) {
+      if (muted || !ctx || !master || rollId === lastLaunch) return false;
+      lastLaunch = rollId;
+      if (!noise) {
+        noise = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * WHOOSH_S), ctx.sampleRate);
+        const data = noise.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = random() * 2 - 1;
+      }
+      const t0 = ctx.currentTime;
+      const src = ctx.createBufferSource();
+      src.buffer = noise;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.Q.value = 1.2;
+      filter.frequency.setValueAtTime(400, t0);
+      filter.frequency.exponentialRampToValueAtTime(2400, t0 + WHOOSH_S);
+      const env = ctx.createGain();
+      env.gain.setValueAtTime(0.0001, t0);
+      env.gain.linearRampToValueAtTime(0.35, t0 + 0.08);
+      env.gain.exponentialRampToValueAtTime(0.0001, t0 + WHOOSH_S);
+      src.connect(filter).connect(env).connect(master);
+      src.start();
+      return true;
     },
 
     /** Plays once per roll id. Returns which sound played, or null. */

@@ -4,7 +4,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Roll } from '../types/dice';
 import { crowdGain, diePitch, MIN_IMPACT, PER_WINDOW, WINDOW_MS } from '../utils/sound.ts';
-import { createSoundEngine, UNLOCK_EVENTS } from './engine.ts';
+import { createSoundEngine, RATTLE_GAP_MS, UNLOCK_EVENTS } from './engine.ts';
+import { createShakeGesture, RATTLE_THRESHOLD, ROLL_THRESHOLD } from '../utils/shakeGesture.ts';
 
 type Node = { kind: string; outs: Node[]; gain?: Param; buffer?: unknown; playbackRate?: Param };
 type Played = { kind: 'sample' | 'tone'; gain: number; note?: string; rate?: number; buffer?: unknown; path: Node[] };
@@ -387,4 +388,58 @@ test('SPL-03.3 a reveal ducks impacts to at most 30 % gain for its length', asyn
     const impactStages = new Set(samples(played).flatMap((p) => p.path.slice(2).filter((n) => n.kind === 'gain')));
     for (const p of played.filter((x) => x.kind === 'tone')) assert.ok(!p.path.some((n) => impactStages.has(n)), 'the reveal is ducked too');
   }
+});
+
+const whooshes = (played: Played[]) => played.filter((p) => p.path.some((n) => n.kind === 'filter'));
+
+test('SPL-04.1 a started roll plays exactly one launch whoosh', async () => {
+  const { engine, played, ctx } = await ready();
+  assert.equal(engine.launch('a'), true);
+  assert.equal(whooshes(played).length, 1);
+  assert.equal(whooshes(played)[0].path[whooshes(played)[0].path.length - 1], ctx.destination, 'reaches the speakers');
+  assert.equal(engine.launch('a'), false, 'same roll again: no second whoosh');
+  assert.equal(whooshes(played).length, 1);
+  assert.equal(engine.launch('b'), true, 'the next roll whooshes again');
+  assert.equal(whooshes(played).length, 2);
+});
+
+test('SPL-04.2 no launch whoosh while sound is off', async () => {
+  const { engine, played } = await ready();
+  engine.setMuted(true);
+  assert.equal(engine.launch('a'), false);
+  assert.deepEqual(played, []);
+  engine.setMuted(false);
+  assert.equal(engine.launch('b'), true, 'unmuting restores the whoosh');
+});
+
+test('SPL-05.1 the engine plays a rattle click from a die sample, at most one per gap', async () => {
+  const { engine, played } = await ready(() => 0.5);
+  const dieBuffers = new Set<unknown>();
+  // the die samples, as impacts play them
+  for (let i = 0; i < 4; i++) engine.impact(MIN_IMPACT * 4, i * WINDOW_MS, 20, 1);
+  samples(played).forEach((p) => dieBuffers.add(p.buffer));
+  const before = played.length;
+  assert.ok(engine.rattle(1000));
+  assert.equal(engine.rattle(1000 + RATTLE_GAP_MS - 1), false, 'too soon after the last click');
+  assert.ok(engine.rattle(1000 + RATTLE_GAP_MS));
+  const clicks = played.slice(before);
+  assert.equal(clicks.length, 2);
+  for (const c of clicks) {
+    assert.ok(dieBuffers.has(c.buffer), 'built from a die sample');
+    assert.ok(c.gain < 0.5, `rattle is quiet (${c.gain})`);
+  }
+});
+
+test('SPL-05.5 while sound is off the shake plays no rattle and still rolls', async () => {
+  const { engine, played } = await ready();
+  engine.setMuted(true);
+  const gesture = createShakeGesture();
+  let rolls = 0;
+  for (const [f, t] of [[ROLL_THRESHOLD + 1, 0], [RATTLE_THRESHOLD + 1, 80], [ROLL_THRESHOLD + 2, 160], [0, 300], [0, 470]] as const) {
+    const r = gesture(f, t, true);
+    if (r === 'rattle') assert.equal(engine.rattle(t), false);
+    if (r === 'roll') rolls++;
+  }
+  assert.equal(rolls, 1);
+  assert.deepEqual(played, []);
 });

@@ -72,7 +72,7 @@ Phase 1 (rules): T1, T2. Phase 2 (engine): T3, then T4, then T5, all after T1. P
 **Tests**: unit (fake AudioContext)
 **Gate**: quick
 **Done when**: C11, C12, C17 pass, and the rattle-click test passes.
-**Status**: Pending
+**Status**: ✅ Complete
 
 ### T6: Wire impacts and whoosh into the roll
 
