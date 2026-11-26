@@ -1,6 +1,6 @@
 # Sound Polish
 
-**Status:** Approved
+**Status:** Done
 **Approved**: 2026-11-26 - user: "aprovo a spec"
 **Scope:** Medium
 
@@ -79,11 +79,11 @@ As a player with shake-to-roll on, I shake the phone and hear the dice rattle; t
 
 | ID | Story | Status |
 | --- | --- | --- |
-| SPL-01 | Cyberpunk reveal, crit and fail | Pending |
-| SPL-02 | Impacts per die type | Pending |
-| SPL-03 | Mix with many dice | Pending |
-| SPL-04 | Launch whoosh | Pending |
-| SPL-05 | Shake rattle, then roll | Pending |
+| SPL-01 | Cyberpunk reveal, crit and fail | Done |
+| SPL-02 | Impacts per die type | Done |
+| SPL-03 | Mix with many dice | Done |
+| SPL-04 | Launch whoosh | Done |
+| SPL-05 | Shake rattle, then roll | Done |
 
 ## Assumptions & Open Questions
 
