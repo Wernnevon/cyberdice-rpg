@@ -132,14 +132,14 @@ test('SND-01.1 an impact at or above the minimum plays exactly one sample', asyn
   const { engine, played } = setup();
   engine.unlock();
   await engine.ready;
-  engine.impact(MIN_IMPACT, 0);
+  engine.impact(MIN_IMPACT, 0, 20, 1);
   assert.equal(played.filter((p) => p.kind === 'sample').length, 1);
-  engine.impact(MIN_IMPACT * 4, WINDOW_MS);
+  engine.impact(MIN_IMPACT * 4, WINDOW_MS, 20, 1);
   const samples = played.filter((p) => p.kind === 'sample');
   assert.equal(samples.length, 2);
   assert.ok(samples[1].gain > samples[0].gain, 'harder impact is louder');
   // below the minimum: nothing more
-  engine.impact(MIN_IMPACT / 2, WINDOW_MS * 2);
+  engine.impact(MIN_IMPACT / 2, WINDOW_MS * 2, 20, 1);
   assert.equal(played.filter((p) => p.kind === 'sample').length, 2);
 });
 
@@ -161,13 +161,13 @@ test('SND-04.2 while muted no impact, reveal, crit or fail plays', async () => {
   engine.unlock();
   await engine.ready;
   engine.setMuted(true);
-  engine.impact(MIN_IMPACT * 4, 0);
+  engine.impact(MIN_IMPACT * 4, 0, 20, 1);
   assert.equal(engine.reveal(roll('a', 12)), null);
   assert.equal(engine.reveal(roll('b', 20)), null);
   assert.equal(engine.reveal(roll('c', 1)), null);
   assert.deepEqual(played, []);
   engine.setMuted(false);
-  engine.impact(MIN_IMPACT * 4, WINDOW_MS);
+  engine.impact(MIN_IMPACT * 4, WINDOW_MS, 20, 1);
   assert.equal(played.length, 1, 'unmuting restores sound');
 });
 
@@ -184,7 +184,7 @@ test('SND-05.2 the first gesture unlocks audio so the first roll is heard', asyn
   engine.unlock(); // the tap that triggers the first roll
   assert.equal(ctx.state, 'running');
   await engine.ready;
-  engine.impact(MIN_IMPACT * 2, 0);
+  engine.impact(MIN_IMPACT * 2, 0, 20, 1);
   assert.equal(engine.reveal(roll('first', 9)), 'reveal');
   assert.ok(played.some((p) => p.kind === 'sample') && played.some((p) => p.kind === 'tone'));
   engine.unlock();
@@ -206,7 +206,7 @@ test('SND-01.4 the engine drops impacts beyond the per-window limit', async () =
   const { engine, played } = setup();
   engine.unlock();
   await engine.ready;
-  for (let i = 0; i < PER_WINDOW + 3; i++) engine.impact(MIN_IMPACT * 4, 500);
+  for (let i = 0; i < PER_WINDOW + 3; i++) engine.impact(MIN_IMPACT * 4, 500, 20, 1);
   assert.equal(played.filter((p) => p.kind === 'sample').length, PER_WINDOW);
 });
 

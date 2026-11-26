@@ -119,7 +119,7 @@ export function createSoundEngine({ createContext, fetchBytes, navigator, random
     },
 
     /** Impact = die speed at contact (m/s), for a die of `sides` in a roll of `dice` dice. Returns the gain played, or null. */
-    impact(speed: number, now: number, sides: DieSpec['sides'] = 20, dice = 1) {
+    impact(speed: number, now: number, sides: DieSpec['sides'], dice: number) {
       if (muted || !ctx || !impactBus || !buffers.length) return null;
       const g = impactGain(speed);
       if (g === null || !allow(now)) return null;
