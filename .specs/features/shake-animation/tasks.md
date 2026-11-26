@@ -189,7 +189,7 @@ Proof: walk
 
 ## Handoff
 
-**Dispatched:** Verifier (validate.md) over HEAD f6f5933, 2026-11-26 - returned (FAIL, 5 findings); Verifier (validate.md, SHA-05 change) over HEAD 29382ed, 2026-11-26 - returned (FAIL, 4 findings: F6-F9)
+**Dispatched:** Verifier (validate.md) over HEAD f6f5933, 2026-11-26 - returned (FAIL, 5 findings); Verifier (validate.md, SHA-05 change) over HEAD 29382ed, 2026-11-26 - returned (FAIL, 4 findings: F6-F9); Verifier (validate.md, C18-C19) over HEAD 473028e, 2026-11-26 - returned (FAIL, 2 findings: F10-F11)
 **Settled mid-build:** 2026-11-26 - user, after testing SHA-05: "muito lento o dado percorre pouco a tela ele ta muito preso, quase ns e move minha intençãoe ra fazer ele parecer aquelas bolas malucas quicando por toda a tela" -> SHA-05.5 (push sets the sideways velocity) and SHA-05.6 (bouncy-ball restitution, almost no friction while held), push size 4-14 m/s; checks C18, C19.
 **Walked:** 2026-11-26 (re-walked after the verifier fixes at 783ef56), headless Chrome 390x844 over CDP on `npx vite --host --port 5173` (HTTPS, cert ignored), fresh profile, Web Audio instrumented (sample playback rates, whoosh, oscillators).
 - SHA-01.1/01.3/01.4 (C3, C4): add d6, d6, d8 to the default d20, tap "Agitar para rolar: desligado", synthetic `devicemotion` alternating 20/2 m/s² for 40 steps. `walk/shaking-1.png`: four dice (2 d6, d8, d20) inside the bottom strip, fully in frame; `main` text is empty (no result, no "ROLANDO…", no ready hint).

@@ -1,9 +1,9 @@
 # shake-animation proofs
 
-**HEAD**: 29382ed
+**HEAD**: 473028e
 **Tree**: clean
 **Shell**: /bin/sh
-**Result**: 18 pass, 0 fail
+**Result**: 20 pass, 0 fail
 
 | Check | Proof | Result |
 | --- | --- | --- |
@@ -23,7 +23,9 @@
 | C14 | `walk` | pass (Walked) |
 | C15 | `run unit / SHA-05.2` | pass |
 | C16 | `run unit / SHA-05.3` | pass |
-| C17 | `walk` | pass (Walked) |
+| C17 | `run unit / SHA-05.5` | pass |
+| C18 | `run unit / SHA-05.5` | pass |
+| C19 | `walk` | pass (Walked) |
 | Build | `npm run build && npm run lint` | pass |
 
 ## Output
@@ -32,18 +34,18 @@
 
 ```
 # Subtest: SHA-03.3 held dice launch nothing until thrown, then exactly one whoosh with the roll id
-ok 72 - SHA-03.3 held dice launch nothing until thrown, then exactly one whoosh with the roll id
+ok 74 - SHA-03.3 held dice launch nothing until thrown, then exactly one whoosh with the roll id
   ---
-  duration_ms: 0.360565
+  duration_ms: 0.325149
   type: 'test'
   ...
-1..72
-# tests 72
+1..74
+# tests 74
 # suites 0
-# pass 72
+# pass 74
 # fail 0
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 197.033312
+# duration_ms 209.616968
 ```
