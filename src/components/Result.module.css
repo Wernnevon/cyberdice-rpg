@@ -1,0 +1,152 @@
+/* Sits over the 3D canvas; never blocks touches. */
+.overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 48px 12px 12px;
+  text-align: center;
+}
+
+.center {
+  justify-content: center;
+  padding-top: 12px;
+}
+
+.corner {
+  position: absolute;
+  top: 14px;
+  left: -6px;
+  font-size: 14px;
+}
+
+.burst {
+  position: relative;
+  width: 200px;
+  height: 170px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  animation: pop 0.35s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+.burst::before,
+.burst::after {
+  content: '';
+  position: absolute;
+  clip-path: polygon(50% 0%, 63% 18.6%, 85.4% 14.6%, 81.4% 37%, 100% 50%, 81.4% 63%, 85.4% 85.4%, 63% 81.4%, 50% 100%, 37% 81.4%, 14.6% 85.4%, 18.6% 63%, 0% 50%, 18.6% 37%, 14.6% 14.6%, 37% 18.6%);
+}
+
+.burst::before {
+  inset: 0;
+  background: var(--red);
+  transform: rotate(10deg);
+}
+
+.burst::after {
+  inset: 20px;
+  background: var(--yellow);
+  transform: rotate(-6deg);
+}
+
+.total {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-display);
+  font-size: 80px;
+  line-height: 1;
+  color: #fff;
+  -webkit-text-stroke: 4px var(--ink);
+  paint-order: stroke fill;
+  text-shadow: 5px 5px 0 var(--ink);
+}
+
+.strip {
+  margin: 0;
+  max-width: 100%;
+  padding: 4px 12px;
+  background: var(--ink);
+  border: 2px solid #fff;
+  font-size: 14px;
+  font-weight: 700;
+  transform: skewX(-10deg);
+  font-variant-numeric: tabular-nums;
+}
+
+.dice {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 6px;
+}
+
+.dice li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sticker {
+  position: absolute;
+  top: -8px;
+  padding: 1px 6px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  white-space: nowrap;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.crit {
+  background: var(--yellow);
+  color: var(--ink);
+  transform: rotate(-8deg);
+}
+
+.fail {
+  background: var(--red);
+  color: #fff;
+  transform: rotate(7deg);
+}
+
+.out {
+  top: auto;
+  bottom: -6px;
+  background: var(--line);
+  color: #fff;
+}
+
+.hintDice {
+  display: flex;
+  align-items: flex-end;
+}
+
+.hintTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1.15;
+  -webkit-text-stroke: 1px var(--ink);
+  text-shadow: 3px 3px 0 var(--red);
+}
+
+.hintBody {
+  margin: 0;
+  padding: 6px 10px;
+  background: var(--ink);
+  font-size: 15px;
+  font-weight: 700;
+  color: #e4e4ef;
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.3) rotate(-20deg);
+  }
+}

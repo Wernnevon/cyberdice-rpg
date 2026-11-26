@@ -1,0 +1,102 @@
+/* Design tokens: anime / manga panel look. Dark only, by design. */
+:root {
+  --ink: #0b0b10;
+  --panel: #13131c;
+  --panel-2: #16161f;
+  --line: #3a3a4c;
+  --text: #ffffff;
+  --muted: #c4c4d4;
+  --dim: #9e9eb4;
+  --red: #e0102f; /* white text on it passes 4.5:1 */
+  --red-hot: #ff2e4d;
+  --yellow: #ffd60a;
+  --cyan: #22d3ee;
+
+  --font-display: 'Dela Gothic One', system-ui, sans-serif;
+  --font-body: 'Zen Kaku Gothic New', system-ui, sans-serif;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background-color: var(--ink);
+  background-image: radial-gradient(#22222e 1.3px, transparent 1.5px); /* halftone */
+  background-size: 9px 9px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-weight: 500;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+:focus-visible {
+  outline: 3px solid var(--yellow);
+  outline-offset: 3px;
+}
+
+/* Skewed label, the signature element. */
+.tag {
+  display: inline-block;
+  margin: 0;
+  padding: 4px 14px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  transform: skewX(-12deg);
+  box-shadow: 4px 4px 0 var(--tag-shadow, var(--yellow));
+  background: var(--tag-bg, var(--red));
+  color: var(--tag-fg, #fff);
+}
+
+.iconBtn {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  color: var(--text);
+}
+
+.iconBtn[aria-pressed='true'] {
+  color: var(--yellow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
