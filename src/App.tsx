@@ -62,7 +62,7 @@ function Layout() {
   const shake = useShake(
     { start: () => holdDice(notation), roll: throwShake, cancel: cancelShake },
     shakeWanted,
-    () => canShakeRoll(view, rolling, !!notation),
+    () => canShakeRoll(view, rolling, notation),
   );
   const shaking = !!state.shaking;
   useEffect(() => sound.setHolding(shaking), [shaking]);

@@ -1,3 +1,5 @@
+import { parse } from './dice.ts';
+
 // ponytail: calibration knobs — tune by hand on a phone (m/s² above gravity, ms of calm)
 export const RATTLE_THRESHOLD = 6;
 export const ROLL_THRESHOLD = 15;
@@ -31,7 +33,7 @@ export function createShakeGesture() {
 }
 
 /** Shake can roll only on the table view, with a valid roll set up, and not while the dice of a roll still move. */
-export const canShakeRoll = (view: string, rolling: boolean, hasRoll: boolean) => view === 'table' && !rolling && hasRoll;
+export const canShakeRoll = (view: string, rolling: boolean, notation: string) => view === 'table' && !rolling && !!parse(notation);
 
 // ponytail: push size per rattle step (physics impulse units), tuned on a phone
 export const MIN_IMPULSE = 0.4;

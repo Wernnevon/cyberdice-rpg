@@ -65,14 +65,14 @@ test('SPL-05.1 the motion handler plays a rattle click for each rattling step, a
 });
 
 test('SPL-05.4 shake can roll only on the table view while no dice move', () => {
-  assert.equal(canShakeRoll('table', false, true), true);
-  assert.equal(canShakeRoll('table', true, true), false, 'dice still moving');
-  assert.equal(canShakeRoll('history', false, true), false);
-  assert.equal(canShakeRoll('formula', false, true), false);
+  assert.equal(canShakeRoll('table', false, '1d20'), true);
+  assert.equal(canShakeRoll('table', true, '1d20'), false, 'dice still moving');
+  assert.equal(canShakeRoll('history', false, '1d20'), false);
+  assert.equal(canShakeRoll('formula', false, '1d20'), false);
   // the handler honours it: no click and no roll while it says no
   const clicks: number[] = [];
   let rolls = 0;
-  const handle = createShakeHandler((t) => clicks.push(t), () => rolls++, () => canShakeRoll('history', false, true));
+  const handle = createShakeHandler((t) => clicks.push(t), () => rolls++, () => canShakeRoll('history', false, '1d20'));
   handle(STRONG, 0);
   handle(CALM, CALM_MS + 10);
   assert.deepEqual(clicks, []);
@@ -90,8 +90,10 @@ function recorder(canRoll: () => boolean = () => true) {
 }
 
 test('SHA-01.5 with no valid roll set up, shaking starts nothing and rattles nothing', () => {
-  assert.equal(canShakeRoll('table', false, false), false);
-  const { calls, handle } = recorder(() => canShakeRoll('table', false, false));
+  assert.equal(canShakeRoll('table', false, ''), false, 'no dice selected');
+  assert.equal(canShakeRoll('table', false, '10d4+10d6+10d8+1d10'), false, 'over the dice cap: not a valid roll');
+  assert.equal(canShakeRoll('table', false, '10d4+10d6+10d8'), true, 'at the cap');
+  const { calls, handle } = recorder(() => canShakeRoll('table', false, '10d4+10d6+10d8+1d10'));
   handle(STRONG, 0);
   handle(WEAK, 50);
   handle(CALM, 50 + CALM_MS);
