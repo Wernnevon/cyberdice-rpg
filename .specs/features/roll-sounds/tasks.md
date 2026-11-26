@@ -72,6 +72,7 @@ Phase 1 (assets): T1. Phase 2 (rules and engine): T2, then T3. Phase 3 (wiring):
 **Tests**: none (rules in T2 and T3; the control in the walk)
 **Gate**: build
 **Done when**: in the browser, tapping the button toggles the icon and `aria-pressed`, and the choice survives a reload.
+**Status**: ✅ Complete
 
 ## Test Coverage Matrix
 

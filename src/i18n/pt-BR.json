@@ -50,5 +50,6 @@
   "history": "HISTÓRICO",
   "sessionNote": "{n} rolagens nesta sessão · somem ao fechar o app",
   "empty": "Nenhuma rolagem ainda. Bora rolar!",
-  "reroll": "Rolar {f} de novo"
+  "reroll": "Rolar {f} de novo",
+  "sound": "Som"
 }

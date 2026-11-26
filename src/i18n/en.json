@@ -50,5 +50,6 @@
   "history": "HISTORY",
   "sessionNote": "{n} rolls this session · cleared when the app closes",
   "empty": "No rolls yet. Let's roll!",
-  "reroll": "Roll {f} again"
+  "reroll": "Roll {f} again",
+  "sound": "Sound"
 }
