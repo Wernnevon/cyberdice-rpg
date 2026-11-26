@@ -178,18 +178,18 @@ Proof: run unit | SHA-05.2
 **C16** - No screen-plane motion: a random direction (SHA-05, AC 3)
 Proof: run unit | SHA-05.3
 
-**C17** - Each push changes a die's speed by the push size, whatever its mass (SHA-05, AC 4)
-Proof: walk
+**C17** - Each push changes a die's speed by the push size, whatever its mass (SHA-05, AC 4; superseded by AC 5, now proven by C18's test: the push sets a velocity, so mass plays no part)
+Proof: run unit | SHA-05.5
 
-**C18** - Each push sets the held die's sideways velocity to the push size along the shake (SHA-05, AC 5)
-Proof: walk
+**C18** - A push sets a slowed held die's sideways velocity to the push size along the shake; a die still flying keeps flying (SHA-05, AC 5)
+Proof: run unit | SHA-05.5
 
 **C19** - Held dice bounce keeping at least 90 % of their speed, almost no friction; thrown dice back to normal (SHA-05, AC 6)
 Proof: walk
 
 ## Handoff
 
-**Dispatched:** Verifier (validate.md) over HEAD f6f5933, 2026-11-26 - returned (FAIL, 5 findings); Verifier (validate.md, SHA-05 change) over HEAD 29382ed, 2026-11-26 - sent
+**Dispatched:** Verifier (validate.md) over HEAD f6f5933, 2026-11-26 - returned (FAIL, 5 findings); Verifier (validate.md, SHA-05 change) over HEAD 29382ed, 2026-11-26 - returned (FAIL, 4 findings: F6-F9)
 **Settled mid-build:** 2026-11-26 - user, after testing SHA-05: "muito lento o dado percorre pouco a tela ele ta muito preso, quase ns e move minha intençãoe ra fazer ele parecer aquelas bolas malucas quicando por toda a tela" -> SHA-05.5 (push sets the sideways velocity) and SHA-05.6 (bouncy-ball restitution, almost no friction while held), push size 4-14 m/s; checks C18, C19.
 **Walked:** 2026-11-26 (re-walked after the verifier fixes at 783ef56), headless Chrome 390x844 over CDP on `npx vite --host --port 5173` (HTTPS, cert ignored), fresh profile, Web Audio instrumented (sample playback rates, whoosh, oscillators).
 - SHA-01.1/01.3/01.4 (C3, C4): add d6, d6, d8 to the default d20, tap "Agitar para rolar: desligado", synthetic `devicemotion` alternating 20/2 m/s² for 40 steps. `walk/shaking-1.png`: four dice (2 d6, d8, d20) inside the bottom strip, fully in frame; `main` text is empty (no result, no "ROLANDO…", no ready hint).
@@ -197,7 +197,7 @@ Proof: walk
 - SHA-03.1 (C8): calm for 25 steps -> one whoosh, dice thrown toward the top; after 4 s `main` reads "RESULTADO! 20 2d6 + 1d8 + 1d20 = 3 + 1 + 5 + 11" and `walk/landed.png` shows that same 20 = 3 + 1 + 5 + 11 with four dice. That the thrown dice are the held ones (same roll and die ids) is proven by C9, not by the picture.
 - SHA-04.2 (T5): weak shake (10/2 m/s²) then calm -> text during: empty; after: "PRONTO PRA ROLAR!".
 - SHA-04.3 (verifier F1, in the browser): strong shake, tap ROLAR! mid-shake, keep sending calm samples -> 0 impacts while held, 1 whoosh, and the button roll lands: "RESULTADO! 5 2d6 + 1d8 + 1d20 = 1 + 1 + 2 + 1".
-- SHA-05 (C14, C17), after T8: same setup (2 d6, d8, d20, shake on). 45 samples of acceleration (-20, 0) m/s², i.e. the phone braking after moving right -> `walk/push-right.png`: all four dice on the right side of the table against its right edge, d20 moving with the lighter dice. Then 45 samples of (14, -14) -> `walk/push-diag.png`: the four dice crossed the table diagonally to the top-left corner. `main` text empty throughout; 24 rattle-rate samples, no impacts, no whoosh while held. Held dice stayed below the lid, fully in frame.
-- SHA-05.5/05.6 (C18, C19), after the bouncy-ball change: same setup; a synthetic back-and-forth shake (x = 22 sin(2π·4t), y = 12 sin(2π·3t + 1) m/s², 60 samples/s) for 0.7 s, 0.5 s, 0.5 s with a screenshot after each. `walk/bounce-strip.png` (the three table crops side by side): the four dice are in different places each time, spread from the middle to the top and bottom edges rather than drifting together. After calm: one whoosh, the dice stop and are read normally - `main` reads "RESULTADO! 10 2d6 + 1d8 + 1d20 = 3 + 1 + 5 + 1", `walk/bounce-landed.png`.
+- SHA-05 (C14, C17), after T8: same setup (2 d6, d8, d20, shake on). 45 samples of acceleration (-20, 0) m/s², i.e. the phone braking after moving right -> `walk/push-right.png`: all four dice moved to the right half of the table, one d6 against its right edge, d20 moving with the lighter dice. Then 45 samples of (14, -14) -> `walk/push-diag.png`: the four dice crossed the table diagonally to the top-left corner. `main` text empty throughout; 24 rattle-rate samples, no impacts, no whoosh while held. Held dice stayed below the lid, fully in frame.
+- SHA-05.5/05.6 (C18, C19), after the bouncy-ball change and the verifier fixes: add d6, d8 to the default d20, shake on; a synthetic back-and-forth shake (x = 22 sin(2π·4t), y = 12 sin(2π·3t + 1) m/s², 60 samples/s) for 0.7 s, 0.5 s, 0.5 s with a screenshot after each. `walk/bounce-strip.png` (the three table crops side by side): the d20 goes from the bottom to the top to the left, the d8 from the middle to the top right to the bottom: the dice cross the table between shots. A first try that set the speed on every sample kept the dice reversing in place (the "preso" feel); fixed by SHA-05.5's refinement. After calm: one whoosh, the dice stop and are read - `main` reads "RESULTADO! 25 1d6 + 1d8 + 1d20 = 1 + 8 + 16", `walk/bounce-landed.png`.
 - First walk found held dice flying up to the camera, huge and cropped; fixed in T6 with a low spawn, a smaller upward push and an invisible lid.
 - Not walked: feel on the user's phone (real accelerometer, push strength).

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { shakeRestore } from '../utils/prefs';
-import { createShakeHandler } from '../utils/shakeGesture';
+import { createShakeHandler, screenMotion } from '../utils/shakeGesture';
 import { sound } from '../audio/engine';
 
 type IOSMotion = typeof DeviceMotionEvent & { requestPermission?: () => Promise<'granted' | 'denied'> };
@@ -44,11 +44,8 @@ export function useShake(gesture: Gesture, wanted: boolean, canRoll: () => boole
       { start: () => cb.current.start(), cancel: () => cb.current.cancel() },
     );
     const handle = (e: DeviceMotionEvent) => {
-      const a = e.acceleration ?? e.accelerationIncludingGravity;
-      if (!a) return;
-      const g = e.acceleration ? 0 : 9.8;
-      const force = Math.hypot(a.x ?? 0, a.y ?? 0, a.z ?? 0) - g;
-      step(force, performance.now(), a.x ?? 0, a.y ?? 0);
+      const m = screenMotion(e.acceleration, e.accelerationIncludingGravity, screen.orientation?.angle ?? 0);
+      if (m) step(m.force, performance.now(), m.ax, m.ay);
     };
     window.addEventListener('devicemotion', handle);
     return () => window.removeEventListener('devicemotion', handle);

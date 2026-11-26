@@ -5,6 +5,7 @@ import type { DieSpec } from '../types/dice';
 import { getDie, labelTexture, readValue } from '../utils/geometry';
 import { sound } from '../audio/engine';
 import { shakeBus, type ShakePush } from '../hooks/useShake';
+import { heldVelocity } from '../utils/shakeGesture';
 import { contactImpact } from '../utils/sound';
 
 const FLAT = 0.95; // cos(~18°): below this the die is resting on an edge/corner -> reroll
@@ -21,11 +22,10 @@ const spin = () => [rand(-15, 15), rand(-15, 15), rand(-15, 15)] as [number, num
 export const HOLD_DEPTH = 2.2; // strip along the bottom edge
 export const HOLD_SPREAD = 1 / 3; // half-width as a share of the table width
 export const HOLD_LID = 2.4; // invisible lid over the table: held dice stay low, away from the camera
-const PUSH_GAP_MS = 60; // the phone reports ~60 samples/s; one push per die per gap
-const PUSH_SPREAD = 0.3; // per-die wobble around the shake direction
 // held dice behave like bouncy balls (SHA-05.6); thrown dice get the normal table back
 const HELD = { restitution: 0.95, friction: 0.02 };
 const THROWN = { restitution: 0.3, friction: 0.6 };
+const HELD_DAMPING = 0.5; // held dice slow down slowly, so pushes keep landing
 
 /** `hold`: in the bottom strip, pushed by the shake, never read. `thrown`: flies to the top and is read. */
 export type Phase = 'hold' | 'thrown';
@@ -53,18 +53,14 @@ export function Die({ spec, index, count, phase, arena, onSettle }: Props) {
   // Held: each rattle step pushes the die along the shake, harder for a harder shake (SHA-02.1, SHA-05)
   useEffect(() => {
     if (thrown) return;
-    let last = -Infinity;
     const push = (e: Event) => {
       const b = body.current;
-      const now = performance.now();
-      if (!b || now - last < PUSH_GAP_MS) return;
-      last = now;
+      if (!b) return;
       const { impulse: i, dir } = (e as CustomEvent<ShakePush>).detail;
-      // the push sets the sideways speed (any mass), so a back-and-forth shake flings dice edge to edge (SHA-05.5)
-      const dx = dir.x + rand(-PUSH_SPREAD, PUSH_SPREAD);
-      const dz = dir.z + rand(-PUSH_SPREAD, PUSH_SPREAD);
-      const n = Math.hypot(dx, dz) || 1;
-      b.setLinvel({ x: (dx / n) * i, y: rand(0.5, 2), z: (dz / n) * i }, true);
+      // sets the sideways speed (any mass), so a back-and-forth shake flings dice edge to edge (SHA-05.5)
+      const v = heldVelocity(b.linvel(), dir, i, Math.random);
+      if (!v) return; // still flying: let it bounce
+      b.setLinvel(v, true);
       b.setAngvel({ x: rand(-i, i), y: rand(-i, i), z: rand(-i, i) }, true);
     };
     shakeBus.addEventListener('push', push);
@@ -133,6 +129,7 @@ export function Die({ spec, index, count, phase, arena, onSettle }: Props) {
       linearVelocity={start.linearVelocity}
       angularVelocity={start.angularVelocity}
       onSleep={() => thrown && settle()}
+      linearDamping={thrown ? 0 : HELD_DAMPING}
       onCollisionEnter={({ other }) => {
         const self = body.current;
         if (!self) return;

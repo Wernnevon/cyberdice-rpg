@@ -1,7 +1,7 @@
 // Derived from .specs/features/sound-polish/spec.md (SPL-05) and shake-animation/spec.md (SHA-01.5, SHA-02.1, SHA-04, SHA-05). Run: npm test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CALM_MS, canShakeRoll, createShakeGesture, createShakeHandler, MAX_IMPULSE, MIN_IMPULSE, pushDirection, RATTLE_THRESHOLD, ROLL_THRESHOLD, shakeImpulse } from './shakeGesture.ts';
+import { CALM_MS, canShakeRoll, createShakeGesture, createShakeHandler, FLYING, heldVelocity, MAX_IMPULSE, MIN_IMPULSE, PUSH_SPREAD, pushDirection, screenMotion, RATTLE_THRESHOLD, ROLL_THRESHOLD, shakeImpulse } from './shakeGesture.ts';
 
 const WEAK = (RATTLE_THRESHOLD + ROLL_THRESHOLD) / 2; // rattles, never rolls
 const STRONG = ROLL_THRESHOLD + 1;
@@ -183,8 +183,10 @@ test('SHA-05.2 the push follows the phone: side-to-side, up-down and mixed, as a
   // the handler hands each rattle step this direction with its push size
   const pushes: unknown[] = [];
   const handle = createShakeHandler((_t, i, d) => pushes.push([i, d]), () => {}, () => true);
-  handle(STRONG, 0, -6, -6);
-  assert.deepEqual(pushes, [[shakeImpulse(STRONG), pushDirection(-6, -6, rnd)]]);
+  handle(STRONG, 0, -3, 9); // asymmetric: swapped axes would point elsewhere
+  assert.deepEqual(pushes, [[shakeImpulse(STRONG), pushDirection(-3, 9, rnd)]]);
+  const [, d] = pushes[0] as [number, { x: number; z: number }];
+  assert.ok(d.x > 0 && d.z > 0 && near(d.z / d.x, 3), `handler direction ${JSON.stringify(d)}`);
 });
 
 test('SHA-05.3 with no side-to-side or up-down motion the push takes a random table direction', () => {
@@ -196,4 +198,44 @@ test('SHA-05.3 with no side-to-side or up-down motion the push takes a random ta
   // tiny noise counts as no direction too
   const n = pushDirection(1e-6, -1e-6, () => 0.25);
   assert.ok(near(n.x, b.x) && near(n.z, b.z));
+  // but a small real sideways motion is followed, not randomized
+  const small = pushDirection(0.5, 0, () => 0.25);
+  assert.ok(near(small.x, -1) && near(small.z, 0), `0.5 m/s² sideways: ${JSON.stringify(small)}`);
+});
+
+test('SHA-05.2 motion parts follow the screen: turned by its angle, gravity-only samples give no direction', () => {
+  const portrait = screenMotion({ x: 3, y: -4, z: 0 }, null, 0)!;
+  assert.ok(near(portrait.ax, 3) && near(portrait.ay, -4) && near(portrait.force, 5));
+  // screen turned 90°: the device's top points to the screen's left, its right edge to the screen's top
+  const land = screenMotion({ x: 3, y: -4, z: 0 }, null, 90)!;
+  assert.ok(near(land.ax, 4) && near(land.ay, 3), `landscape: ${JSON.stringify(land)}`);
+  const land270 = screenMotion({ x: 3, y: -4, z: 0 }, null, 270)!;
+  assert.ok(near(land270.ax, -4) && near(land270.ay, -3), `landscape 270: ${JSON.stringify(land270)}`);
+  // only gravity-including data: force above gravity still counts, the direction does not
+  const tilted = screenMotion(null, { x: 6.3, y: 7.5, z: 0 }, 0)!;
+  assert.ok(near(tilted.force, Math.hypot(6.3, 7.5) - 9.8));
+  assert.deepEqual([tilted.ax, tilted.ay], [0, 0], 'random push, not a gravity-biased one');
+  assert.equal(screenMotion(null, null, 0), null);
+});
+
+test('SHA-05.5 a push sets the held die sideways speed to the push size, along the shake', () => {
+  const dir = pushDirection(-3, 9, () => 0);
+  for (const r of [0, 0.25, 0.5, 0.75, 0.999]) {
+    for (const i of [MIN_IMPULSE, 9, MAX_IMPULSE]) {
+      const v = heldVelocity({ x: 0, z: 0 }, dir, i, () => r)!;
+      assert.ok(near(Math.hypot(v.x, v.z), i), `sideways speed ${Math.hypot(v.x, v.z)} for push ${i}`);
+      const cos = (v.x * dir.x + v.z * dir.z) / i;
+      assert.ok(cos > Math.cos((25 * Math.PI) / 180), `wobble too wide: ${Math.acos(cos)} rad`);
+      assert.ok(v.y > 0 && v.y <= 2, 'a small hop');
+    }
+  }
+  assert.equal(PUSH_SPREAD, 0.3);
+  // a die slowed below 60 % of the push is flung whole the new way, whatever way it was going
+  const slow = { x: dir.x * 9 * (FLYING - 0.01), z: dir.z * 9 * (FLYING - 0.01) };
+  const back = heldVelocity(slow, { x: -dir.x, z: -dir.z }, 9, () => 0.5)!;
+  assert.ok(near(back.x, -dir.x * 9) && near(back.z, -dir.z * 9));
+  // a die still flying at 60 % of the push or more keeps flying: no new velocity
+  assert.equal(FLYING, 0.6);
+  assert.equal(heldVelocity({ x: 9 * FLYING, z: 0 }, dir, 9, () => 0.5), null);
+  assert.equal(heldVelocity({ x: 0, z: -12 }, dir, 9, () => 0.5), null, 'fast in another direction: keeps bouncing');
 });

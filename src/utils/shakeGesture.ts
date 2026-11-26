@@ -60,6 +60,47 @@ export function shakeImpulse(force: number) {
   return MIN_IMPULSE + (MAX_IMPULSE - MIN_IMPULSE) * t;
 }
 
+// ponytail: per-die wobble around the shake direction, so held dice do not move in lockstep
+export const PUSH_SPREAD = 0.3;
+
+export const FLYING = 0.6; // a held die faster than this share of the push keeps flying (SHA-05.5)
+
+/**
+ * Velocity a held die takes on a push (SHA-05.5): sideways speed exactly `impulse` (m/s, any mass),
+ * along `dir` with a small per-die wobble, plus a small hop. Null while the die still flies faster than
+ * FLYING x impulse, so it travels and bounces freely instead of being reversed on every ~60 Hz sample.
+ */
+export function heldVelocity(
+  current: { x: number; z: number },
+  dir: { x: number; z: number },
+  impulse: number,
+  random: () => number,
+) {
+  if (Math.hypot(current.x, current.z) >= FLYING * impulse) return null;
+  const dx = dir.x + (random() * 2 - 1) * PUSH_SPREAD;
+  const dz = dir.z + (random() * 2 - 1) * PUSH_SPREAD;
+  const n = Math.hypot(dx, dz) || 1;
+  return { x: (dx / n) * impulse, y: 0.5 + random() * 1.5, z: (dz / n) * impulse };
+}
+
+type Vec = { x: number | null; y: number | null; z: number | null } | null;
+
+/**
+ * One motion sample as the gesture needs it: force above gravity and the screen-plane parts
+ * (screen right, screen top), turned by the screen angle. Without gravity-free `acceleration` the
+ * direction is unknown (gravity sits in x/y), so the parts are 0 and the push goes random.
+ */
+export function screenMotion(acceleration: Vec, withGravity: Vec, angle: number) {
+  const a = acceleration ?? withGravity;
+  if (!a) return null;
+  const force = Math.hypot(a.x ?? 0, a.y ?? 0, a.z ?? 0) - (acceleration ? 0 : 9.8);
+  if (!acceleration) return { force, ax: 0, ay: 0 };
+  const r = (angle * Math.PI) / 180;
+  const x = a.x ?? 0;
+  const y = a.y ?? 0;
+  return { force, ax: x * Math.cos(r) - y * Math.sin(r), ay: x * Math.sin(r) + y * Math.cos(r) };
+}
+
 type GestureEvents = { start?: () => void; cancel?: () => void };
 
 /**
