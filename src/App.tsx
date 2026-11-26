@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { sound } from './audio/engine';
+import { sound, UNLOCK_EVENTS } from './audio/engine';
 import { DiceScene } from './components/DiceScene';
 import { Formula } from './components/Formula';
 import { History } from './components/History';
@@ -40,8 +40,8 @@ function Layout() {
   // iOS only starts (and resumes after backgrounding) audio inside a user gesture.
   useEffect(() => {
     const unlock = () => sound.unlock();
-    window.addEventListener('pointerdown', unlock, true);
-    return () => window.removeEventListener('pointerdown', unlock, true);
+    for (const e of UNLOCK_EVENTS) window.addEventListener(e, unlock, true);
+    return () => UNLOCK_EVENTS.forEach((e) => window.removeEventListener(e, unlock, true));
   }, []);
 
   useEffect(() => {

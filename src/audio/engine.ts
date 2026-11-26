@@ -1,6 +1,12 @@
 import type { Roll } from '../types/dice';
 import { createLimiter, impactGain, revealSound, type RevealSound } from '../utils/sound.ts';
 
+/**
+ * Events that unlock audio. A touch only counts as user activation on pointerup/touchend
+ * (pointerdown counts for a mouse only), and iOS starts Web Audio on touchend/click.
+ */
+export const UNLOCK_EVENTS = ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'] as const;
+
 const SAMPLES = [1, 2, 3, 4].map((i) => `/sounds/die-${i}.m4a`);
 
 type Deps = {

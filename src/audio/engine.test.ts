@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Roll } from '../types/dice';
 import { MIN_IMPACT, PER_WINDOW, WINDOW_MS } from '../utils/sound.ts';
-import { createSoundEngine } from './engine.ts';
+import { createSoundEngine, UNLOCK_EVENTS } from './engine.ts';
 
 type Played = { kind: 'sample' | 'tone'; gain: number; note?: string };
 
@@ -186,4 +186,12 @@ test('SND-03.2 a natural 1 plays the fail sound instead of the plain reveal', as
   assert.notEqual(fail, crit);
   assert.ok(!fail.includes(reveal), 'the plain reveal also played');
   assert.equal(new Set(fail.split('|')).size, fail.split('|').length, 'fail played once');
+});
+
+test('SND-05.2 audio unlocks on every event that counts as a user tap, mouse or touch', () => {
+  // HTML user activation: a touch activates on pointerup/touchend (not pointerdown);
+  // iOS starts Web Audio on touchend/click; keyboard users roll with keydown.
+  for (const e of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) {
+    assert.ok((UNLOCK_EVENTS as readonly string[]).includes(e), `missing ${e}`);
+  }
 });
