@@ -4,6 +4,7 @@ import { ConvexHullCollider, RigidBody, type RapierRigidBody } from '@react-thre
 import type { DieSpec } from '../types/dice';
 import { getDie, labelTexture, readValue } from '../utils/geometry';
 import { sound } from '../audio/engine';
+import { shakeBus } from '../hooks/useShake';
 import { contactImpact } from '../utils/sound';
 
 const FLAT = 0.95; // cos(~18°): below this the die is resting on an edge/corner -> reroll
@@ -16,20 +17,59 @@ const REST_S = 0.15;
 
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 const spin = () => [rand(-15, 15), rand(-15, 15), rand(-15, 15)] as [number, number, number];
+// ponytail: holding area knobs (world units) — the throw already starts from this strip
+export const HOLD_DEPTH = 2.2; // strip along the bottom edge
+export const HOLD_SPREAD = 1 / 3; // half-width as a share of the table width
+export const HOLD_LID = 2.4; // invisible lid: held dice stay low, away from the camera
 
-type Props = { spec: DieSpec; index: number; count: number; arena: { w: number; h: number }; onSettle: (dieId: string, value: number) => void };
+/** `hold`: in the bottom strip, pushed by the shake, never read. `thrown`: flies to the top and is read. */
+export type Phase = 'hold' | 'thrown';
 
-export function Die({ spec, index, count, arena, onSettle }: Props) {
+type Props = { spec: DieSpec; index: number; count: number; phase: Phase; arena: { w: number; h: number }; onSettle: (dieId: string, value: number) => void };
+
+export function Die({ spec, index, count, phase, arena, onSettle }: Props) {
   const def = useMemo(() => getDie(spec.sides, spec.role), [spec.sides, spec.role]);
   const body = useRef<RapierRigidBody>(null);
   const done = useRef(false);
 
-  // Thrown from the bottom edge (near the thumb) toward the top of the screen
+  const throwVelocity = () => [rand(-3, 3), rand(0, 2), -rand(6, 12)] as [number, number, number];
+  // Starts in the bottom strip (near the thumb); thrown toward the top of the screen, or held there while shaking
   const [start] = useState(() => ({
-    position: [rand(-arena.w / 3, arena.w / 3), 1.5 + (index % 6) * 0.6, arena.h / 2 - 0.9] as [number, number, number],
-    linearVelocity: [rand(-3, 3), rand(0, 2), -rand(6, 12)] as [number, number, number],
-    angularVelocity: spin(),
+    position: [
+      rand(-arena.w * HOLD_SPREAD, arena.w * HOLD_SPREAD),
+      phase === 'thrown' ? 1.5 + (index % 6) * 0.6 : 0.8 + (index % 2) * 0.8,
+      arena.h / 2 - HOLD_DEPTH / 2,
+    ] as [number, number, number],
+    linearVelocity: phase === 'thrown' ? throwVelocity() : ([0, 0, 0] as [number, number, number]),
+    angularVelocity: phase === 'thrown' ? spin() : ([rand(-3, 3), rand(-3, 3), rand(-3, 3)] as [number, number, number]),
   }));
+  const thrown = phase === 'thrown';
+
+  // Held: each rattle step pushes the die, harder for a harder shake (SHA-02.1)
+  useEffect(() => {
+    if (thrown) return;
+    const push = (e: Event) => {
+      const b = body.current;
+      const i = (e as CustomEvent<number>).detail;
+      if (!b) return;
+      b.applyImpulse({ x: rand(-i, i), y: rand(0.15, 0.5) * i, z: rand(-i, i) / 2 }, true);
+      b.applyTorqueImpulse({ x: rand(-i, i) / 4, y: rand(-i, i) / 4, z: rand(-i, i) / 4 }, true);
+    };
+    shakeBus.addEventListener('push', push);
+    return () => shakeBus.removeEventListener('push', push);
+  }, [thrown]);
+
+  // Released: the held die is thrown from where it is (SHA-03.1)
+  const wasHeld = useRef(!thrown);
+  useEffect(() => {
+    const b = body.current;
+    if (!thrown || !wasHeld.current || !b) return;
+    wasHeld.current = false;
+    const [x, y, z] = throwVelocity();
+    const [ax, ay, az] = spin();
+    b.setLinvel({ x, y, z }, true);
+    b.setAngvel({ x: ax, y: ay, z: az }, true);
+  }, [thrown]);
 
   const settle = (force = false) => {
     const b = body.current;
@@ -52,7 +92,7 @@ export function Die({ spec, index, count, arena, onSettle }: Props) {
     if (!b) return;
     const v = b.linvel();
     lastSpeed.current = Math.hypot(v.x, v.y, v.z);
-    if (done.current) return;
+    if (done.current || !thrown) return; // held dice are never read
     const w = b.angvel();
     if (lastSpeed.current < REST_LIN && Math.hypot(w.x, w.y, w.z) < REST_ANG) {
       still.current += dt;
@@ -68,9 +108,10 @@ export function Die({ spec, index, count, arena, onSettle }: Props) {
     settleRef.current = settle;
   });
   useEffect(() => {
+    if (!thrown) return;
     const t = setTimeout(() => settleRef.current(true), FALLBACK_MS);
     return () => clearTimeout(t);
-  }, []);
+  }, [thrown]);
 
   return (
     <RigidBody
@@ -81,7 +122,7 @@ export function Die({ spec, index, count, arena, onSettle }: Props) {
       angularVelocity={start.angularVelocity}
       restitution={0.3}
       friction={0.6}
-      onSleep={() => settle()}
+      onSleep={() => thrown && settle()}
       onCollisionEnter={({ other }) => {
         const self = body.current;
         if (!self) return;

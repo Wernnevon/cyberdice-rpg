@@ -91,7 +91,7 @@ Phase 1 (rules): T1, T2, T3, T4, independent. Phase 2 (wiring): T5 after T1, T2,
 **Tests**: none (physics in the browser; screenshots in the walk)
 **Gate**: build
 **Done when**: the walk's screenshots show the dice in the bottom area while shaking and spread over the table after the throw.
-**Status**: Pending
+**Status**: ✅ Complete
 
 ## Test Coverage Matrix
 
@@ -149,3 +149,10 @@ Proof: run unit | SHA-04.3
 
 **Dispatched:** none
 **Settled mid-build:** none
+**Walked:** 2026-11-26, headless Chrome 390x844 over CDP on `npx vite --host --port 5173` (HTTPS, cert ignored), fresh profile, Web Audio instrumented (sample playback rates, whoosh, oscillators).
+- SHA-01.1/01.3/01.4 (C3, C4): add d6, d6, d8 to the default d20, tap "Agitar para rolar: desligado", synthetic `devicemotion` alternating 20/2 m/s² for 40 steps. `walk/shaking-1.png`: four dice (2 d6, d8, d20) inside the bottom strip, fully in frame; `main` text is empty (no result, no "ROLANDO…", no ready hint).
+- SHA-02.2: during the shake only rattle clicks (rates 1.45-1.72) reached Web Audio; no impact-rate samples until the throw.
+- SHA-03.1 (C8): calm for 25 steps -> "ROLANDO…", dice spread toward the top; after 4 s `walk/landed.png` shows RESULTADO 26 = 3 + 6 + 8 + 9 from the same four dice; one whoosh, 4 reveal voices.
+- SHA-04.2 (T5): weak shake (10/2 m/s²) then calm -> text during: empty; after: "PRONTO PRA ROLAR!".
+- First walk found held dice flying up to the camera, huge and cropped; fixed in T6 with a low spawn, a smaller upward push and an invisible lid.
+- Not walked: feel on the user's phone (real accelerometer, push strength).

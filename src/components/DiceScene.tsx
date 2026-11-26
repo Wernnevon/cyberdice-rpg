@@ -2,7 +2,7 @@ import { Suspense, useCallback, useLayoutEffect } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { CuboidCollider, Physics, RigidBody } from '@react-three/rapier';
 import { useRoll } from '../hooks/useRoll';
-import { Die } from './Die';
+import { Die, HOLD_DEPTH, HOLD_LID, HOLD_SPREAD } from './Die';
 
 // ponytail: framing knobs. Table shows VIEW_W world units across (a die is ~1.4), so dice
 // keep the same share of the panel on any screen; MIN_H keeps short panels from zooming in too far.
@@ -32,6 +32,10 @@ function Table() {
     camera.updateProjectionMatrix();
   }, [camera, dist]);
   const active = state.active;
+  const held = state.shaking; // dice held while the phone is shaken (SHA-01)
+  const shown = held ?? active;
+  const holdW = aw * HOLD_SPREAD + 0.9; // half-width: the spawn spread plus a die
+  const holdZ = ah / 2 - HOLD_DEPTH; // back wall of the strip
   const onSettle = useCallback((dieId: string, value: number) => active && settle(active.id, dieId, value), [active, settle]);
 
   return (
@@ -48,8 +52,17 @@ function Table() {
         <planeGeometry args={[w, h]} />
         <shadowMaterial opacity={0.35} />
       </mesh>
-      {active?.dice.map((d, i) => (
-        <Die key={d.id} spec={d} index={i} count={active.dice.length} arena={{ w: aw, h: ah }} onSettle={onSettle} />
+      {held && (
+        // invisible box along the bottom edge; the table wall closes the near side
+        <RigidBody type="fixed" key={`hold-${aw}x${ah}`}>
+          <CuboidCollider args={[holdW, WALL, 0.25]} position={[0, WALL, holdZ - 0.25]} />
+          <CuboidCollider args={[0.25, WALL, HOLD_DEPTH / 2]} position={[-holdW - 0.25, WALL, ah / 2 - HOLD_DEPTH / 2]} />
+          <CuboidCollider args={[0.25, WALL, HOLD_DEPTH / 2]} position={[holdW + 0.25, WALL, ah / 2 - HOLD_DEPTH / 2]} />
+          <CuboidCollider args={[holdW, 0.25, HOLD_DEPTH / 2]} position={[0, HOLD_LID + 0.25, ah / 2 - HOLD_DEPTH / 2]} />
+        </RigidBody>
+      )}
+      {shown?.dice.map((d, i) => (
+        <Die key={d.id} spec={d} index={i} count={shown.dice.length} phase={held ? 'hold' : 'thrown'} arena={{ w: aw, h: ah }} onSettle={onSettle} />
       ))}
     </>
   );
