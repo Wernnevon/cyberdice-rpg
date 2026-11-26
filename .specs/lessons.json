@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "promote_threshold": 2,
+  "window_days": 45,
+  "quarantine_threshold": 2,
+  "next_id": 4,
+  "lessons": [
+    {
+      "id": "L-001",
+      "key": "weak_test::a routing test must play every sound the engine can make impact tones whoosh rattle not only the first ones written",
+      "text": "A routing test must play every sound the engine can make (impact, tones, whoosh, rattle), not only the first ones written.",
+      "signal": "weak_test",
+      "scope": "audio",
+      "status": "candidate",
+      "features": [
+        "sound-polish"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C9 / F1 (audio)"
+      ],
+      "created": "2026-11-26T22:49:13Z",
+      "last_seen": "2026-11-26T22:49:13Z"
+    },
+    {
+      "id": "L-002",
+      "key": "weak_test::do not give engine parameters defaults that the real caller must pass required args let the build catch a dropped call",
+      "text": "Do not give engine parameters defaults that the real caller must pass; required args let the build catch a dropped call.",
+      "signal": "weak_test",
+      "scope": "audio",
+      "status": "candidate",
+      "features": [
+        "sound-polish"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C5 C8 / F2 (audio)"
+      ],
+      "created": "2026-11-26T22:49:13Z",
+      "last_seen": "2026-11-26T22:49:13Z"
+    },
+    {
+      "id": "L-003",
+      "key": "ac_gap::rules wired inside react hooks or components roll launch motion step can roll predicate go in pure ts helpers with tests the hook only calls them",
+      "text": "Rules wired inside React hooks or components (roll launch, motion step, can-roll predicate) go in pure .ts helpers with tests; the hook only calls them.",
+      "signal": "ac_gap",
+      "scope": "hooks",
+      "status": "candidate",
+      "features": [
+        "sound-polish"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C11 C13 C16 / F3 F4 (hooks)"
+      ],
+      "created": "2026-11-26T22:49:13Z",
+      "last_seen": "2026-11-26T22:49:13Z"
+    }
+  ]
+}
