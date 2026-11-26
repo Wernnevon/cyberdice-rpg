@@ -94,7 +94,7 @@ Phase 1 (rules): T1, T2. Phase 2 (engine): T3, then T4, then T5, all after T1. P
 **Tests**: none (gesture rules in T2, rattle playback in T5; the wiring on the user's phone)
 **Gate**: build
 **Done when**: the build passes and the phone walk is handed to the user.
-**Status**: Pending
+**Status**: ✅ Complete
 
 ## Test Coverage Matrix
 
@@ -165,3 +165,7 @@ Proof: run unit | SPL-05.5
 
 **Dispatched:** none
 **Settled mid-build:** none
+**Walked:** 2026-11-26, headless Chrome 390x844 over CDP on `HTTP=1 npx vite --port 5174`, start state: fresh profile; Web Audio instrumented by wrapping `AudioBufferSourceNode.start` (playback rate, whoosh = the 0.35 s noise buffer) and `OscillatorNode.start`.
+- SPL-02/SPL-04 (T6): add d4, d6, d6 to the default d20, tap the roll button. One whoosh; 16 impacts with rates d20 0.82-0.87, d6 1.21-1.30, d4 1.40-1.49; reveal 4 oscillator voices (2 notes x 2).
+- SPL-05 (T7): tap "Agitar para rolar: desligado", then synthetic `devicemotion`: weak shake (10 m/s²) then calm -> 8 rattle clicks, no roll; strong shake (20 m/s²) -> rattle, no whoosh while shaking, one whoosh and a roll after calm; shaking again while the dice roll -> 0 rattle clicks, no second roll.
+- Not walked: how it sounds and feels on the user's phone (taste, real accelerometer).

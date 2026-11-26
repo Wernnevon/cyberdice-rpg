@@ -58,7 +58,7 @@ function Layout() {
     if (n && !rolling && roll(n)) setView('table');
   };
   const [shakeWanted] = useState(() => loadFlag(store, SHAKE_KEY));
-  const shake = useShake(() => view === 'table' && doRoll(), shakeWanted);
+  const shake = useShake(() => doRoll(), shakeWanted, () => view === 'table' && !rolling);
   const toggleShake = async () => {
     if (shake.on) {
       shake.disable();

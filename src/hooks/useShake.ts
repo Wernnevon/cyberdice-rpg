@@ -1,17 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { shakeRestore } from '../utils/prefs';
-
-// ponytail: calibration knobs — tune on real devices (m/s² above gravity, ms between shakes)
-const THRESHOLD = 15;
-const COOLDOWN = 1200;
+import { createShakeGesture } from '../utils/shakeGesture';
+import { sound } from '../audio/engine';
 
 type IOSMotion = typeof DeviceMotionEvent & { requestPermission?: () => Promise<'granted' | 'denied'> };
 
-/** `wanted`: the saved choice, read once at start to bring shake-to-roll back. */
-export function useShake(onShake: () => void, wanted = false) {
+/**
+ * Shake rattles the dice, and they are thrown when the shaking stops (SPL-05).
+ * `wanted`: the saved choice, read once at start. `canRoll`: false while dice move or another view shows.
+ */
+export function useShake(onShake: () => void, wanted = false, canRoll: () => boolean = () => true) {
   const cb = useRef(onShake);
+  const can = useRef(canRoll);
   useEffect(() => {
     cb.current = onShake;
+    can.current = canRoll;
   });
   const supported = typeof window !== 'undefined' && 'DeviceMotionEvent' in window;
   const needsPermission = supported && typeof (DeviceMotionEvent as IOSMotion).requestPermission === 'function';
@@ -25,17 +28,16 @@ export function useShake(onShake: () => void, wanted = false) {
   const listening = on || pending;
   useEffect(() => {
     if (!listening) return;
-    let last = 0;
+    const gesture = createShakeGesture();
     const handle = (e: DeviceMotionEvent) => {
       const a = e.acceleration ?? e.accelerationIncludingGravity;
       if (!a) return;
       const g = e.acceleration ? 0 : 9.8;
       const force = Math.hypot(a.x ?? 0, a.y ?? 0, a.z ?? 0) - g;
-      const now = Date.now();
-      if (force > THRESHOLD && now - last > COOLDOWN) {
-        last = now;
-        cb.current();
-      }
+      const now = performance.now();
+      const step = gesture(force, now, can.current());
+      if (step === 'rattle') sound.rattle(now);
+      else if (step === 'roll') cb.current();
     };
     window.addEventListener('devicemotion', handle);
     return () => window.removeEventListener('devicemotion', handle);
