@@ -10,9 +10,12 @@ import { useShake } from './hooks/useShake';
 import { t } from './i18n/t';
 import { buildNotation } from './utils/dice';
 import { loadMuted, saveMuted } from './utils/sound';
+import { loadFlag, saveFlag } from './utils/prefs';
 import s from './App.module.css';
 
 type View = 'table' | 'history' | 'formula';
+
+const SHAKE_KEY = 'shake-on';
 
 // localStorage itself can throw (blocked site data), not just its methods.
 const store = (() => {
@@ -54,10 +57,16 @@ function Layout() {
   const doRoll = (n = notation) => {
     if (n && !rolling && roll(n)) setView('table');
   };
-  const shake = useShake(() => view === 'table' && doRoll());
+  const [shakeWanted] = useState(() => loadFlag(store, SHAKE_KEY));
+  const shake = useShake(() => view === 'table' && doRoll(), shakeWanted);
   const toggleShake = async () => {
-    if (shake.on) return shake.disable();
-    setShakeError(!(await shake.enable()));
+    if (shake.on) {
+      shake.disable();
+      return saveFlag(store, SHAKE_KEY, false);
+    }
+    const ok = await shake.enable();
+    setShakeError(!ok);
+    if (ok) saveFlag(store, SHAKE_KEY, true);
   };
 
   return (
@@ -72,7 +81,7 @@ function Layout() {
             </svg>
           </button>
           {shake.supported && (
-            <button className="iconBtn" aria-pressed={shake.on} onClick={toggleShake} aria-label={shake.on ? t('shakeOn') : t('shakeOff')} title={shakeError ? t('shakeDenied') : undefined}>
+            <button className="iconBtn" data-shake-toggle aria-pressed={shake.on} onClick={toggleShake} aria-label={shake.on ? t('shakeOn') : t('shakeOff')} title={shakeError ? t('shakeDenied') : undefined}>
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <rect x="7" y="3" width="10" height="18" rx="2" />
                 <path d="M3 8v8M21 8v8" />

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { shakeRestore } from '../utils/prefs';
 
 // ponytail: calibration knobs — tune on real devices (m/s² above gravity, ms between shakes)
 const THRESHOLD = 15;
@@ -6,13 +7,18 @@ const COOLDOWN = 1200;
 
 type IOSMotion = typeof DeviceMotionEvent & { requestPermission?: () => Promise<'granted' | 'denied'> };
 
-export function useShake(onShake: () => void) {
+/** `wanted`: the saved choice, read once at start to bring shake-to-roll back. */
+export function useShake(onShake: () => void, wanted = false) {
   const cb = useRef(onShake);
   useEffect(() => {
     cb.current = onShake;
   });
-  const [on, setOn] = useState(false);
   const supported = typeof window !== 'undefined' && 'DeviceMotionEvent' in window;
+  const needsPermission = supported && typeof (DeviceMotionEvent as IOSMotion).requestPermission === 'function';
+  const [restore] = useState(() => (supported ? shakeRestore(wanted, needsPermission) : 'off'));
+  const [on, setOn] = useState(restore === 'now');
+  // iOS, saved as on, waiting for the first tap: show it on; tapping the toggle itself turns it off.
+  const [pending, setPending] = useState(restore === 'first-tap');
 
   useEffect(() => {
     if (!on) return;
@@ -40,5 +46,28 @@ export function useShake(onShake: () => void) {
     return true;
   };
 
-  return { supported, on, enable, disable: () => setOn(false) };
+  // iOS: re-ask for motion access inside the first tap after launch.
+  const enableRef = useRef(enable);
+  useEffect(() => {
+    enableRef.current = enable;
+  });
+  useEffect(() => {
+    if (!pending) return;
+    const events = ['touchend', 'click'] as const;
+    const once = (e: Event) => {
+      events.forEach((n) => window.removeEventListener(n, once, true));
+      if ((e.target as Element | null)?.closest?.('[data-shake-toggle]')) return; // the toggle decides
+      setPending(false);
+      void enableRef.current();
+    };
+    events.forEach((n) => window.addEventListener(n, once, true));
+    return () => events.forEach((n) => window.removeEventListener(n, once, true));
+  }, [pending]);
+
+  const disable = () => {
+    setOn(false);
+    setPending(false);
+  };
+
+  return { supported, on: on || pending, enable, disable };
 }
