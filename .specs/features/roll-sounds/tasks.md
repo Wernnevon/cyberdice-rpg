@@ -39,6 +39,7 @@ Phase 1 (assets): T1. Phase 2 (rules and engine): T2, then T3. Phase 3 (wiring):
 **Tests**: unit
 **Gate**: quick
 **Done when**: C2, C3, C4, C6, C7, C8, C9, C12, C13 pass.
+**Status**: ✅ Complete
 
 ### T3: Audio engine
 
