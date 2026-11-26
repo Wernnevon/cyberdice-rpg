@@ -103,3 +103,10 @@ export function createSoundEngine({ createContext, fetchBytes, navigator, random
 }
 
 export type SoundEngine = ReturnType<typeof createSoundEngine>;
+
+/** The app's engine, on the browser's real Web Audio (nothing happens until unlock()). */
+export const sound = createSoundEngine({
+  createContext: () => new AudioContext(),
+  fetchBytes: (url) => fetch(url).then((r) => r.arrayBuffer()),
+  navigator: globalThis.navigator as Deps['navigator'],
+});

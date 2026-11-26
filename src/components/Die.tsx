@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { ConvexHullCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import type { DieSpec } from '../types/dice';
 import { getDie, labelTexture, readValue } from '../utils/geometry';
+import { sound } from '../audio/engine';
 
 const FLAT = 0.95; // cos(~18°): below this the die is resting on an edge/corner -> reroll
 const FALLBACK_MS = 10000; // read anyway if the body never comes to rest
@@ -43,12 +44,16 @@ export function Die({ spec, index, arena, onSettle }: Props) {
   };
 
   const still = useRef(0);
+  // Collision events arrive after the bounce has already slowed the die, so keep last frame's speed.
+  const lastSpeed = useRef(0);
   useFrame((_, dt) => {
     const b = body.current;
-    if (!b || done.current) return;
+    if (!b) return;
     const v = b.linvel();
+    lastSpeed.current = Math.hypot(v.x, v.y, v.z);
+    if (done.current) return;
     const w = b.angvel();
-    if (Math.hypot(v.x, v.y, v.z) < REST_LIN && Math.hypot(w.x, w.y, w.z) < REST_ANG) {
+    if (lastSpeed.current < REST_LIN && Math.hypot(w.x, w.y, w.z) < REST_ANG) {
       still.current += dt;
       if (still.current >= REST_S) {
         still.current = 0;
@@ -76,6 +81,7 @@ export function Die({ spec, index, arena, onSettle }: Props) {
       restitution={0.3}
       friction={0.6}
       onSleep={() => settle()}
+      onCollisionEnter={() => sound.impact(lastSpeed.current, performance.now())}
     >
       <ConvexHullCollider args={[def.hull]} />
       <mesh geometry={def.geometry} castShadow>

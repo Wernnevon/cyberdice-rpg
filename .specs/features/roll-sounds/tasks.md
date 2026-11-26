@@ -55,12 +55,13 @@ Phase 1 (assets): T1. Phase 2 (rules and engine): T2, then T3. Phase 3 (wiring):
 ### T4: Play impacts from the physics
 
 **What**: `Die` reports contact force events to the engine, filtered by T2's rules.
-**Where**: `src/components/Die.tsx`
+**Where**: `src/components/Die.tsx`, `src/audio/engine.ts` (the shared browser instance, added here)
 **Depends on**: T3
 **Requirements**: SND-01
 **Tests**: none (rules in T2, playback in T3, the wiring in the walk)
 **Gate**: build
 **Done when**: a roll in the browser plays impact sounds.
+**Status**: ✅ Complete
 
 ### T5: Reveal sound and mute button
 
