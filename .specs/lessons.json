@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 8,
+  "next_id": 11,
   "lessons": [
     {
       "id": "L-001",
@@ -130,6 +130,60 @@
       ],
       "created": "2026-11-26T23:09:27Z",
       "last_seen": "2026-11-26T23:09:27Z"
+    },
+    {
+      "id": "L-008",
+      "key": "ac_gap::physics rules push velocity surface per phase go in pure helpers taking a body like object tested with a fake body the component only wires them",
+      "text": "Physics rules (push velocity, surface per phase) go in pure helpers taking a body-like object, tested with a fake body; the component only wires them.",
+      "signal": "ac_gap",
+      "scope": "physics",
+      "status": "candidate",
+      "features": [
+        "shake-animation"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C17 C18 C19 / F6 F7 F10 F11 (physics)"
+      ],
+      "created": "2026-11-26T23:37:54Z",
+      "last_seen": "2026-11-26T23:37:54Z"
+    },
+    {
+      "id": "L-009",
+      "key": "spec_deviation::device motion axes are device fixed turn them by screen orientation angle and treat accelerationincludinggravity as having no usable direction",
+      "text": "Device-motion axes are device-fixed: turn them by screen.orientation.angle, and treat accelerationIncludingGravity as having no usable direction.",
+      "signal": "spec_deviation",
+      "scope": "sensors",
+      "status": "candidate",
+      "features": [
+        "shake-animation"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "SHA-05.2 / F8 (sensors)"
+      ],
+      "created": "2026-11-26T23:37:54Z",
+      "last_seen": "2026-11-26T23:37:54Z"
+    },
+    {
+      "id": "L-010",
+      "key": "spec_precision_gap::a push applied on every 60 hz sensor sample cancels itself on a back and forth shake let a moving body fly and push only slowed ones",
+      "text": "A push applied on every ~60 Hz sensor sample cancels itself on a back-and-forth shake; let a moving body fly and push only slowed ones.",
+      "signal": "spec_precision_gap",
+      "scope": "physics",
+      "status": "candidate",
+      "features": [
+        "shake-animation"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "SHA-05.5 refinement (physics)"
+      ],
+      "created": "2026-11-26T23:37:54Z",
+      "last_seen": "2026-11-26T23:37:54Z"
     }
   ]
 }

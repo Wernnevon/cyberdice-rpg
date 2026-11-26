@@ -56,6 +56,24 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: C8 / F5 (walk)
 - last seen: 2026-11-26T23:09:27Z
 
+### L-008 - Physics rules (push velocity, surface per phase) go in pure helpers taking a body-like object, tested with a fake body; the component only wires them.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `physics` · harmful: 0
+- features: shake-animation
+- evidence: C17 C18 C19 / F6 F7 F10 F11 (physics)
+- last seen: 2026-11-26T23:37:54Z
+
+### L-009 - Device-motion axes are device-fixed: turn them by screen.orientation.angle, and treat accelerationIncludingGravity as having no usable direction.
+- signal: `spec_deviation` · recurrence: 1 feature(s) · scope: `sensors` · harmful: 0
+- features: shake-animation
+- evidence: SHA-05.2 / F8 (sensors)
+- last seen: 2026-11-26T23:37:54Z
+
+### L-010 - A push applied on every ~60 Hz sensor sample cancels itself on a back-and-forth shake; let a moving body fly and push only slowed ones.
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `physics` · harmful: 0
+- features: shake-animation
+- evidence: SHA-05.5 refinement (physics)
+- last seen: 2026-11-26T23:37:54Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.
