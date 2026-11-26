@@ -50,6 +50,7 @@ Phase 1 (assets): T1. Phase 2 (rules and engine): T2, then T3. Phase 3 (wiring):
 **Tests**: unit (fake AudioContext and navigator)
 **Gate**: quick
 **Done when**: C1, C5, C11, C14, C15 pass.
+**Status**: ✅ Complete
 
 ### T4: Play impacts from the physics
 
