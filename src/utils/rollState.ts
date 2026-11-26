@@ -33,7 +33,7 @@ export function rollReducer(state: RollState, action: RollAction): RollState {
       return { ...state, active: null, shaking: action.roll };
     case 'throw':
       return state.shaking ? { ...state, active: state.shaking, shaking: null } : state;
-    case 'cancelShake': // back to the ready screen
-      return { ...state, active: null, shaking: null };
+    case 'cancelShake': // back to the ready screen; nothing held (a button roll replaced it): keep that roll
+      return state.shaking ? { ...state, active: null, shaking: null } : state;
   }
 }

@@ -94,3 +94,14 @@ test('SHA-04.3 the roll button drops the held dice and its roll replaces them', 
   // a late throw of the dropped dice does nothing
   assert.equal(rollReducer(s, { type: 'throw' }), s);
 });
+
+test('SHA-04.3 the cancel that follows a button roll mid-shake keeps the button roll and its result', () => {
+  const held = make('2d6');
+  let s = rollReducer(initialRollState, { type: 'shake', roll: held });
+  const button = make('1d20');
+  s = rollReducer(s, { type: 'roll', active: button }); // ROLAR! tapped mid-shake
+  s = rollReducer(s, { type: 'cancelShake' }); // the gesture then reports cancel (can no longer roll)
+  assert.equal(s.active, button, 'the button roll stays on the table');
+  s = rollReducer(s, { type: 'settled', rollId: button.id, dieId: button.dice[0].id, value: 17 });
+  assert.equal(s.history[0].id, button.id, 'and lands in the history');
+});
