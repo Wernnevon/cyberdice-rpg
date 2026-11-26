@@ -134,10 +134,15 @@ Proof: run unit | SND-05.1
 Proof: run unit | SND-05.2
 
 **C16** - All four impact samples are precached for offline (SND-05, AC 3)
-Proof: `npm run build >/dev/null && grep -o 'sounds/die-[1-4].m4a' dist/sw.js | sort -u | wc -l` = 4
+Proof: `npm run build >/dev/null && node -e "const n = new Set(require('fs').readFileSync('dist/sw.js', 'utf8').match(/sounds\/die-[1-4]\.m4a/g)).size; console.log(n + ' sounds precached'); process.exit(n === 4 ? 0 : 1)"`
 
 ## Handoff
 
 **Dispatched:** none
 **Settled mid-build:** none
-**Walked:** not yet
+**Walked:** 2026-11-25, Chrome on `HTTP=1 npx vite --port 5174`, start state: fresh page, `localStorage` cleared.
+- SND-01/SND-02: tap anywhere (unlock), add d6, d6, d8 to the default d20, tap ROLAR!. Result 28 after 2.0 s; 23 impact samples and 2 reveal tones reached Web Audio (counted by wrapping `AudioBufferSourceNode`/`OscillatorNode.start`).
+- SND-04.1 (C10): the header button "Som" starts `aria-pressed="true"` with the speaker-waves icon; one tap shows `aria-pressed="false"` and the X icon, and stores `sound-muted=1`.
+- SND-04.2: the next roll while muted played 0 samples and 0 tones.
+- SND-04.3: after a reload the button still reads `aria-pressed="false"`; one tap back stores `sound-muted=0`.
+- Not walked: audibility on a real iPhone (silent switch, first sound). Needs the user's phone.
