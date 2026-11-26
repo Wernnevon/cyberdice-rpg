@@ -29,3 +29,16 @@ export function createShakeGesture() {
     return roll ? 'roll' : null;
   };
 }
+
+/** Shake can roll only on the table view, and not while the dice of a roll still move. */
+export const canShakeRoll = (view: string, rolling: boolean) => view === 'table' && !rolling;
+
+/** Motion handler: feeds the gesture and turns its steps into a rattle click or a roll. */
+export function createShakeHandler(rattle: (now: number) => void, roll: () => void, canRoll: () => boolean) {
+  const gesture = createShakeGesture();
+  return (force: number, now: number) => {
+    const step = gesture(force, now, canRoll());
+    if (step === 'rattle') rattle(now);
+    else if (step === 'roll') roll();
+  };
+}

@@ -7,6 +7,7 @@ import { Result } from './components/Result';
 import { Tray, type Counts } from './components/Tray';
 import { RollProvider, useRoll } from './hooks/useRoll';
 import { useShake } from './hooks/useShake';
+import { canShakeRoll } from './utils/shakeGesture';
 import { t } from './i18n/t';
 import { buildNotation } from './utils/dice';
 import { loadMuted, saveMuted } from './utils/sound';
@@ -58,7 +59,7 @@ function Layout() {
     if (n && !rolling && roll(n)) setView('table');
   };
   const [shakeWanted] = useState(() => loadFlag(store, SHAKE_KEY));
-  const shake = useShake(() => doRoll(), shakeWanted, () => view === 'table' && !rolling);
+  const shake = useShake(() => doRoll(), shakeWanted, () => canShakeRoll(view, rolling));
   const toggleShake = async () => {
     if (shake.on) {
       shake.disable();

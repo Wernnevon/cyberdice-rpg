@@ -1,7 +1,7 @@
 // Derived from .specs/features/sound-polish/spec.md (SPL-05). Run: npm test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CALM_MS, createShakeGesture, RATTLE_THRESHOLD, ROLL_THRESHOLD } from './shakeGesture.ts';
+import { CALM_MS, canShakeRoll, createShakeGesture, createShakeHandler, RATTLE_THRESHOLD, ROLL_THRESHOLD } from './shakeGesture.ts';
 
 const WEAK = (RATTLE_THRESHOLD + ROLL_THRESHOLD) / 2; // rattles, never rolls
 const STRONG = ROLL_THRESHOLD + 1;
@@ -48,4 +48,33 @@ test('SPL-05.4 no rattle and no roll while the app cannot roll', () => {
   feed(mid, [[STRONG, 0]]);
   assert.equal(mid(STRONG, 50, false), null);
   assert.deepEqual(feed(mid, [[CALM, 400], [CALM, 900]]), [null, null]);
+});
+
+test('SPL-05.1 the motion handler plays a rattle click for each rattling step, and rolls on release', () => {
+  const clicks: number[] = [];
+  let rolls = 0;
+  const handle = createShakeHandler((t) => clicks.push(t), () => rolls++, () => true);
+  handle(WEAK, 0);
+  handle(STRONG, 50);
+  handle(CALM, 100);
+  assert.deepEqual(clicks, [0, 50]);
+  assert.equal(rolls, 0);
+  handle(CALM, 50 + CALM_MS);
+  assert.equal(rolls, 1);
+  assert.deepEqual(clicks, [0, 50], 'no click while calm');
+});
+
+test('SPL-05.4 shake can roll only on the table view while no dice move', () => {
+  assert.equal(canShakeRoll('table', false), true);
+  assert.equal(canShakeRoll('table', true), false, 'dice still moving');
+  assert.equal(canShakeRoll('history', false), false);
+  assert.equal(canShakeRoll('formula', false), false);
+  // the handler honours it: no click and no roll while it says no
+  const clicks: number[] = [];
+  let rolls = 0;
+  const handle = createShakeHandler((t) => clicks.push(t), () => rolls++, () => canShakeRoll('history', false));
+  handle(STRONG, 0);
+  handle(CALM, CALM_MS + 10);
+  assert.deepEqual(clicks, []);
+  assert.equal(rolls, 0);
 });
