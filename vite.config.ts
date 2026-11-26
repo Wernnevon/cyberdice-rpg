@@ -18,10 +18,16 @@ export default defineConfig({
         orientation: 'portrait',
         background_color: '#0B0B10',
         theme_color: '#0B0B10',
-        icons: [{ src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }],
+        // PNGs generated from public/icon.svg by `npm run icons`
+        icons: [
+          { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
+          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'maskable-icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,wasm}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,wasm}'],
         // Rapier ships its WASM inlined in JS (~2MB+), above workbox's 2MB default
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         // Google Fonts: cached on first load so the app keeps its look offline
