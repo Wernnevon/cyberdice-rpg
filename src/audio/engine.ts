@@ -16,11 +16,20 @@ type Deps = {
   random?: () => number;
 };
 
-// Synth notes: [frequency Hz, start s, duration s]
-const TONES: Record<RevealSound, { wave: OscillatorType; notes: [number, number, number][]; slideTo?: number }> = {
-  reveal: { wave: 'square', notes: [[523, 0, 0.09], [784, 0.07, 0.16]] },
-  crit: { wave: 'square', notes: [[523, 0, 0.1], [659, 0.08, 0.1], [784, 0.16, 0.1], [1047, 0.24, 0.35]] },
-  fail: { wave: 'sawtooth', notes: [[330, 0, 0.25], [262, 0.22, 0.6]], slideTo: 110 },
+// Synth notes: [frequency Hz, start s, duration s, slide-to Hz?]. Each note is two detuned voices.
+// ponytail: tuned by ear on a phone; DETUNE spreads the voices into a thick "supersaw".
+const DETUNE = 12; // cents, ± per voice
+const TONES: Record<RevealSound, { wave: OscillatorType; notes: [number, number, number, number?][] }> = {
+  reveal: { wave: 'sawtooth', notes: [[659, 0, 0.1], [988, 0.07, 0.28]] },
+  crit: {
+    wave: 'sawtooth',
+    notes: [[523, 0, 0.09], [659, 0.07, 0.09], [784, 0.14, 0.09], [1047, 0.21, 0.09], [1319, 0.28, 0.6]],
+  },
+  fail: {
+    wave: 'square',
+    // falling sweep, then a glitch stutter stepping down, then a low thud
+    notes: [[440, 0, 0.5, 147], [220, 0.52, 0.04], [196, 0.59, 0.04], [175, 0.66, 0.04], [147, 0.73, 0.04], [110, 0.82, 0.3, 73]],
+  },
 };
 
 /**
@@ -50,20 +59,23 @@ export function createSoundEngine({ createContext, fetchBytes, navigator, random
       .finally(resolveReady);
 
   function tone(c: AudioContext, kind: RevealSound) {
-    const { wave, notes, slideTo } = TONES[kind];
+    const { wave, notes } = TONES[kind];
     const t0 = c.currentTime;
-    for (const [freq, at, dur] of notes) {
-      const osc = c.createOscillator();
-      const env = c.createGain();
-      osc.type = wave;
-      osc.frequency.setValueAtTime(freq, t0 + at);
-      if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t0 + at + dur);
-      env.gain.setValueAtTime(0.0001, t0 + at);
-      env.gain.linearRampToValueAtTime(0.18, t0 + at + 0.01);
-      env.gain.exponentialRampToValueAtTime(0.0001, t0 + at + dur);
-      osc.connect(env).connect(c.destination);
-      osc.start(t0 + at);
-      osc.stop(t0 + at + dur + 0.05);
+    for (const [freq, at, dur, slideTo] of notes) {
+      for (const detune of [-DETUNE, DETUNE]) {
+        const osc = c.createOscillator();
+        const env = c.createGain();
+        osc.type = wave;
+        osc.detune.value = detune;
+        osc.frequency.setValueAtTime(freq, t0 + at);
+        if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t0 + at + dur);
+        env.gain.setValueAtTime(0.0001, t0 + at);
+        env.gain.linearRampToValueAtTime(0.1, t0 + at + 0.008);
+        env.gain.exponentialRampToValueAtTime(0.0001, t0 + at + dur);
+        osc.connect(env).connect(c.destination);
+        osc.start(t0 + at);
+        osc.stop(t0 + at + dur + 0.01);
+      }
     }
   }
 

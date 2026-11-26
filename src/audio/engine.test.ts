@@ -1,4 +1,5 @@
-// Derived from .specs/features/roll-sounds/spec.md (SND-01.1, SND-02.1, SND-04.2, SND-05.1, SND-05.2). Run: npm test
+// Derived from .specs/features/roll-sounds/spec.md (SND-01.1, SND-02.1, SND-04.2, SND-05.1, SND-05.2)
+// and sound-polish/spec.md (SPL-01, SPL-03, SPL-04, SPL-05). Run: npm test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Roll } from '../types/dice';
@@ -6,10 +7,12 @@ import { MIN_IMPACT, PER_WINDOW, WINDOW_MS } from '../utils/sound.ts';
 import { createSoundEngine, UNLOCK_EVENTS } from './engine.ts';
 
 type Played = { kind: 'sample' | 'tone'; gain: number; note?: string };
+type Voice = { wave: string; freq: number; detune: number; start: number; stop: number; rampTo: number | null };
 
 /** Minimal Web Audio stand-in that records what reaches the speakers. */
 function fakeAudio() {
   const played: Played[] = [];
+  const voices: Voice[] = [];
   const param = () => ({ value: 1, setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {} });
   const ctx = {
     state: 'suspended' as AudioContextState,
@@ -41,19 +44,33 @@ function fakeAudio() {
       return src;
     },
     createOscillator() {
-      let freq = 0;
+      const v: Voice = { wave: 'sine', freq: 0, detune: 0, start: 0, stop: 0, rampTo: null };
       const osc = {
-        type: 'sine',
-        frequency: { ...param(), setValueAtTime: (f: number) => void (freq ||= f) },
+        get type() {
+          return v.wave;
+        },
+        set type(w: string) {
+          v.wave = w;
+        },
+        frequency: {
+          ...param(),
+          setValueAtTime: (f: number) => void (v.freq ||= f),
+          exponentialRampToValueAtTime: (f: number) => void (v.rampTo = f),
+        },
+        detune: { ...param(), set value(c: number) { v.detune = c; } },
         connect: (t: unknown) => t,
-        // a note = wave, pitch and start time: what a listener can tell apart
-        start: (at = 0) => played.push({ kind: 'tone', gain: 1, note: `${osc.type}@${freq}Hz+${at}s` }),
-        stop() {},
+        // a voice = wave, pitch, detune and start time: what a listener can tell apart
+        start: (at = 0) => {
+          v.start = at;
+          voices.push(v);
+          played.push({ kind: 'tone', gain: 1, note: `${v.wave}@${v.freq}Hz~${v.detune}c+${at}s` });
+        },
+        stop: (at = 0) => void (v.stop = at),
       };
       return osc;
     },
   };
-  return { ctx, played };
+  return { ctx, played, voices };
 }
 
 function setup(nav: { audioSession?: { type: string } } = {}) {
@@ -194,4 +211,62 @@ test('SND-05.2 audio unlocks on every event that counts as a user tap, mouse or 
   for (const e of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) {
     assert.ok((UNLOCK_EVENTS as readonly string[]).includes(e), `missing ${e}`);
   }
+});
+
+/** The voices one result sound plays, grouped into notes (same pitch and start). */
+async function voicesOf(d20: number) {
+  const { engine, voices } = setup();
+  engine.unlock();
+  await engine.ready;
+  engine.reveal(roll('x', d20));
+  const notes = new Map<string, Voice[]>();
+  for (const v of voices) notes.set(`${v.freq}@${v.start}`, [...(notes.get(`${v.freq}@${v.start}`) ?? []), v]);
+  return { voices, notes: [...notes.values()].sort((a, b) => a[0].start - b[0].start) };
+}
+
+const end = (voices: Voice[]) => Math.max(...voices.map((v) => v.stop));
+
+test('SPL-01.1 every reveal, crit and fail note uses at least two detuned voices', async () => {
+  for (const d20 of [12, 20, 1]) {
+    const { notes } = await voicesOf(d20);
+    assert.ok(notes.length > 0);
+    for (const n of notes) {
+      assert.ok(n.length >= 2, `d20=${d20}: note ${n[0].freq} Hz has ${n.length} voice(s)`);
+      assert.ok(new Set(n.map((v) => v.detune)).size >= 2, `d20=${d20}: note ${n[0].freq} Hz voices are not detuned`);
+    }
+  }
+});
+
+test('SPL-01.2 the plain reveal finishes within 0.4 s', async () => {
+  const { voices } = await voicesOf(12);
+  assert.ok(voices.length > 0);
+  assert.ok(end(voices) <= 0.4, `ends at ${end(voices)} s`);
+});
+
+test('SPL-01.3 the crit rises over at least four notes and finishes within 1.2 s', async () => {
+  const { voices, notes } = await voicesOf(20);
+  assert.ok(notes.length >= 4, `${notes.length} notes`);
+  for (let i = 1; i < notes.length; i++) {
+    assert.ok(notes[i][0].freq > notes[i - 1][0].freq, `note ${i} does not rise`);
+    assert.ok(notes[i][0].start > notes[i - 1][0].start, `note ${i} is not after the previous`);
+  }
+  assert.ok(end(voices) <= 1.2, `ends at ${end(voices)} s`);
+});
+
+test('SPL-01.4 the fail falls in pitch with at least three glitch retriggers and finishes within 1.2 s', async () => {
+  const { voices, notes } = await voicesOf(1);
+  const first = notes[0][0];
+  const last = notes[notes.length - 1][0];
+  assert.ok((first.rampTo ?? first.freq) < first.freq || last.freq < first.freq, 'pitch does not fall');
+  assert.ok((last.rampTo ?? last.freq) < first.freq, 'ends lower than it starts');
+  // glitch: short notes (≤ 60 ms) retriggered within 100 ms of each other
+  const short = notes.filter((n) => n[0].stop - n[0].start <= 0.06 + 1e-9);
+  let run = 1;
+  let best = short.length ? 1 : 0;
+  for (let i = 1; i < short.length; i++) {
+    run = short[i][0].start - short[i - 1][0].start <= 0.1 + 1e-9 ? run + 1 : 1;
+    best = Math.max(best, run);
+  }
+  assert.ok(best >= 3, `${best} rapid retriggers`);
+  assert.ok(end(voices) <= 1.2, `ends at ${end(voices)} s`);
 });
