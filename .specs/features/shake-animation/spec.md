@@ -75,6 +75,11 @@ As a player, the dice fly across the whole screen and bang into its edges, follo
 3. WHEN a rattle step has no side-to-side or up-down part THE SYSTEM SHALL push the held dice in a random screen-plane direction.
 4. WHEN a rattle step arrives THE SYSTEM SHALL change each held die's speed by the push size of SHA-02.1, whatever the die's mass.
 
+**Settled mid-build (2026-11-26, after testing SHA-05 on the phone):** "muito lento o dado percorre pouco a tela ele ta muito preso, quase ns e move minha intençãoe ra fazer ele parecer aquelas bolas malucas quicando por toda a tela". Criterion 4 gives way to 5 and 6:
+
+5. WHEN a rattle step arrives THE SYSTEM SHALL set each held die's sideways velocity to the push size along the push direction, so a back-and-forth shake throws the dice from edge to edge instead of cancelling out.
+6. WHILE the dice are being shaken THE SYSTEM SHALL make them bounce off the table edges and off each other keeping at least 90 % of their speed, with almost no friction on the table, like bouncy balls; once thrown they get back their normal bounce and friction.
+
 ## Requirement Traceability
 
 | ID | Story | Status |

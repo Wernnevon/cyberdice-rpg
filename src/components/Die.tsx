@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { ConvexHullCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
+import { CoefficientCombineRule, ConvexHullCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import type { DieSpec } from '../types/dice';
 import { getDie, labelTexture, readValue } from '../utils/geometry';
 import { sound } from '../audio/engine';
 import { shakeBus, type ShakePush } from '../hooks/useShake';
-import { MAX_IMPULSE } from '../utils/shakeGesture';
 import { contactImpact } from '../utils/sound';
 
 const FLAT = 0.95; // cos(~18°): below this the die is resting on an edge/corner -> reroll
@@ -22,8 +21,11 @@ const spin = () => [rand(-15, 15), rand(-15, 15), rand(-15, 15)] as [number, num
 export const HOLD_DEPTH = 2.2; // strip along the bottom edge
 export const HOLD_SPREAD = 1 / 3; // half-width as a share of the table width
 export const HOLD_LID = 2.4; // invisible lid over the table: held dice stay low, away from the camera
-const PUSH_GAP_MS = 50; // the phone reports ~60 samples/s; one push per die per gap
-const PUSH_SPREAD = 0.25; // per-die wobble around the shake direction
+const PUSH_GAP_MS = 60; // the phone reports ~60 samples/s; one push per die per gap
+const PUSH_SPREAD = 0.3; // per-die wobble around the shake direction
+// held dice behave like bouncy balls (SHA-05.6); thrown dice get the normal table back
+const HELD = { restitution: 0.95, friction: 0.02 };
+const THROWN = { restitution: 0.3, friction: 0.6 };
 
 /** `hold`: in the bottom strip, pushed by the shake, never read. `thrown`: flies to the top and is read. */
 export type Phase = 'hold' | 'thrown';
@@ -58,15 +60,12 @@ export function Die({ spec, index, count, phase, arena, onSettle }: Props) {
       if (!b || now - last < PUSH_GAP_MS) return;
       last = now;
       const { impulse: i, dir } = (e as CustomEvent<ShakePush>).detail;
-      const m = b.mass(); // impulse = mass x speed change: every die moves alike
+      // the push sets the sideways speed (any mass), so a back-and-forth shake flings dice edge to edge (SHA-05.5)
       const dx = dir.x + rand(-PUSH_SPREAD, PUSH_SPREAD);
       const dz = dir.z + rand(-PUSH_SPREAD, PUSH_SPREAD);
-      b.applyImpulse({ x: dx * i * m, y: rand(0.05, 0.2) * i * m, z: dz * i * m }, true);
-      b.applyTorqueImpulse({ x: rand(-i, i) * m * 0.1, y: rand(-i, i) * m * 0.1, z: rand(-i, i) * m * 0.1 }, true);
-      // ponytail: a steady one-way shake would add up forever; cap the sideways speed
-      const v = b.linvel();
-      const side = Math.hypot(v.x, v.z);
-      if (side > MAX_IMPULSE) b.setLinvel({ x: (v.x / side) * MAX_IMPULSE, y: v.y, z: (v.z / side) * MAX_IMPULSE }, true);
+      const n = Math.hypot(dx, dz) || 1;
+      b.setLinvel({ x: (dx / n) * i, y: rand(0.5, 2), z: (dz / n) * i }, true);
+      b.setAngvel({ x: rand(-i, i), y: rand(-i, i), z: rand(-i, i) }, true);
     };
     shakeBus.addEventListener('push', push);
     return () => shakeBus.removeEventListener('push', push);
@@ -133,8 +132,6 @@ export function Die({ spec, index, count, phase, arena, onSettle }: Props) {
       position={start.position}
       linearVelocity={start.linearVelocity}
       angularVelocity={start.angularVelocity}
-      restitution={0.3}
-      friction={0.6}
       onSleep={() => thrown && settle()}
       onCollisionEnter={({ other }) => {
         const self = body.current;
@@ -148,7 +145,12 @@ export function Die({ spec, index, count, phase, arena, onSettle }: Props) {
         if (speed !== null) sound.impact(speed, performance.now(), spec.sides, count);
       }}
     >
-      <ConvexHullCollider args={[def.hull]} />
+      <ConvexHullCollider
+        args={[def.hull]}
+        {...(thrown ? THROWN : HELD)}
+        restitutionCombineRule={thrown ? CoefficientCombineRule.Average : CoefficientCombineRule.Max}
+        frictionCombineRule={thrown ? CoefficientCombineRule.Average : CoefficientCombineRule.Min}
+      />
       <mesh geometry={def.geometry} castShadow>
         <meshToonMaterial color={def.color} />
       </mesh>

@@ -36,8 +36,8 @@ export function createShakeGesture() {
 export const canShakeRoll = (view: string, rolling: boolean, notation: string) => view === 'table' && !rolling && !!parse(notation);
 
 // ponytail: push size per rattle step, as a speed change in m/s (any die mass), tuned on a phone
-export const MIN_IMPULSE = 1.5;
-export const MAX_IMPULSE = 8;
+export const MIN_IMPULSE = 4;
+export const MAX_IMPULSE = 14;
 const NO_DIRECTION = 0.05; // m/s² of screen-plane motion below which the direction is noise
 
 /**
