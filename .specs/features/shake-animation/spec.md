@@ -89,7 +89,7 @@ As a player, the dice fly across the whole screen and bang into its edges, follo
 | SHA-02 | Shaking follows the phone | Done |
 | SHA-03 | Thrown from the hand | Done |
 | SHA-04 | Weak shake leaves no trace | Done |
-| SHA-05 | Shaken inside the phone (replaces the holding area of SHA-01.1, SHA-01.3) | Pending |
+| SHA-05 | Shaken inside the phone (replaces the holding area of SHA-01.1, SHA-01.3) | Done |
 
 ## Assumptions & Open Questions
 
