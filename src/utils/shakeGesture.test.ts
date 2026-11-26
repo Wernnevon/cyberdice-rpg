@@ -105,10 +105,10 @@ test('SHA-01.5 a strong shake reports start once, then rattles with the force, t
   handle(WEAK, 0);
   handle(STRONG, 50);
   handle(CALM, 50 + CALM_MS);
-  assert.deepEqual(calls, ['start', `rattle@0:${WEAK}`, `rattle@50:${STRONG}`, 'roll']);
+  assert.deepEqual(calls, ['start', `rattle@0:${shakeImpulse(WEAK)}`, `rattle@50:${shakeImpulse(STRONG)}`, 'roll']);
   // the next gesture starts again
   handle(STRONG, 1000);
-  assert.deepEqual(calls.slice(4), ['start', `rattle@1000:${STRONG}`]);
+  assert.deepEqual(calls.slice(4), ['start', `rattle@1000:${shakeImpulse(STRONG)}`]);
 });
 
 test('SHA-02.1 the push grows with the force, from the minimum at the rattle threshold to the maximum at twice the roll threshold', () => {
@@ -125,13 +125,23 @@ test('SHA-02.1 the push grows with the force, from the minimum at the rattle thr
   }
 });
 
+test('SHA-02.1 each rattle step hands the held dice a push that grows with the force', () => {
+  const pushes: number[] = [];
+  const handle = createShakeHandler((_t, i) => pushes.push(i), () => {}, () => true);
+  handle(WEAK, 0);
+  handle(STRONG, 20);
+  handle(2 * ROLL_THRESHOLD + 5, 40);
+  assert.deepEqual(pushes, [shakeImpulse(WEAK), shakeImpulse(STRONG), MAX_IMPULSE]);
+  assert.ok(pushes[0] < pushes[1] && pushes[1] < pushes[2]);
+});
+
 test('SHA-04.1 a weak shake reports cancel once when it ends, and no roll', () => {
   const { calls, handle } = recorder();
   handle(WEAK, 0);
   handle(WEAK, 50);
   handle(CALM, 100);
   handle(CALM, 50 + CALM_MS - 1);
-  assert.deepEqual(calls, ['start', `rattle@0:${WEAK}`, `rattle@50:${WEAK}`], 'not over yet');
+  assert.deepEqual(calls, ['start', `rattle@0:${shakeImpulse(WEAK)}`, `rattle@50:${shakeImpulse(WEAK)}`], 'not over yet');
   handle(CALM, 50 + CALM_MS);
   handle(CALM, 2000);
   assert.deepEqual(calls.slice(3), ['cancel']);
@@ -146,5 +156,5 @@ test('SHA-04.3 a view change or a button roll mid-shake reports cancel, and no l
   handle(CALM, 400);
   can = true;
   handle(CALM, 900);
-  assert.deepEqual(calls, ['start', `rattle@0:${STRONG}`, 'cancel']);
+  assert.deepEqual(calls, ['start', `rattle@0:${shakeImpulse(STRONG)}`, 'cancel']);
 });

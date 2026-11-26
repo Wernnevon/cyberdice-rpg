@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { shakeRestore } from '../utils/prefs';
-import { createShakeHandler, shakeImpulse } from '../utils/shakeGesture';
+import { createShakeHandler } from '../utils/shakeGesture';
 import { sound } from '../audio/engine';
 
 type IOSMotion = typeof DeviceMotionEvent & { requestPermission?: () => Promise<'granted' | 'denied'> };
@@ -34,9 +34,9 @@ export function useShake(gesture: Gesture, wanted: boolean, canRoll: () => boole
   useEffect(() => {
     if (!listening) return;
     const step = createShakeHandler(
-      (now, force) => {
+      (now, impulse) => {
         sound.rattle(now);
-        shakeBus.dispatchEvent(new CustomEvent('push', { detail: shakeImpulse(force) }));
+        shakeBus.dispatchEvent(new CustomEvent('push', { detail: impulse }));
       },
       () => cb.current.roll(),
       () => can.current(),

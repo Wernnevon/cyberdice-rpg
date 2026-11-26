@@ -49,11 +49,11 @@ type GestureEvents = { start?: () => void; cancel?: () => void };
 
 /**
  * Motion handler: feeds the gesture and turns its steps into calls. `start` on the first rattle of a
- * gesture, `rattle` on each rattle step with its force, `roll` on release after a strong shake, and
+ * gesture, `rattle` on each rattle step with the push for the held dice (`shakeImpulse` of its force), `roll` on release after a strong shake, and
  * `cancel` when a started gesture ends with no roll (weak shake, or it can no longer roll).
  */
 export function createShakeHandler(
-  rattle: (now: number, force: number) => void,
+  rattle: (now: number, impulse: number) => void,
   roll: () => void,
   canRoll: () => boolean,
   { start, cancel }: GestureEvents = {},
@@ -68,7 +68,7 @@ export function createShakeHandler(
       if (!active) start?.();
       active = true;
       lastRattle = now;
-      rattle(now, force);
+      rattle(now, shakeImpulse(force));
     } else if (step === 'roll') {
       active = false;
       roll();
