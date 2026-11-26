@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { ConvexHullCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import type { DieSpec } from '../types/dice';
 import { getDie, labelTexture, readValue } from '../utils/geometry';
 
 const FLAT = 0.95; // cos(~18°): below this the die is resting on an edge/corner -> reroll
-const FALLBACK_MS = 10000; // read anyway if the body never sleeps
+const FALLBACK_MS = 10000; // read anyway if the body never comes to rest
+// ponytail: rest detection knobs. Rapier's own sleep waits ~2s of stillness, which felt laggy,
+// so we read the face as soon as the die is visibly still for REST_S.
+const REST_LIN = 0.1; // m/s
+const REST_ANG = 0.2; // rad/s
+const REST_S = 0.15;
 
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 const spin = () => [rand(-15, 15), rand(-15, 15), rand(-15, 15)] as [number, number, number];
@@ -35,6 +41,21 @@ export function Die({ spec, index, arena, onSettle }: Props) {
     done.current = true;
     onSettle(spec.id, value);
   };
+
+  const still = useRef(0);
+  useFrame((_, dt) => {
+    const b = body.current;
+    if (!b || done.current) return;
+    const v = b.linvel();
+    const w = b.angvel();
+    if (Math.hypot(v.x, v.y, v.z) < REST_LIN && Math.hypot(w.x, w.y, w.z) < REST_ANG) {
+      still.current += dt;
+      if (still.current >= REST_S) {
+        still.current = 0;
+        settle(); // flat -> report; cocked -> re-thrown and the counter starts over
+      }
+    } else still.current = 0;
+  });
 
   const settleRef = useRef(settle);
   useEffect(() => {
