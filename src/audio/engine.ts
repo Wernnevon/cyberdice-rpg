@@ -1,5 +1,5 @@
-import type { Roll } from '../types/dice';
-import { createLimiter, impactGain, revealSound, type RevealSound } from '../utils/sound.ts';
+import type { DieSpec, Roll } from '../types/dice';
+import { createLimiter, crowdGain, impactGain, nextSample, pitchRate, revealSound, type RevealSound } from '../utils/sound.ts';
 
 /**
  * Events that unlock audio. A touch only counts as user activation on pointerup/touchend
@@ -19,6 +19,7 @@ type Deps = {
 // Synth notes: [frequency Hz, start s, duration s, slide-to Hz?]. Each note is two detuned voices.
 // ponytail: tuned by ear on a phone; DETUNE spreads the voices into a thick "supersaw".
 const DETUNE = 12; // cents, ± per voice
+const DUCK = 0.3; // impact level while a result sound plays
 const TONES: Record<RevealSound, { wave: OscillatorType; notes: [number, number, number, number?][] }> = {
   reveal: { wave: 'sawtooth', notes: [[659, 0, 0.1], [988, 0.07, 0.28]] },
   crit: {
@@ -41,7 +42,11 @@ export function createSoundEngine({ createContext, fetchBytes, navigator, random
   if (navigator?.audioSession) navigator.audioSession.type = 'ambient';
 
   let ctx: AudioContext | null = null;
+  // impacts -> impactBus (ducked by results) -> master compressor -> speakers; tones -> master
+  let master: AudioNode | null = null;
+  let impactBus: GainNode | null = null;
   let buffers: AudioBuffer[] = [];
+  let lastSample: number | null = null;
   let muted = false;
   let lastReveal: string | null = null;
   const allow = createLimiter();
@@ -58,9 +63,11 @@ export function createSoundEngine({ createContext, fetchBytes, navigator, random
       })
       .finally(resolveReady);
 
-  function tone(c: AudioContext, kind: RevealSound) {
+  /** Plays a result sound; returns its length in seconds. */
+  function tone(c: AudioContext, out: AudioNode, kind: RevealSound) {
     const { wave, notes } = TONES[kind];
     const t0 = c.currentTime;
+    let len = 0;
     for (const [freq, at, dur, slideTo] of notes) {
       for (const detune of [-DETUNE, DETUNE]) {
         const osc = c.createOscillator();
@@ -72,11 +79,13 @@ export function createSoundEngine({ createContext, fetchBytes, navigator, random
         env.gain.setValueAtTime(0.0001, t0 + at);
         env.gain.linearRampToValueAtTime(0.1, t0 + at + 0.008);
         env.gain.exponentialRampToValueAtTime(0.0001, t0 + at + dur);
-        osc.connect(env).connect(c.destination);
+        osc.connect(env).connect(out);
         osc.start(t0 + at);
         osc.stop(t0 + at + dur + 0.01);
+        len = Math.max(len, at + dur + 0.01);
       }
     }
+    return len;
   }
 
   return {
@@ -86,6 +95,13 @@ export function createSoundEngine({ createContext, fetchBytes, navigator, random
     unlock() {
       if (!ctx) {
         ctx = createContext();
+        const comp = ctx.createDynamicsCompressor();
+        comp.threshold.value = -18;
+        comp.ratio.value = 6;
+        comp.connect(ctx.destination);
+        master = comp;
+        impactBus = ctx.createGain();
+        impactBus.connect(comp);
         void load(ctx);
       }
       if (ctx.state === 'suspended') void ctx.resume();
@@ -95,16 +111,19 @@ export function createSoundEngine({ createContext, fetchBytes, navigator, random
       muted = value;
     },
 
-    /** Impact = die speed at contact (m/s). Returns the gain played, or null. */
-    impact(speed: number, now: number) {
-      if (muted || !ctx || !buffers.length) return null;
-      const gain = impactGain(speed);
-      if (gain === null || !allow(now)) return null;
+    /** Impact = die speed at contact (m/s), for a die of `sides` in a roll of `dice` dice. Returns the gain played, or null. */
+    impact(speed: number, now: number, sides: DieSpec['sides'] = 20, dice = 1) {
+      if (muted || !ctx || !impactBus || !buffers.length) return null;
+      const g = impactGain(speed);
+      if (g === null || !allow(now)) return null;
+      const gain = g * crowdGain(dice);
+      lastSample = nextSample(buffers.length, lastSample, random);
       const src = ctx.createBufferSource();
-      src.buffer = buffers[Math.floor(random() * buffers.length)];
+      src.buffer = buffers[lastSample];
+      src.playbackRate.value = pitchRate(sides, random);
       const vol = ctx.createGain();
       vol.gain.value = gain;
-      src.connect(vol).connect(ctx.destination);
+      src.connect(vol).connect(impactBus);
       src.start();
       return gain;
     },
@@ -114,7 +133,11 @@ export function createSoundEngine({ createContext, fetchBytes, navigator, random
       if (muted || !ctx || roll.id === lastReveal) return null;
       lastReveal = roll.id;
       const kind = revealSound(roll);
-      tone(ctx, kind);
+      const len = tone(ctx, master!, kind);
+      const t0 = ctx.currentTime;
+      impactBus!.gain.setValueAtTime(DUCK, t0);
+      impactBus!.gain.setValueAtTime(DUCK, t0 + len);
+      impactBus!.gain.linearRampToValueAtTime(1, t0 + len + 0.15);
       return kind;
     },
   };

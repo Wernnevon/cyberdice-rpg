@@ -3,21 +3,57 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Roll } from '../types/dice';
-import { MIN_IMPACT, PER_WINDOW, WINDOW_MS } from '../utils/sound.ts';
+import { crowdGain, diePitch, MIN_IMPACT, PER_WINDOW, WINDOW_MS } from '../utils/sound.ts';
 import { createSoundEngine, UNLOCK_EVENTS } from './engine.ts';
 
-type Played = { kind: 'sample' | 'tone'; gain: number; note?: string };
+type Node = { kind: string; outs: Node[]; gain?: Param; buffer?: unknown; playbackRate?: Param };
+type Played = { kind: 'sample' | 'tone'; gain: number; note?: string; rate?: number; buffer?: unknown; path: Node[] };
 type Voice = { wave: string; freq: number; detune: number; start: number; stop: number; rampTo: number | null };
+type Param = ReturnType<typeof param>;
 
-/** Minimal Web Audio stand-in that records what reaches the speakers. */
+/** An AudioParam that remembers its scheduled values. */
+function param(initial = 1) {
+  const events: { t: number; v: number }[] = [];
+  return {
+    value: initial,
+    events,
+    setValueAtTime(v: number, t: number) {
+      events.push({ t, v });
+    },
+    linearRampToValueAtTime(v: number, t: number) {
+      events.push({ t, v });
+    },
+    exponentialRampToValueAtTime(v: number, t: number) {
+      events.push({ t, v });
+    },
+    /** Value in effect at time t (ramps counted as reached at their end time). */
+    at(t: number) {
+      const past = events.filter((e) => e.t <= t + 1e-9).sort((x, y) => x.t - y.t);
+      return past.length ? past[past.length - 1].v : this.value;
+    },
+  };
+}
+
+/** Minimal Web Audio stand-in that records what reaches the speakers, and through which nodes. */
 function fakeAudio() {
   const played: Played[] = [];
   const voices: Voice[] = [];
-  const param = () => ({ value: 1, setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {} });
+  const destination: Node = { kind: 'destination', outs: [] };
+  const node = (kind: string, extra: object = {}) => {
+    const n = { kind, outs: [] as Node[], ...extra, connect: (t: Node) => (n.outs.push(t), t) };
+    return n;
+  };
+  /** The chain from a source to the speakers (first output at each step). */
+  const pathOf = (n: Node) => {
+    const path = [n];
+    while (path[path.length - 1].outs[0]) path.push(path[path.length - 1].outs[0]);
+    return path;
+  };
   const ctx = {
     state: 'suspended' as AudioContextState,
     currentTime: 0,
-    destination: {},
+    sampleRate: 8000,
+    destination,
     resumed: 0,
     resume() {
       this.state = 'running';
@@ -25,27 +61,22 @@ function fakeAudio() {
       return Promise.resolve();
     },
     decodeAudioData: (b: ArrayBuffer) => Promise.resolve({ duration: 0.3, bytes: b.byteLength }),
-    createGain() {
-      const node = { gain: param(), connect: (t: unknown) => t };
-      return node;
-    },
+    createGain: () => node('gain', { gain: param() }),
+    createDynamicsCompressor: () => node('compressor', { threshold: param(), knee: param(), ratio: param(), attack: param(), release: param() }),
+    createBiquadFilter: () => node('filter', { type: 'lowpass', frequency: param(), Q: param() }),
+    createBuffer: (_ch: number, length: number) => ({ length, getChannelData: () => new Float32Array(length) }),
     createBufferSource() {
-      const src = {
-        buffer: null as unknown,
-        out: null as { gain: { value: number } } | null,
-        connect(t: { gain: { value: number } }) {
-          src.out = t;
-          return t;
-        },
-        start() {
-          if (src.buffer) played.push({ kind: 'sample', gain: src.out?.gain.value ?? 1 });
-        },
+      const src = node('source', { buffer: null as unknown, playbackRate: param() }) as Node & { connect(t: Node): Node; start(): void };
+      src.start = () => {
+        if (!src.buffer) return;
+        const path = pathOf(src);
+        played.push({ kind: 'sample', gain: path[1]?.gain?.value ?? 1, rate: src.playbackRate!.value, buffer: src.buffer, path });
       };
       return src;
     },
     createOscillator() {
       const v: Voice = { wave: 'sine', freq: 0, detune: 0, start: 0, stop: 0, rampTo: null };
-      const osc = {
+      const osc = node('oscillator', {
         get type() {
           return v.wave;
         },
@@ -58,22 +89,21 @@ function fakeAudio() {
           exponentialRampToValueAtTime: (f: number) => void (v.rampTo = f),
         },
         detune: { ...param(), set value(c: number) { v.detune = c; } },
-        connect: (t: unknown) => t,
         // a voice = wave, pitch, detune and start time: what a listener can tell apart
         start: (at = 0) => {
           v.start = at;
           voices.push(v);
-          played.push({ kind: 'tone', gain: 1, note: `${v.wave}@${v.freq}Hz~${v.detune}c+${at}s` });
+          played.push({ kind: 'tone', gain: 1, note: `${v.wave}@${v.freq}Hz~${v.detune}c+${at}s`, path: pathOf(osc) });
         },
         stop: (at = 0) => void (v.stop = at),
-      };
+      });
       return osc;
     },
   };
   return { ctx, played, voices };
 }
 
-function setup(nav: { audioSession?: { type: string } } = {}) {
+function setup(nav: { audioSession?: { type: string } } = {}, random: () => number = () => 0) {
   const audio = fakeAudio();
   let created = 0;
   const engine = createSoundEngine({
@@ -83,7 +113,7 @@ function setup(nav: { audioSession?: { type: string } } = {}) {
     },
     fetchBytes: () => Promise.resolve(new ArrayBuffer(8)),
     navigator: nav,
-    random: () => 0,
+    random,
   });
   return { engine, ...audio, created: () => created };
 }
@@ -269,4 +299,92 @@ test('SPL-01.4 the fail falls in pitch with at least three glitch retriggers and
   }
   assert.ok(best >= 3, `${best} rapid retriggers`);
   assert.ok(end(voices) <= 1.2, `ends at ${end(voices)} s`);
+});
+
+/** A fresh, unlocked engine with its samples loaded. */
+async function ready(random?: () => number) {
+  const s = setup({}, random);
+  s.engine.unlock();
+  await s.engine.ready;
+  return s;
+}
+const samples = (played: Played[]) => played.filter((p) => p.kind === 'sample');
+
+test('SPL-02.1 the engine plays a smaller die higher, in the order d4 > d6 > d8 > d10 > d12 > d20', async () => {
+  const rates = [];
+  for (const sides of [4, 6, 8, 10, 12, 20] as const) {
+    const { engine, played } = await ready(() => 0.5); // 0.5: no jitter
+    engine.impact(MIN_IMPACT * 4, 0, sides, 1);
+    rates.push(samples(played)[0].rate!);
+  }
+  for (let i = 1; i < rates.length; i++) assert.ok(rates[i - 1] > rates[i], `rates ${rates.join(', ')}`);
+  assert.ok(Math.abs(rates[0] - diePitch(4)) < 1e-9);
+});
+
+test('SPL-02.2 the engine varies each impact pitch by at most ±6 %', async () => {
+  for (const r of [0, 0.999999]) {
+    const { engine, played } = await ready(() => r);
+    engine.impact(MIN_IMPACT * 4, 0, 6, 1);
+    const ratio = samples(played)[0].rate! / diePitch(6);
+    assert.ok(ratio >= 0.94 - 1e-9 && ratio <= 1.06 + 1e-9, `ratio ${ratio}`);
+    assert.ok(Math.abs(ratio - 1) > 0.05, 'the random draw reaches the pitch');
+  }
+});
+
+test('SPL-02.3 the engine never plays the same sample twice in a row', async () => {
+  const { engine, played } = await ready(() => 0); // a random that always says "first sample"
+  for (let i = 0; i < 8; i++) engine.impact(MIN_IMPACT * 4, i * WINDOW_MS, 8, 1);
+  const bufs = samples(played).map((p) => p.buffer);
+  assert.equal(bufs.length, 8);
+  for (let i = 1; i < bufs.length; i++) assert.notEqual(bufs[i], bufs[i - 1], `impact ${i} repeated its sample`);
+});
+
+test('SPL-03.1 the engine plays each impact at the crowd gain of its roll', async () => {
+  const gains = [];
+  for (const dice of [1, 4, 16]) {
+    const { engine, played } = await ready();
+    engine.impact(MIN_IMPACT * 100, 0, 20, dice); // full impact gain: 1
+    gains.push(samples(played)[0].gain);
+  }
+  assert.deepEqual(gains, [1, crowdGain(4), crowdGain(16)]);
+  assert.deepEqual(gains, [1, 0.5, 0.35]);
+});
+
+test('SPL-03.2 every sound reaches the speakers through one master compressor', async () => {
+  const { engine, played, ctx } = await ready();
+  engine.impact(MIN_IMPACT * 4, 0, 12, 3);
+  engine.reveal(roll('a', 12));
+  engine.reveal(roll('b', 20));
+  engine.reveal(roll('c', 1));
+  assert.ok(samples(played).length && played.some((p) => p.kind === 'tone'));
+  const masters = new Set<Node>();
+  for (const p of played) {
+    assert.equal(p.path[p.path.length - 1], ctx.destination, `${p.kind} does not reach the speakers`);
+    const comps = p.path.filter((n) => n.kind === 'compressor');
+    assert.equal(comps.length, 1, `${p.kind} passes ${comps.length} compressors`);
+    assert.equal(p.path[p.path.length - 2], comps[0], 'the compressor is the last stage');
+    masters.add(comps[0]);
+  }
+  assert.equal(masters.size, 1, 'one shared master');
+});
+
+test('SPL-03.3 a reveal ducks impacts to at most 30 % gain for its length', async () => {
+  for (const d20 of [12, 20, 1]) {
+    const { engine, played, voices, ctx } = await ready();
+    engine.impact(MIN_IMPACT * 4, 0, 20, 1); // an impact already playing
+    ctx.currentTime = 2;
+    engine.reveal(roll('r', d20));
+    const len = Math.max(...voices.map((v) => v.stop)) - 2;
+    engine.impact(MIN_IMPACT * 4, 2500, 20, 1); // one arriving during the reveal
+    // everything an impact passes through, multiplied, at a moment in time
+    const level = (p: Played, t: number) => p.path.reduce((g, n) => g * (n.gain && n.kind === 'gain' && n !== p.path[1] ? n.gain.at(t) : 1), 1);
+    for (const p of samples(played)) {
+      assert.ok(level(p, 1.9) > 0.99, 'not ducked before the reveal');
+      for (const t of [2, 2 + len / 2, 2 + len - 0.01]) assert.ok(level(p, t) <= 0.3 + 1e-9, `d20=${d20}: level ${level(p, t)} at ${t}`);
+      assert.ok(level(p, 2 + len + 0.2) > 0.99, `d20=${d20}: still ducked after the reveal`);
+    }
+    // the reveal itself is not ducked: no tone passes through the impacts' ducking stage
+    const impactStages = new Set(samples(played).flatMap((p) => p.path.slice(2).filter((n) => n.kind === 'gain')));
+    for (const p of played.filter((x) => x.kind === 'tone')) assert.ok(!p.path.some((n) => impactStages.has(n)), 'the reveal is ducked too');
+  }
 });

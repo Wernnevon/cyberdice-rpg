@@ -61,7 +61,7 @@ Phase 1 (rules): T1, T2. Phase 2 (engine): T3, then T4, then T5, all after T1. P
 **Tests**: unit (fake AudioContext)
 **Gate**: quick
 **Done when**: C9, C10 pass and the existing SND tests still pass.
-**Status**: Pending
+**Status**: ✅ Complete
 
 ### T5: Whoosh and rattle
 
