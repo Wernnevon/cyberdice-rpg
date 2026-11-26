@@ -310,6 +310,7 @@ async function ready(random?: () => number) {
   return s;
 }
 const samples = (played: Played[]) => played.filter((p) => p.kind === 'sample');
+const whooshes = (played: Played[]) => played.filter((p) => p.path.some((n) => n.kind === 'filter'));
 
 test('SPL-02.1 the engine plays a smaller die higher, in the order d4 > d6 > d8 > d10 > d12 > d20', async () => {
   const rates = [];
@@ -357,7 +358,11 @@ test('SPL-03.2 every sound reaches the speakers through one master compressor', 
   engine.reveal(roll('a', 12));
   engine.reveal(roll('b', 20));
   engine.reveal(roll('c', 1));
+  engine.launch('w');
+  engine.rattle(1000);
   assert.ok(samples(played).length && played.some((p) => p.kind === 'tone'));
+  assert.equal(whooshes(played).length, 1, 'the whoosh is among the sounds checked');
+  assert.equal(samples(played).length, 3, 'impact, rattle and whoosh are among the sounds checked');
   const masters = new Set<Node>();
   for (const p of played) {
     assert.equal(p.path[p.path.length - 1], ctx.destination, `${p.kind} does not reach the speakers`);
@@ -390,7 +395,6 @@ test('SPL-03.3 a reveal ducks impacts to at most 30 % gain for its length', asyn
   }
 });
 
-const whooshes = (played: Played[]) => played.filter((p) => p.path.some((n) => n.kind === 'filter'));
 
 test('SPL-04.1 a started roll plays exactly one launch whoosh', async () => {
   const { engine, played, ctx } = await ready();
