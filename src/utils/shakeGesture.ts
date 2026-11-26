@@ -83,6 +83,35 @@ export function heldVelocity(
   return { x: (dx / n) * impulse, y: 0.5 + random() * 1.5, z: (dz / n) * impulse };
 }
 
+type PushBody = {
+  linvel(): { x: number; y: number; z: number };
+  setLinvel(v: { x: number; y: number; z: number }, wake: boolean): void;
+  setAngvel(v: { x: number; y: number; z: number }, wake: boolean): void;
+};
+
+/** Applies one shake push to a held die body: a slowed die is flung, a flying one is left alone (SHA-05.5). */
+export function pushHeld(body: PushBody, push: { impulse: number; dir: { x: number; z: number } }, random: () => number) {
+  const v = heldVelocity(body.linvel(), push.dir, push.impulse, random);
+  if (!v) return false;
+  const i = push.impulse;
+  body.setLinvel(v, true);
+  body.setAngvel({ x: (random() * 2 - 1) * i, y: (random() * 2 - 1) * i, z: (random() * 2 - 1) * i }, true);
+  return true;
+}
+
+export type Combine = 'average' | 'min' | 'max';
+
+/**
+ * Die surface per phase (SHA-05.6). Held: bouncy balls - keeps 95 % of its speed against the walls
+ * (their restitution is 0, so the rule is max) and nearly no friction (rule min), light damping.
+ * Thrown: the normal table, so dice stop and are read.
+ */
+export function dieMaterial(phase: 'hold' | 'thrown') {
+  return phase === 'hold'
+    ? { restitution: 0.95, friction: 0.02, restitutionRule: 'max' as Combine, frictionRule: 'min' as Combine, damping: 0.5 }
+    : { restitution: 0.3, friction: 0.6, restitutionRule: 'average' as Combine, frictionRule: 'average' as Combine, damping: 0 };
+}
+
 type Vec = { x: number | null; y: number | null; z: number | null } | null;
 
 /**

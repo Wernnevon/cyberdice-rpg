@@ -1,7 +1,7 @@
 // Derived from .specs/features/sound-polish/spec.md (SPL-05) and shake-animation/spec.md (SHA-01.5, SHA-02.1, SHA-04, SHA-05). Run: npm test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CALM_MS, canShakeRoll, createShakeGesture, createShakeHandler, FLYING, heldVelocity, MAX_IMPULSE, MIN_IMPULSE, PUSH_SPREAD, pushDirection, screenMotion, RATTLE_THRESHOLD, ROLL_THRESHOLD, shakeImpulse } from './shakeGesture.ts';
+import { CALM_MS, canShakeRoll, createShakeGesture, createShakeHandler, dieMaterial, FLYING, heldVelocity, pushHeld, MAX_IMPULSE, MIN_IMPULSE, PUSH_SPREAD, pushDirection, screenMotion, RATTLE_THRESHOLD, ROLL_THRESHOLD, shakeImpulse } from './shakeGesture.ts';
 
 const WEAK = (RATTLE_THRESHOLD + ROLL_THRESHOLD) / 2; // rattles, never rolls
 const STRONG = ROLL_THRESHOLD + 1;
@@ -238,4 +238,49 @@ test('SHA-05.5 a push sets the held die sideways speed to the push size, along t
   assert.equal(FLYING, 0.6);
   assert.equal(heldVelocity({ x: 9 * FLYING, z: 0 }, dir, 9, () => 0.5), null);
   assert.equal(heldVelocity({ x: 0, z: -12 }, dir, 9, () => 0.5), null, 'fast in another direction: keeps bouncing');
+});
+
+/** A die body stand-in that records what the push did to it. */
+function fakeBody(v: { x: number; y: number; z: number }) {
+  const calls: string[] = [];
+  return {
+    calls,
+    v,
+    linvel: () => v,
+    setLinvel(n: { x: number; y: number; z: number }) {
+      calls.push('linvel');
+      v = n;
+      this.v = n;
+    },
+    setAngvel() {
+      calls.push('angvel');
+    },
+  };
+}
+
+test('SHA-05.5 a push flings a slowed die body with its own velocity rule and the event push size', () => {
+  const push = { impulse: 11, dir: pushDirection(-3, 9, () => 0) };
+  const slow = fakeBody({ x: -1, y: 0, z: 0.5 });
+  assert.equal(pushHeld(slow, push, () => 0.5), true);
+  assert.ok(near(Math.hypot(slow.v.x, slow.v.z), 11), 'the event push size, not another one');
+  const expected = heldVelocity({ x: -1, z: 0.5 }, push.dir, 11, () => 0.5)!;
+  assert.ok(near(slow.v.x, expected.x) && near(slow.v.z, expected.z), 'along the shake');
+  // a die still flying is left untouched: not stopped, not reversed
+  const flying = fakeBody({ x: 0, y: 0.3, z: -9 });
+  assert.equal(pushHeld(flying, push, () => 0.5), false);
+  assert.deepEqual(flying.calls, []);
+  assert.deepEqual(flying.v, { x: 0, y: 0.3, z: -9 });
+});
+
+test('SHA-05.6 held dice bounce like balls with almost no friction; thrown dice get the normal table back', () => {
+  const held = dieMaterial('hold');
+  assert.ok(held.restitution >= 0.9, `held restitution ${held.restitution}`);
+  assert.equal(held.restitutionRule, 'max', 'walls have restitution 0: only max keeps the bounce');
+  assert.ok(held.friction <= 0.05, `held friction ${held.friction}`);
+  assert.equal(held.frictionRule, 'min', 'the table friction must not average it up');
+  const thrown = dieMaterial('thrown');
+  assert.deepEqual(
+    { r: thrown.restitution, f: thrown.friction, rr: thrown.restitutionRule, fr: thrown.frictionRule, d: thrown.damping },
+    { r: 0.3, f: 0.6, rr: 'average', fr: 'average', d: 0 },
+  );
 });

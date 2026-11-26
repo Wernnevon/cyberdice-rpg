@@ -185,7 +185,7 @@ Proof: run unit | SHA-05.5
 Proof: run unit | SHA-05.5
 
 **C19** - Held dice bounce keeping at least 90 % of their speed, almost no friction; thrown dice back to normal (SHA-05, AC 6)
-Proof: walk
+Proof: run unit | SHA-05.6
 
 ## Handoff
 
@@ -198,6 +198,6 @@ Proof: walk
 - SHA-04.2 (T5): weak shake (10/2 m/s²) then calm -> text during: empty; after: "PRONTO PRA ROLAR!".
 - SHA-04.3 (verifier F1, in the browser): strong shake, tap ROLAR! mid-shake, keep sending calm samples -> 0 impacts while held, 1 whoosh, and the button roll lands: "RESULTADO! 5 2d6 + 1d8 + 1d20 = 1 + 1 + 2 + 1".
 - SHA-05 (C14, C17), after T8: same setup (2 d6, d8, d20, shake on). 45 samples of acceleration (-20, 0) m/s², i.e. the phone braking after moving right -> `walk/push-right.png`: all four dice moved to the right half of the table, one d6 against its right edge, d20 moving with the lighter dice. Then 45 samples of (14, -14) -> `walk/push-diag.png`: the four dice crossed the table diagonally to the top-left corner. `main` text empty throughout; 24 rattle-rate samples, no impacts, no whoosh while held. Held dice stayed below the lid, fully in frame.
-- SHA-05.5/05.6 (C18, C19), after the bouncy-ball change and the verifier fixes: add d6, d8 to the default d20, shake on; a synthetic back-and-forth shake (x = 22 sin(2π·4t), y = 12 sin(2π·3t + 1) m/s², 60 samples/s) for 0.7 s, 0.5 s, 0.5 s with a screenshot after each. `walk/bounce-strip.png` (the three table crops side by side): the d20 goes from the bottom to the top to the left, the d8 from the middle to the top right to the bottom: the dice cross the table between shots. A first try that set the speed on every sample kept the dice reversing in place (the "preso" feel); fixed by SHA-05.5's refinement. After calm: one whoosh, the dice stop and are read - `main` reads "RESULTADO! 25 1d6 + 1d8 + 1d20 = 1 + 8 + 16", `walk/bounce-landed.png`.
+- SHA-05.5/05.6 (C18, C19), after the bouncy-ball change and the verifier fixes: add d6, d8 to the default d20, shake on; a synthetic back-and-forth shake (x = 22 sin(2π·4t), y = 12 sin(2π·3t + 1) m/s², 60 samples/s) for 0.7 s, 0.5 s, 0.5 s with a screenshot after each. `walk/bounce-strip.png` (the three table crops side by side): the d20 goes from the bottom to the top to the left, the d8 from the middle to the top right to the bottom: the dice cross the table between shots. A first try that set the speed on every sample kept the dice reversing in place (the "preso" feel); fixed by SHA-05.5's refinement. After calm: one whoosh, the dice stop and are read - `main` reads "RESULTADO! 25 1d6 + 1d8 + 1d20 = 1 + 8 + 16", `walk/bounce-landed.png`. Re-checked after the F10/F11 refactor (1d6 + 1d20): the d6 flies to the top edge mid-shake, then "RESULTADO! 8 1d6 + 1d20 = 2 + 6".
 - First walk found held dice flying up to the camera, huge and cropped; fixed in T6 with a low spawn, a smaller upward push and an invisible lid.
 - Not walked: feel on the user's phone (real accelerometer, push strength).

@@ -5,7 +5,7 @@ import type { DieSpec } from '../types/dice';
 import { getDie, labelTexture, readValue } from '../utils/geometry';
 import { sound } from '../audio/engine';
 import { shakeBus, type ShakePush } from '../hooks/useShake';
-import { heldVelocity } from '../utils/shakeGesture';
+import { dieMaterial, pushHeld, type Combine } from '../utils/shakeGesture';
 import { contactImpact } from '../utils/sound';
 
 const FLAT = 0.95; // cos(~18°): below this the die is resting on an edge/corner -> reroll
@@ -22,10 +22,11 @@ const spin = () => [rand(-15, 15), rand(-15, 15), rand(-15, 15)] as [number, num
 export const HOLD_DEPTH = 2.2; // strip along the bottom edge
 export const HOLD_SPREAD = 1 / 3; // half-width as a share of the table width
 export const HOLD_LID = 2.4; // invisible lid over the table: held dice stay low, away from the camera
-// held dice behave like bouncy balls (SHA-05.6); thrown dice get the normal table back
-const HELD = { restitution: 0.95, friction: 0.02 };
-const THROWN = { restitution: 0.3, friction: 0.6 };
-const HELD_DAMPING = 0.5; // held dice slow down slowly, so pushes keep landing
+const RULE: Record<Combine, CoefficientCombineRule> = {
+  average: CoefficientCombineRule.Average,
+  min: CoefficientCombineRule.Min,
+  max: CoefficientCombineRule.Max,
+};
 
 /** `hold`: in the bottom strip, pushed by the shake, never read. `thrown`: flies to the top and is read. */
 export type Phase = 'hold' | 'thrown';
@@ -49,19 +50,13 @@ export function Die({ spec, index, count, phase, arena, onSettle }: Props) {
     angularVelocity: phase === 'thrown' ? spin() : ([rand(-3, 3), rand(-3, 3), rand(-3, 3)] as [number, number, number]),
   }));
   const thrown = phase === 'thrown';
+  const material = dieMaterial(phase); // bouncy while held, normal once thrown (SHA-05.6)
 
   // Held: each rattle step pushes the die along the shake, harder for a harder shake (SHA-02.1, SHA-05)
   useEffect(() => {
     if (thrown) return;
     const push = (e: Event) => {
-      const b = body.current;
-      if (!b) return;
-      const { impulse: i, dir } = (e as CustomEvent<ShakePush>).detail;
-      // sets the sideways speed (any mass), so a back-and-forth shake flings dice edge to edge (SHA-05.5)
-      const v = heldVelocity(b.linvel(), dir, i, Math.random);
-      if (!v) return; // still flying: let it bounce
-      b.setLinvel(v, true);
-      b.setAngvel({ x: rand(-i, i), y: rand(-i, i), z: rand(-i, i) }, true);
+      if (body.current) pushHeld(body.current, (e as CustomEvent<ShakePush>).detail, Math.random);
     };
     shakeBus.addEventListener('push', push);
     return () => shakeBus.removeEventListener('push', push);
@@ -129,7 +124,7 @@ export function Die({ spec, index, count, phase, arena, onSettle }: Props) {
       linearVelocity={start.linearVelocity}
       angularVelocity={start.angularVelocity}
       onSleep={() => thrown && settle()}
-      linearDamping={thrown ? 0 : HELD_DAMPING}
+      linearDamping={material.damping}
       onCollisionEnter={({ other }) => {
         const self = body.current;
         if (!self) return;
@@ -144,9 +139,10 @@ export function Die({ spec, index, count, phase, arena, onSettle }: Props) {
     >
       <ConvexHullCollider
         args={[def.hull]}
-        {...(thrown ? THROWN : HELD)}
-        restitutionCombineRule={thrown ? CoefficientCombineRule.Average : CoefficientCombineRule.Max}
-        frictionCombineRule={thrown ? CoefficientCombineRule.Average : CoefficientCombineRule.Min}
+        restitution={material.restitution}
+        friction={material.friction}
+        restitutionCombineRule={RULE[material.restitutionRule]}
+        frictionCombineRule={RULE[material.frictionRule]}
       />
       <mesh geometry={def.geometry} castShadow>
         <meshToonMaterial color={def.color} />
