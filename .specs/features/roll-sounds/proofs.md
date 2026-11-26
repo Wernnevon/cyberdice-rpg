@@ -1,6 +1,6 @@
 # roll-sounds proofs
 
-**HEAD**: 06b0f65
+**HEAD**: aa0e485
 **Tree**: clean
 **Shell**: /bin/sh
 **Result**: 17 pass, 0 fail
@@ -30,21 +30,21 @@
 `Run unit` - exit 0
 
 ```
-# Subtest: SND-04.4 missing or unreadable storage starts with sound on
-ok 18 - SND-04.4 missing or unreadable storage starts with sound on
+# Subtest: SND-01.1 a die hitting the table or a wall sounds at its own speed
+ok 26 - SND-01.1 a die hitting the table or a wall sounds at its own speed
   ---
-  duration_ms: 0.640173
+  duration_ms: 0.096234
   type: 'test'
   ...
-1..18
-# tests 18
+1..26
+# tests 26
 # suites 0
-# pass 18
+# pass 26
 # fail 0
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 102.06473
+# duration_ms 104.752615
 ```
 
 `npm run build >/dev/null && node -e "const n = new Set(require('fs').readFileSync('dist/sw.js', 'utf8').match(` - exit 0

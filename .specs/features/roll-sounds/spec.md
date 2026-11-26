@@ -1,6 +1,6 @@
 # Roll Sounds
 
-**Status:** Approved
+**Status:** Done
 **Approved**: 2026-11-25 - user: "1a e 2b, aprovo a spec"
 **Scope:** Medium
 
@@ -78,11 +78,11 @@ As an iPhone player, the app respects my silent switch, never misses the first s
 
 | ID | Story | Status |
 | --- | --- | --- |
-| SND-01 | Dice impacts | Pending |
-| SND-02 | Result reveal | Pending |
-| SND-03 | Crit and fail | Pending |
-| SND-04 | Mute control | Pending |
-| SND-05 | Platform behaviour | Pending |
+| SND-01 | Dice impacts | Done |
+| SND-02 | Result reveal | Done |
+| SND-03 | Crit and fail | Done |
+| SND-04 | Mute control | Done |
+| SND-05 | Platform behaviour | Done |
 
 ## Assumptions & Open Questions
 

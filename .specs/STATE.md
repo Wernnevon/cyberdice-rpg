@@ -11,5 +11,5 @@ The app stores no data by design. The sound on/off choice is the one exception: 
 
 ## Handoff
 
-- **Feature:** roll-sounds
-- **Phase:** Specify. Spec drafted, waiting on the asset download, the iPhone file format, and spec approval.
+- **Feature:** roll-sounds, done 2026-11-25. Verifier round 1 FAIL (7 findings), all closed; round 2 proofs 17/17; validate_verification exit 0.
+- **Open:** audibility on a real iPhone (silent switch, first roll after a tap) was not walked; it needs the user's phone.
