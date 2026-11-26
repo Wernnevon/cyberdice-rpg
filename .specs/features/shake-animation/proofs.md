@@ -1,6 +1,6 @@
 # shake-animation proofs
 
-**HEAD**: f6f5933
+**HEAD**: 82a0a28
 **Tree**: clean
 **Shell**: /bin/sh
 **Result**: 14 pass, 0 fail
@@ -28,18 +28,18 @@
 
 ```
 # Subtest: SHA-03.3 held dice launch nothing until thrown, then exactly one whoosh with the roll id
-ok 67 - SHA-03.3 held dice launch nothing until thrown, then exactly one whoosh with the roll id
+ok 70 - SHA-03.3 held dice launch nothing until thrown, then exactly one whoosh with the roll id
   ---
-  duration_ms: 0.308217
+  duration_ms: 0.307189
   type: 'test'
   ...
-1..67
-# tests 67
+1..70
+# tests 70
 # suites 0
-# pass 67
+# pass 70
 # fail 0
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 194.204047
+# duration_ms 195.122308
 ```

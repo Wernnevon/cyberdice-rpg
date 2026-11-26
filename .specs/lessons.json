@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 4,
+  "next_id": 8,
   "lessons": [
     {
       "id": "L-001",
@@ -58,6 +58,78 @@
       ],
       "created": "2026-11-26T22:49:13Z",
       "last_seen": "2026-11-26T22:49:13Z"
+    },
+    {
+      "id": "L-004",
+      "key": "ac_gap::when two events can follow each other button roll then gesture cancel test the chain in the reducer not each half alone a cancel must not clear state it did not create",
+      "text": "When two events can follow each other (button roll, then gesture cancel), test the chain in the reducer, not each half alone; a cancel must not clear state it did not create.",
+      "signal": "ac_gap",
+      "scope": "state",
+      "status": "candidate",
+      "features": [
+        "shake-animation"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C13 / F1 (state)"
+      ],
+      "created": "2026-11-26T23:09:27Z",
+      "last_seen": "2026-11-26T23:09:27Z"
+    },
+    {
+      "id": "L-005",
+      "key": "weak_test::gate on the same validity check the action uses parse not a proxy like a non empty string",
+      "text": "Gate on the same validity check the action uses (parse), not a proxy like a non-empty string.",
+      "signal": "weak_test",
+      "scope": "shake",
+      "status": "candidate",
+      "features": [
+        "shake-animation"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C5 / F2 (shake)"
+      ],
+      "created": "2026-11-26T23:09:27Z",
+      "last_seen": "2026-11-26T23:09:27Z"
+    },
+    {
+      "id": "L-006",
+      "key": "ac_gap::values a hook computes and forwards impulse throw action come out of the tested helper so the hook only passes them through",
+      "text": "Values a hook computes and forwards (impulse, throw action) come out of the tested helper, so the hook only passes them through.",
+      "signal": "ac_gap",
+      "scope": "hooks",
+      "status": "candidate",
+      "features": [
+        "shake-animation"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C6 C9 / F3 F4 (hooks)"
+      ],
+      "created": "2026-11-26T23:09:27Z",
+      "last_seen": "2026-11-26T23:09:27Z"
+    },
+    {
+      "id": "L-007",
+      "key": "weak_test::walk lines quote the text the saved screenshot shows record them from the same run",
+      "text": "Walk lines quote the text the saved screenshot shows; record them from the same run.",
+      "signal": "weak_test",
+      "scope": "walk",
+      "status": "candidate",
+      "features": [
+        "shake-animation"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C8 / F5 (walk)"
+      ],
+      "created": "2026-11-26T23:09:27Z",
+      "last_seen": "2026-11-26T23:09:27Z"
     }
   ]
 }

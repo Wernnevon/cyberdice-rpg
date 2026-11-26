@@ -32,6 +32,30 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: C11 C13 C16 / F3 F4 (hooks)
 - last seen: 2026-11-26T22:49:13Z
 
+### L-004 - When two events can follow each other (button roll, then gesture cancel), test the chain in the reducer, not each half alone; a cancel must not clear state it did not create.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `state` · harmful: 0
+- features: shake-animation
+- evidence: C13 / F1 (state)
+- last seen: 2026-11-26T23:09:27Z
+
+### L-005 - Gate on the same validity check the action uses (parse), not a proxy like a non-empty string.
+- signal: `weak_test` · recurrence: 1 feature(s) · scope: `shake` · harmful: 0
+- features: shake-animation
+- evidence: C5 / F2 (shake)
+- last seen: 2026-11-26T23:09:27Z
+
+### L-006 - Values a hook computes and forwards (impulse, throw action) come out of the tested helper, so the hook only passes them through.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `hooks` · harmful: 0
+- features: shake-animation
+- evidence: C6 C9 / F3 F4 (hooks)
+- last seen: 2026-11-26T23:09:27Z
+
+### L-007 - Walk lines quote the text the saved screenshot shows; record them from the same run.
+- signal: `weak_test` · recurrence: 1 feature(s) · scope: `walk` · harmful: 0
+- features: shake-animation
+- evidence: C8 / F5 (walk)
+- last seen: 2026-11-26T23:09:27Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.
