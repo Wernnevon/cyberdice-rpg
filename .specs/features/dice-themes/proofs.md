@@ -1,6 +1,6 @@
 # dice-themes proofs
 
-**HEAD**: 21bc6f3
+**HEAD**: a2131b6
 **Tree**: clean
 **Shell**: /bin/sh
 **Result**: 35 pass, 0 fail
@@ -48,19 +48,19 @@
 `Run unit` - exit 0
 
 ```
-✔ C5 saves the id under dice-theme (0.249905ms)
-✔ C7 falls back to neon (0.161068ms)
-✔ C8 survives blocked storage (0.236369ms)
-✔ C9 neon is the current look (0.234427ms)
-✔ C15 d100 keeps two tones (0.160461ms)
-✔ C16 numbers keep 4.5 contrast (0.373148ms)
-✔ C17 dropped icons stay grey (0.228914ms)
-ℹ tests 99
+✔ C5 saves the id under dice-theme (0.242028ms)
+✔ C7 falls back to neon (0.134437ms)
+✔ C8 survives blocked storage (0.295545ms)
+✔ C9 neon is the current look (0.291547ms)
+✔ C15 d100 keeps two tones (0.160813ms)
+✔ C16 numbers keep 4.5 contrast (0.369128ms)
+✔ C17 dropped icons stay grey (0.246998ms)
+ℹ tests 100
 ℹ suites 0
-ℹ pass 99
+ℹ pass 100
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 337.141228
+ℹ duration_ms 369.679909
 ```

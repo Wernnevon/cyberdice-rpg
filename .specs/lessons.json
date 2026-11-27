@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 11,
+  "next_id": 14,
   "lessons": [
     {
       "id": "L-001",
@@ -184,6 +184,60 @@
       ],
       "created": "2026-11-26T23:37:54Z",
       "last_seen": "2026-11-26T23:37:54Z"
+    },
+    {
+      "id": "L-011",
+      "key": "weak_test::assert the observable effect of canvas and asset code what was painted requested or repainted not only that a helper was created",
+      "text": "Assert the observable effect of canvas and asset code (what was painted, requested or repainted), not only that a helper was created",
+      "signal": "weak_test",
+      "scope": "src/utils canvas",
+      "status": "candidate",
+      "features": [
+        "dice-themes"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md C19, C22, late image repaint (src/utils canvas)"
+      ],
+      "created": "2026-11-27T00:39:29Z",
+      "last_seen": "2026-11-27T00:39:29Z"
+    },
+    {
+      "id": "L-012",
+      "key": "weak_test::put every clause of a criterion inside the test its proof selects and perform the state change the criterion names",
+      "text": "Put every clause of a criterion inside the test its proof selects, and perform the state change the criterion names",
+      "signal": "weak_test",
+      "scope": "src/utils tests",
+      "status": "candidate",
+      "features": [
+        "dice-themes"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md C8, C18 (src/utils tests)"
+      ],
+      "created": "2026-11-27T00:39:29Z",
+      "last_seen": "2026-11-27T00:39:29Z"
+    },
+    {
+      "id": "L-013",
+      "key": "weak_test::walk each walk check under its exact stated condition and every listed variant before recording it",
+      "text": "Walk each walk check under its exact stated condition and every listed variant before recording it",
+      "signal": "weak_test",
+      "scope": "walk checks",
+      "status": "candidate",
+      "features": [
+        "dice-themes"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md C13, C30 (walk checks)"
+      ],
+      "created": "2026-11-27T00:39:29Z",
+      "last_seen": "2026-11-27T00:39:29Z"
     }
   ]
 }

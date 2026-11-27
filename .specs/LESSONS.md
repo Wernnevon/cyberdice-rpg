@@ -74,6 +74,24 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: SHA-05.5 refinement (physics)
 - last seen: 2026-11-26T23:37:54Z
 
+### L-011 - Assert the observable effect of canvas and asset code (what was painted, requested or repainted), not only that a helper was created
+- signal: `weak_test` · recurrence: 1 feature(s) · scope: `src/utils canvas` · harmful: 0
+- features: dice-themes
+- evidence: verification.md C19, C22, late image repaint (src/utils canvas)
+- last seen: 2026-11-27T00:39:29Z
+
+### L-012 - Put every clause of a criterion inside the test its proof selects, and perform the state change the criterion names
+- signal: `weak_test` · recurrence: 1 feature(s) · scope: `src/utils tests` · harmful: 0
+- features: dice-themes
+- evidence: verification.md C8, C18 (src/utils tests)
+- last seen: 2026-11-27T00:39:29Z
+
+### L-013 - Walk each walk check under its exact stated condition and every listed variant before recording it
+- signal: `weak_test` · recurrence: 1 feature(s) · scope: `walk checks` · harmful: 0
+- features: dice-themes
+- evidence: verification.md C13, C30 (walk checks)
+- last seen: 2026-11-27T00:39:29Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.
