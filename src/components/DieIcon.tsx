@@ -1,5 +1,6 @@
 import type { Sides } from '../types/dice';
-import { COLORS } from '../utils/geometry';
+import { iconColor, type Theme } from '../utils/themes';
+import { useTheme } from '../utils/themeStore';
 
 // Faux-3D polyhedra in a 64×64 box: [points, shade] where shade <1 lightens, >1 darkens.
 const SHAPES: Record<Exclude<Sides, 100>, { ty: number; polys: [string, number][] }> = {
@@ -39,12 +40,14 @@ const FILTER = {
   drop: 'grayscale(1) opacity(0.55)',
 };
 
-type Props = { sides: Sides; value?: number | string; size?: number; tilt?: number; state?: DieState };
+type Props = { sides: Sides; value?: number | string; size?: number; tilt?: number; state?: DieState; theme?: Theme };
 
 /** Decorative unless it shows a value (then it carries an accessible label). */
-export function DieIcon({ sides, value, size = 48, tilt = 0, state }: Props) {
+export function DieIcon({ sides, value, size = 48, tilt = 0, state, theme: preview }: Props) {
+  const active = useTheme();
+  const theme = preview ?? active;
   const shape = SHAPES[sides === 100 ? 10 : sides];
-  const base = state === 'drop' ? '#5A5A6E' : COLORS[sides];
+  const base = iconColor(theme, sides, state);
   const text = value === undefined ? '' : String(value);
   return (
     <svg
@@ -63,10 +66,10 @@ export function DieIcon({ sides, value, size = 48, tilt = 0, state }: Props) {
           y={shape.ty}
           textAnchor="middle"
           dominantBaseline="central"
-          fontFamily="'Russo One', sans-serif"
+          fontFamily={`'${theme.font}', sans-serif`}
           fontSize={text.length > 2 ? 16 : 22}
-          fill="#fff"
-          stroke="#0B0B10"
+          fill={theme.label.fill}
+          stroke={theme.label.outline}
           strokeWidth={5}
           strokeLinejoin="round"
           paintOrder="stroke"

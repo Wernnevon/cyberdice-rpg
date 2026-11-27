@@ -123,9 +123,9 @@ T6 → T7 → T8 → T9
 
 **Done when**:
 
-- [ ] Icons use the theme's body color, number color, outline and font, without texture; dropped icons stay grey
-- [ ] `Tray.tsx` and `Formula.tsx` accents use `bodyColor`
-- [ ] Gate passes: `npm test && npm run build && npm run lint`
+- [x] Icons use the theme's body color, number color, outline and font, without texture; dropped icons stay grey
+- [x] `Tray.tsx` and `Formula.tsx` accents use `bodyColor`
+- [x] Gate passes: `npm test && npm run build && npm run lint`
 
 **Tests**: none
 **Gate**: build

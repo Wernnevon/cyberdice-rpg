@@ -43,7 +43,7 @@ export function ThemeScreen({ onBack }: { onBack: () => void }) {
                 <span className={s.rowTitle}>{t(`theme_${theme.id}`)}</span>
               </span>
               {PREVIEW.map((sides) => (
-                <DieIcon key={sides} sides={sides} size={36} />
+                <DieIcon key={sides} sides={sides} size={36} theme={theme} />
               ))}
             </button>
           </li>
