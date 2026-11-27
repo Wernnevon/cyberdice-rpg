@@ -88,8 +88,8 @@ T6 → T7 → T8 → T9
 
 **Done when**:
 
-- [ ] `themeStore.test.ts` has the tests named in checks C3, C6
-- [ ] Gate passes: `npm test`
+- [x] `themeStore.test.ts` has the tests named in checks C3, C6
+- [x] Gate passes: `npm test`
 
 **Tests**: unit
 **Gate**: quick
