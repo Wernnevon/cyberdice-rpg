@@ -9,6 +9,12 @@ const IMAGE = {} as CanvasImageSource;
 
 type Paint = { op: string; style: unknown; alpha: number; mode: string; args: unknown[] };
 
+/** Gradients keep their stops as data, so two identical paints compare equal. */
+function addColorStop(this: { stops: unknown[] }, offset: number, color: string) {
+  this.stops.push([offset, color]);
+}
+const fakeGradient = () => ({ stops: [] as unknown[], addColorStop });
+
 /** A canvas context that records every painting call with the state it ran under. */
 function recorder() {
   const paints: Paint[] = [];
@@ -35,8 +41,12 @@ function recorder() {
     fill: () => record('fill', ctx.fillStyle, []),
     stroke: () => record('stroke', ctx.strokeStyle, []),
     drawImage: (...args: unknown[]) => record('drawImage', null, args),
+    createLinearGradient: fakeGradient,
+    createPattern: () => ({}),
+    translate() {},
+    scale() {},
     createRadialGradient() {
-      const gradient = { addColorStop() {} };
+      const gradient = fakeGradient();
       gradients.push(gradient);
       return gradient;
     },
@@ -187,5 +197,15 @@ test('a late texture image repaints the face', () => {
     assert.equal(draws().length, 1);
     assert.equal(draws()[0].args[0], built[0]);
     assert.ok(tex.version > version, 'texture flagged for upload');
+  });
+});
+
+test('sakura blossoms are tinted against the body', () => {
+  withFakeDom(({ paints, built }) => {
+    faceTexture(getTheme('sakura'), '#F2789F');
+    built[0].load();
+    faceTexture(getTheme('sakura'), '#FFD3DD');
+    const tints = paints.filter((p) => p.mode === 'source-in').map((p) => p.style);
+    assert.deepEqual(tints, ['#FFFFFF', '#D6246E']);
   });
 });
