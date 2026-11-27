@@ -177,11 +177,11 @@ T6 → T7 → T8 → T9
 
 **Done when**:
 
-- [ ] `marble.jpg`, `gold.jpg`, `halftone.png`, `sakura.png` exist within the limits and were looked at
-- [ ] `LICENSES.md` has the source URL and license of each, as read on its own page
-- [ ] `vite.config.ts` precaches `jpg`
-- [ ] `textures.test.ts` has the test named in check C28
-- [ ] Gate passes: `npm test && npm run build && npm run lint`
+- [x] `marble.jpg`, `gold.jpg`, `halftone.png`, `sakura.png` exist within the limits and were looked at
+- [x] `LICENSES.md` has the source URL and license of each, as read on its own page
+- [x] `vite.config.ts` precaches `jpg`
+- [x] `textures.test.ts` has the test named in check C28
+- [x] Gate passes: `npm test && npm run build && npm run lint`
 
 **Tests**: unit
 **Gate**: build
