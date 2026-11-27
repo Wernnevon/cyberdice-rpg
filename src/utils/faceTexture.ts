@@ -122,7 +122,7 @@ function paintShonen(ctx: CanvasRenderingContext2D, size: number) {
 
 // Few large blossoms; the face center falls between two of them.
 function paintTile(ctx: CanvasRenderingContext2D, size: number, image: CanvasImageSource) {
-  ctx.globalAlpha = 0.65;
+  ctx.globalAlpha = 0.5;
   const step = size / 3;
   const d = size * 0.32;
   for (let row = 0; row < 3; row++) {

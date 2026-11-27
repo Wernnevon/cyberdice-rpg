@@ -14,12 +14,17 @@ const CODE_SWATCH = {
   shonen: 'repeating-conic-gradient(rgb(255 255 255 / 0.45) 0deg 4deg, transparent 4deg 18deg)',
 };
 
-function swatch({ bodies, texture }: Theme): CSSProperties {
+// The gold image is nearly flat: the same light and shadow bands as the die faces (faceTexture.ts).
+const GOLD_BANDS = 'linear-gradient(135deg, #6b430066, #fff6c866, #8a5a0066, #fff6c866, #6b430066)';
+
+function swatch({ id, bodies, texture }: Theme): CSSProperties {
+  const image = !texture ? undefined : texture.kind === 'code' ? CODE_SWATCH[texture.pattern] : `url(${texture.src})`;
   return {
     backgroundColor: bodies[20],
-    backgroundImage: !texture ? undefined : texture.kind === 'code' ? CODE_SWATCH[texture.pattern] : `url(${texture.src})`,
+    backgroundImage: id === 'gold' ? `${GOLD_BANDS}, ${image}` : image,
     backgroundSize: texture?.kind === 'image' ? 'cover' : texture?.kind === 'tile' ? '24px' : undefined,
-    backgroundBlendMode: texture?.kind === 'code' ? 'normal' : 'multiply', // multiply hides white lines
+    // multiply hides white lines, so code patterns and the gold bands lie on top as they are
+    backgroundBlendMode: texture?.kind === 'code' ? 'normal' : id === 'gold' ? 'normal, multiply' : 'multiply',
   };
 }
 
