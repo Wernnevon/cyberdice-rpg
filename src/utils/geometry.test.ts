@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { getDie } from './geometry.ts';
+import { Euler, Quaternion } from 'three';
+import { getDie, readValue } from './geometry.ts';
+import { themeStore } from './themeStore.ts';
+import { THEMES } from './themes.ts';
 
 test('C18 geometry does not depend on the theme', () => {
   assert.equal(getDie.length, 2); // sides and role only: no theme argument
@@ -9,6 +12,33 @@ test('C18 geometry does not depend on the theme', () => {
     const def = getDie(sides, role);
     assert.equal(getDie(sides, role).geometry, def.geometry);
     assert.ok(!('color' in def));
+  }
+
+  // switching theme keeps every shape, face position, and the value a resting die reads
+  const rotations = [[0, 0, 0], [1, 0.3, 2], [2.5, 4, 0.7]].map(([x, y, z]) => new Quaternion().setFromEuler(new Euler(x, y, z)));
+  const snapshot = () =>
+    dice.map(([sides, role]) => {
+      const def = getDie(sides, role);
+      return {
+        def,
+        geometry: def.geometry,
+        data: JSON.stringify([Array.from(def.hull), def.readouts, def.labels, rotations.map((q) => readValue(def, q))]),
+      };
+    });
+  const initial = themeStore.get();
+  const before = snapshot();
+  try {
+    for (const { id } of THEMES) {
+      themeStore.set(id);
+      assert.equal(themeStore.get(), id);
+      snapshot().forEach((after, i) => {
+        assert.equal(after.def, before[i].def);
+        assert.equal(after.geometry, before[i].geometry);
+        assert.equal(after.data, before[i].data, `die ${dice[i]} changed under ${id}`);
+      });
+    }
+  } finally {
+    themeStore.set(initial);
   }
 });
 

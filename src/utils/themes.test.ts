@@ -1,6 +1,7 @@
 // Dice theme catalog and rules (specs/dice-themes). Run: npm test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { createThemeStore } from './themeStore.ts';
 import { THEMES, bodyColor, contrast, getTheme, iconColor, loadTheme, saveTheme } from './themes.ts';
 
 const IDS = ['neon', 'ivory', 'marble', 'gold', 'crystal', 'shonen', 'manga', 'sakura'];
@@ -41,6 +42,9 @@ test('C8 survives blocked storage', () => {
   assert.equal(loadTheme(s), 'neon');
   assert.doesNotThrow(() => saveTheme(s, 'gold'));
   assert.doesNotThrow(() => saveTheme(undefined, 'gold'));
+  const store = createThemeStore(s);
+  assert.doesNotThrow(() => store.set('gold'));
+  assert.equal(store.get(), 'gold');
 });
 
 test('C9 neon is the current look', () => {

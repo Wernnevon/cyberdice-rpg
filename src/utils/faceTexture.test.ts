@@ -9,10 +9,10 @@ const IMAGE = {} as CanvasImageSource;
 
 type Paint = { op: string; style: unknown; alpha: number; mode: string; args: unknown[] };
 
-/** Records every painting call with the state it ran under. */
-function paint(id: ThemeId, image: CanvasImageSource | null) {
+/** A canvas context that records every painting call with the state it ran under. */
+function recorder() {
   const paints: Paint[] = [];
-  const gradients: string[] = [];
+  const gradients: object[] = [];
   const initial = { fillStyle: '#000000' as unknown, strokeStyle: '#000000' as unknown, globalAlpha: 0.5, globalCompositeOperation: 'xor', lineWidth: 1 };
   const stack: (typeof initial)[] = [];
   const record = (op: string, style: unknown, args: unknown[]) =>
@@ -36,14 +36,59 @@ function paint(id: ThemeId, image: CanvasImageSource | null) {
     stroke: () => record('stroke', ctx.strokeStyle, []),
     drawImage: (...args: unknown[]) => record('drawImage', null, args),
     createRadialGradient() {
-      gradients.push('radial');
-      return { addColorStop() {} };
+      const gradient = { addColorStop() {} };
+      gradients.push(gradient);
+      return gradient;
     },
   };
+  return { ctx, initial, paints, gradients };
+}
+
+function paint(id: ThemeId, image: CanvasImageSource | null) {
+  const { ctx, initial, paints, gradients } = recorder();
   paintFace(ctx as unknown as CanvasRenderingContext2D, SIZE, BODY, getTheme(id).texture, image);
   for (const [k, v] of Object.entries(initial)) assert.equal(ctx[k as keyof typeof initial], v, `${k} not restored`);
   const [base, ...over] = paints;
   return { base, over, gradients, draws: over.filter((p) => p.op === 'drawImage') };
+}
+
+/** An image still loading until `load()` is called. */
+class FakeImage {
+  src = '';
+  complete = false;
+  naturalWidth = 0;
+  private onLoad: (() => void)[] = [];
+  addEventListener(type: string, fn: () => void) {
+    if (type === 'load') this.onLoad.push(fn);
+  }
+  load() {
+    this.complete = true;
+    this.naturalWidth = 512;
+    this.onLoad.splice(0).forEach((fn) => fn());
+  }
+}
+
+/** Runs `run` with a fake document and Image, recording the images built; globals are restored. */
+function withFakeDom(run: (dom: { paints: Paint[]; built: FakeImage[] }) => void) {
+  const { ctx, paints } = recorder();
+  const built: FakeImage[] = [];
+  const g = globalThis as Record<string, unknown>;
+  const saved = (['document', 'Image'] as const).map((k) => [k, Object.getOwnPropertyDescriptor(g, k)] as const);
+  g.document = { createElement: () => ({ getContext: () => ctx }) };
+  g.Image = class extends FakeImage {
+    constructor() {
+      super();
+      built.push(this);
+    }
+  };
+  try {
+    run({ paints, built });
+  } finally {
+    for (const [k, descriptor] of saved) {
+      if (descriptor) Object.defineProperty(g, k, descriptor);
+      else delete g[k];
+    }
+  }
 }
 
 const assertBody = ({ base }: { base: Paint }) =>
@@ -58,6 +103,11 @@ test('C19 ivory paints a grain without an image', () => {
   assert.ok(run.over.length > 10);
   assert.equal(run.draws.length, 0);
   assert.deepEqual(paint('ivory', null).over, run.over);
+  withFakeDom(({ paints, built }) => {
+    assert.ok(faceTexture(getTheme('ivory'), '#C19C19'));
+    assert.ok(paints.length > 10);
+    assert.equal(built.length, 0, 'no image requested');
+  });
 });
 
 for (const [name, id, src] of [
@@ -81,7 +131,10 @@ test('C22 shonen paints speed lines and aura', () => {
   assert.equal(getTheme('shonen').texture?.kind, 'code');
   const run = paint('shonen', null);
   assertBody(run);
-  assert.deepEqual(run.gradients, ['radial']);
+  assert.equal(run.gradients.length, 1);
+  const aura = run.over.find((p) => p.op === 'fillRect' && p.style === run.gradients[0]);
+  assert.ok(aura && aura.alpha > 0, 'aura is painted');
+  assert.deepEqual(aura.args, [0, 0, SIZE, SIZE]);
   assert.ok(run.over.filter((p) => p.op === 'fill').length >= 20);
   assert.equal(run.draws.length, 0);
 });
@@ -120,4 +173,19 @@ test('C27 failed image leaves the body color', () => {
     assertBody(run);
     assert.equal(run.over.length, 0);
   }
+});
+
+test('a late texture image repaints the face', () => {
+  withFakeDom(({ paints, built }) => {
+    const tex = faceTexture(getTheme('marble'), '#1A7E1A')!;
+    assert.equal(built.length, 1);
+    assert.equal(built[0].src, '/textures/marble.jpg');
+    const draws = () => paints.filter((p) => p.op === 'drawImage');
+    assert.equal(draws().length, 0);
+    const { version } = tex;
+    built[0].load();
+    assert.equal(draws().length, 1);
+    assert.equal(draws()[0].args[0], built[0]);
+    assert.ok(tex.version > version, 'texture flagged for upload');
+  });
 });
