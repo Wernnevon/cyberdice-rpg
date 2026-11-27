@@ -1,4 +1,4 @@
-import type { Roll } from '../types/dice';
+import type { DieSpec, Roll } from '../types/dice';
 
 // ponytail: impact tuning, calibrated by ear on a phone. Impact = die speed at contact (m/s).
 export const MIN_IMPACT = 1.5; // softer touches are silent
@@ -37,6 +37,27 @@ export function createLimiter(limit = PER_WINDOW, windowMs = WINDOW_MS) {
     return true;
   };
 }
+
+// ponytail: pitch per die type, tuned by ear (1 = the sample as recorded)
+const PITCH: Record<DieSpec['sides'], number> = { 4: 1.45, 6: 1.25, 8: 1.12, 10: 1.02, 12: 0.94, 20: 0.84 };
+export const JITTER = 0.06;
+export const CROWD_FLOOR = 0.35;
+
+/** Playback rate for a die type: smaller dice sound higher. */
+export const diePitch = (sides: DieSpec['sides']) => PITCH[sides];
+
+/** The die's pitch moved randomly by up to ±JITTER. */
+export const pitchRate = (sides: DieSpec['sides'], random: () => number) => diePitch(sides) * (1 + (random() * 2 - 1) * JITTER);
+
+/** A sample index other than `last`. */
+export function nextSample(count: number, last: number | null, random: () => number) {
+  if (count < 2 || last === null) return Math.floor(random() * count);
+  const i = Math.floor(random() * (count - 1));
+  return i >= last ? i + 1 : i;
+}
+
+/** Per-impact gain for a roll of `dice` dice, so many dice do not blend into one noise. */
+export const crowdGain = (dice: number) => (dice <= 1 ? 1 : Math.max(CROWD_FLOOR, 1 / Math.sqrt(dice)));
 
 export type RevealSound = 'crit' | 'fail' | 'reveal';
 

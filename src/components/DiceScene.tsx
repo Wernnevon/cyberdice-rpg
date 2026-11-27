@@ -1,8 +1,10 @@
 import { Suspense, useCallback, useLayoutEffect } from 'react';
+import { PMREMGenerator } from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Canvas, useThree } from '@react-three/fiber';
 import { CuboidCollider, Physics, RigidBody } from '@react-three/rapier';
 import { useRoll } from '../hooks/useRoll';
-import { Die } from './Die';
+import { Die, HOLD_LID } from './Die';
 
 // ponytail: framing knobs. Table shows VIEW_W world units across (a die is ~1.4), so dice
 // keep the same share of the panel on any screen; MIN_H keeps short panels from zooming in too far.
@@ -12,6 +14,30 @@ const FOV = 40;
 const CEILING = 6.5; // below the closest camera (MIN_H framing ≈ 7.5) so dice never fly past it
 const WALL = 10;
 const DIE_TOP = 1.6; // tallest die resting height + small margin
+
+// ponytail: reflection strength knob — lower it if gold/marble wash out, raise it if metal looks dull.
+// (material.envMapIntensity is ignored for scene.environment; the lights below also add to it.)
+const ENV_INTENSITY = 0.5;
+
+/** Something for metal, gloss and glass to reflect; toon ignores it. */
+function Environment() {
+  const get = useThree((s) => s.get);
+  useLayoutEffect(() => {
+    const { gl, scene } = get();
+    const pmrem = new PMREMGenerator(gl);
+    const room = new RoomEnvironment();
+    const target = pmrem.fromScene(room, 0.04);
+    room.dispose();
+    pmrem.dispose();
+    scene.environment = target.texture;
+    scene.environmentIntensity = ENV_INTENSITY;
+    return () => {
+      scene.environment = null;
+      target.dispose();
+    };
+  }, [get]);
+  return null;
+}
 
 function Table() {
   const { state, settle } = useRoll();
@@ -32,6 +58,8 @@ function Table() {
     camera.updateProjectionMatrix();
   }, [camera, dist]);
   const active = state.active;
+  const held = state.shaking; // dice held while the phone is shaken (SHA-01)
+  const shown = held ?? active;
   const onSettle = useCallback((dieId: string, value: number) => active && settle(active.id, dieId, value), [active, settle]);
 
   return (
@@ -48,8 +76,14 @@ function Table() {
         <planeGeometry args={[w, h]} />
         <shadowMaterial opacity={0.35} />
       </mesh>
-      {active?.dice.map((d, i) => (
-        <Die key={d.id} spec={d} index={i} arena={{ w: aw, h: ah }} onSettle={onSettle} />
+      {held && (
+        // held dice roam the whole table (its walls are the phone's sides) under a low invisible lid (SHA-05.1)
+        <RigidBody type="fixed" key={`lid-${aw}x${ah}`}>
+          <CuboidCollider args={[w, 0.25, h]} position={[0, HOLD_LID + 0.25, 0]} />
+        </RigidBody>
+      )}
+      {shown?.dice.map((d, i) => (
+        <Die key={d.id} spec={d} index={i} count={shown.dice.length} phase={held ? 'hold' : 'thrown'} arena={{ w: aw, h: ah }} onSettle={onSettle} />
       ))}
     </>
   );
@@ -58,6 +92,7 @@ function Table() {
 export function DiceScene() {
   return (
     <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 18, 0.001], fov: FOV }} gl={{ alpha: true }}>
+      <Environment />
       <ambientLight intensity={1.2} />
       <directionalLight
         position={[4, 14, 6]}

@@ -1,3 +1,60 @@
+/* Die number fonts: self-hosted so the service worker precaches them (licenses in public/fonts). */
+@font-face {
+  font-family: 'Russo One';
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/russo-one.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'EB Garamond';
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/eb-garamond.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Cinzel';
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/cinzel.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Cormorant Garamond';
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/cormorant-garamond.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Orbitron';
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/orbitron.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Bangers';
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/bangers.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Anton';
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/anton.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'M PLUS Rounded 1c';
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/m-plus-rounded-1c.woff2') format('woff2');
+}
+
 /* Design tokens: anime / manga panel look. Dark only, by design. */
 :root {
   --ink: #0b0b10;

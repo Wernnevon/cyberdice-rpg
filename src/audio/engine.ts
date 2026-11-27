@@ -1,5 +1,5 @@
-import type { Roll } from '../types/dice';
-import { createLimiter, impactGain, revealSound, type RevealSound } from '../utils/sound.ts';
+import type { DieSpec, Roll } from '../types/dice';
+import { createLimiter, crowdGain, impactGain, nextSample, pitchRate, revealSound, type RevealSound } from '../utils/sound.ts';
 
 /**
  * Events that unlock audio. A touch only counts as user activation on pointerup/touchend
@@ -16,11 +16,25 @@ type Deps = {
   random?: () => number;
 };
 
-// Synth notes: [frequency Hz, start s, duration s]
-const TONES: Record<RevealSound, { wave: OscillatorType; notes: [number, number, number][]; slideTo?: number }> = {
-  reveal: { wave: 'square', notes: [[523, 0, 0.09], [784, 0.07, 0.16]] },
-  crit: { wave: 'square', notes: [[523, 0, 0.1], [659, 0.08, 0.1], [784, 0.16, 0.1], [1047, 0.24, 0.35]] },
-  fail: { wave: 'sawtooth', notes: [[330, 0, 0.25], [262, 0.22, 0.6]], slideTo: 110 },
+// Synth notes: [frequency Hz, start s, duration s, slide-to Hz?]. Each note is two detuned voices.
+// ponytail: tuned by ear on a phone; DETUNE spreads the voices into a thick "supersaw".
+const DETUNE = 12; // cents, ± per voice
+const DUCK = 0.3; // impact level while a result sound plays
+export const RATTLE_GAP_MS = 55; // minimum gap between rattle clicks
+const RATTLE_GAIN = 0.25;
+const RATTLE_PITCH = 1.6; // small, light clicks
+const WHOOSH_S = 0.35;
+const TONES: Record<RevealSound, { wave: OscillatorType; notes: [number, number, number, number?][] }> = {
+  reveal: { wave: 'sawtooth', notes: [[659, 0, 0.1], [988, 0.07, 0.28]] },
+  crit: {
+    wave: 'sawtooth',
+    notes: [[523, 0, 0.09], [659, 0.07, 0.09], [784, 0.14, 0.09], [1047, 0.21, 0.09], [1319, 0.28, 0.6]],
+  },
+  fail: {
+    wave: 'square',
+    // falling sweep, then a glitch stutter stepping down, then a low thud
+    notes: [[440, 0, 0.5, 147], [220, 0.52, 0.04], [196, 0.59, 0.04], [175, 0.66, 0.04], [147, 0.73, 0.04], [110, 0.82, 0.3, 73]],
+  },
 };
 
 /**
@@ -32,8 +46,16 @@ export function createSoundEngine({ createContext, fetchBytes, navigator, random
   if (navigator?.audioSession) navigator.audioSession.type = 'ambient';
 
   let ctx: AudioContext | null = null;
+  // impacts -> impactBus (ducked by results) -> master compressor -> speakers; tones -> master
+  let master: AudioNode | null = null;
+  let impactBus: GainNode | null = null;
   let buffers: AudioBuffer[] = [];
+  let lastSample: number | null = null;
+  let lastLaunch: string | null = null;
+  let lastRattle = -Infinity;
+  let noise: AudioBuffer | null = null;
   let muted = false;
+  let holding = false; // dice held while shaking: their contacts are silent (SHA-02.2)
   let lastReveal: string | null = null;
   const allow = createLimiter();
   let resolveReady: () => void = () => {};
@@ -49,22 +71,29 @@ export function createSoundEngine({ createContext, fetchBytes, navigator, random
       })
       .finally(resolveReady);
 
-  function tone(c: AudioContext, kind: RevealSound) {
-    const { wave, notes, slideTo } = TONES[kind];
+  /** Plays a result sound; returns its length in seconds. */
+  function tone(c: AudioContext, out: AudioNode, kind: RevealSound) {
+    const { wave, notes } = TONES[kind];
     const t0 = c.currentTime;
-    for (const [freq, at, dur] of notes) {
-      const osc = c.createOscillator();
-      const env = c.createGain();
-      osc.type = wave;
-      osc.frequency.setValueAtTime(freq, t0 + at);
-      if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t0 + at + dur);
-      env.gain.setValueAtTime(0.0001, t0 + at);
-      env.gain.linearRampToValueAtTime(0.18, t0 + at + 0.01);
-      env.gain.exponentialRampToValueAtTime(0.0001, t0 + at + dur);
-      osc.connect(env).connect(c.destination);
-      osc.start(t0 + at);
-      osc.stop(t0 + at + dur + 0.05);
+    let len = 0;
+    for (const [freq, at, dur, slideTo] of notes) {
+      for (const detune of [-DETUNE, DETUNE]) {
+        const osc = c.createOscillator();
+        const env = c.createGain();
+        osc.type = wave;
+        osc.detune.value = detune;
+        osc.frequency.setValueAtTime(freq, t0 + at);
+        if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t0 + at + dur);
+        env.gain.setValueAtTime(0.0001, t0 + at);
+        env.gain.linearRampToValueAtTime(0.1, t0 + at + 0.008);
+        env.gain.exponentialRampToValueAtTime(0.0001, t0 + at + dur);
+        osc.connect(env).connect(out);
+        osc.start(t0 + at);
+        osc.stop(t0 + at + dur + 0.01);
+        len = Math.max(len, at + dur + 0.01);
+      }
     }
+    return len;
   }
 
   return {
@@ -74,6 +103,13 @@ export function createSoundEngine({ createContext, fetchBytes, navigator, random
     unlock() {
       if (!ctx) {
         ctx = createContext();
+        const comp = ctx.createDynamicsCompressor();
+        comp.threshold.value = -18;
+        comp.ratio.value = 6;
+        comp.connect(ctx.destination);
+        master = comp;
+        impactBus = ctx.createGain();
+        impactBus.connect(comp);
         void load(ctx);
       }
       if (ctx.state === 'suspended') void ctx.resume();
@@ -83,18 +119,66 @@ export function createSoundEngine({ createContext, fetchBytes, navigator, random
       muted = value;
     },
 
-    /** Impact = die speed at contact (m/s). Returns the gain played, or null. */
-    impact(speed: number, now: number) {
-      if (muted || !ctx || !buffers.length) return null;
-      const gain = impactGain(speed);
-      if (gain === null || !allow(now)) return null;
+    setHolding(value: boolean) {
+      holding = value;
+    },
+
+    /** Impact = die speed at contact (m/s), for a die of `sides` in a roll of `dice` dice. Returns the gain played, or null. */
+    impact(speed: number, now: number, sides: DieSpec['sides'], dice: number) {
+      if (muted || holding || !ctx || !impactBus || !buffers.length) return null;
+      const g = impactGain(speed);
+      if (g === null || !allow(now)) return null;
+      const gain = g * crowdGain(dice);
+      lastSample = nextSample(buffers.length, lastSample, random);
       const src = ctx.createBufferSource();
-      src.buffer = buffers[Math.floor(random() * buffers.length)];
+      src.buffer = buffers[lastSample];
+      src.playbackRate.value = pitchRate(sides, random);
       const vol = ctx.createGain();
       vol.gain.value = gain;
-      src.connect(vol).connect(ctx.destination);
+      src.connect(vol).connect(impactBus);
       src.start();
       return gain;
+    },
+
+    /** Rattle click while the phone is shaken; at most one per RATTLE_GAP_MS. Returns whether it played. */
+    rattle(now: number) {
+      if (muted || !ctx || !impactBus || !buffers.length || now - lastRattle < RATTLE_GAP_MS) return false;
+      lastRattle = now;
+      lastSample = nextSample(buffers.length, lastSample, random);
+      const src = ctx.createBufferSource();
+      src.buffer = buffers[lastSample];
+      src.playbackRate.value = RATTLE_PITCH * (0.9 + random() * 0.2);
+      const vol = ctx.createGain();
+      vol.gain.value = RATTLE_GAIN * (0.6 + random() * 0.4);
+      src.connect(vol).connect(impactBus);
+      src.start();
+      return true;
+    },
+
+    /** Launch whoosh (filtered noise sweep), once per roll id. Returns whether it played. */
+    launch(rollId: string) {
+      if (muted || !ctx || !master || rollId === lastLaunch) return false;
+      lastLaunch = rollId;
+      if (!noise) {
+        noise = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * WHOOSH_S), ctx.sampleRate);
+        const data = noise.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = random() * 2 - 1;
+      }
+      const t0 = ctx.currentTime;
+      const src = ctx.createBufferSource();
+      src.buffer = noise;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.Q.value = 1.2;
+      filter.frequency.setValueAtTime(400, t0);
+      filter.frequency.exponentialRampToValueAtTime(2400, t0 + WHOOSH_S);
+      const env = ctx.createGain();
+      env.gain.setValueAtTime(0.0001, t0);
+      env.gain.linearRampToValueAtTime(0.35, t0 + 0.08);
+      env.gain.exponentialRampToValueAtTime(0.0001, t0 + WHOOSH_S);
+      src.connect(filter).connect(env).connect(master);
+      src.start();
+      return true;
     },
 
     /** Plays once per roll id. Returns which sound played, or null. */
@@ -102,7 +186,11 @@ export function createSoundEngine({ createContext, fetchBytes, navigator, random
       if (muted || !ctx || roll.id === lastReveal) return null;
       lastReveal = roll.id;
       const kind = revealSound(roll);
-      tone(ctx, kind);
+      const len = tone(ctx, master!, kind);
+      const t0 = ctx.currentTime;
+      impactBus!.gain.setValueAtTime(DUCK, t0);
+      impactBus!.gain.setValueAtTime(DUCK, t0 + len);
+      impactBus!.gain.linearRampToValueAtTime(1, t0 + len + 0.15);
       return kind;
     },
   };

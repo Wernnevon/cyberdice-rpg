@@ -1,17 +1,20 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
 import type { Key } from '../i18n/t';
+import type { Sides } from '../types/dice';
 import { t } from '../i18n/t';
 import { bodyCount, MAX_BODIES, parse, range } from '../utils/dice';
+import { bodyColor } from '../utils/themes';
+import { useTheme } from '../utils/themeStore';
 import { Back } from './History';
 import s from './Screen.module.css';
 
-const PRESETS: { code: string; name: Key; color: string }[] = [
-  { code: '1d20', name: 'pCheck', color: '#FF3FD8' },
-  { code: '2d20kh1', name: 'pAdv', color: '#22D3EE' },
-  { code: '2d20kl1', name: 'pDis', color: '#E0102F' },
-  { code: '4d6kh3', name: 'pStat', color: '#FFD60A' },
-  { code: 'd%', name: 'pPct', color: '#3DFF8B' },
-  { code: '8d6', name: 'pFire', color: '#FF7A1A' },
+const PRESETS: { code: string; name: Key; sides: Sides }[] = [
+  { code: '1d20', name: 'pCheck', sides: 20 },
+  { code: '2d20kh1', name: 'pAdv', sides: 8 },
+  { code: '2d20kl1', name: 'pDis', sides: 4 },
+  { code: '4d6kh3', name: 'pStat', sides: 6 },
+  { code: 'd%', name: 'pPct', sides: 100 },
+  { code: '8d6', name: 'pFire', sides: 12 },
 ];
 
 const SYNTAX: [string, Key][] = [
@@ -26,6 +29,7 @@ type Props = { initial: string; onBack: () => void; onRoll: (notation: string) =
 
 export function Formula({ initial, onBack, onRoll }: Props) {
   const [text, setText] = useState(initial);
+  const theme = useTheme();
   const expr = parse(text);
   const r = expr && range(expr);
 
@@ -84,7 +88,7 @@ export function Formula({ initial, onBack, onRoll }: Props) {
           <h2>{t('shortcuts')}</h2>
           <div className={s.presets}>
             {PRESETS.map((p) => (
-              <button type="button" key={p.code} className={s.preset} style={{ '--c': p.color } as CSSProperties} onClick={() => setText(p.code)}>
+              <button type="button" key={p.code} className={s.preset} style={{ '--c': bodyColor(theme, p.sides) } as CSSProperties} onClick={() => setText(p.code)}>
                 <strong>{p.code}</strong>
                 <span>{t(p.name)}</span>
               </button>

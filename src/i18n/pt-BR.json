@@ -51,5 +51,15 @@
   "sessionNote": "{n} rolagens nesta sessão · somem ao fechar o app",
   "empty": "Nenhuma rolagem ainda. Bora rolar!",
   "reroll": "Rolar {f} de novo",
-  "sound": "Som"
+  "sound": "Som",
+  "openThemes": "Abrir temas",
+  "themes": "TEMAS",
+  "theme_neon": "Neon",
+  "theme_ivory": "Marfim",
+  "theme_marble": "Mármore",
+  "theme_gold": "Ouro",
+  "theme_crystal": "Cristal",
+  "theme_shonen": "Shonen",
+  "theme_manga": "Mangá",
+  "theme_sakura": "Sakura"
 }

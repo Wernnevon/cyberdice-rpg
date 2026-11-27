@@ -1,38 +1,16 @@
 import { createContext, useCallback, useContext, useMemo, useReducer, type ReactNode } from 'react';
-import type { ActiveRoll, State } from '../types/dice';
-import { parse, resolve, spawn, uid } from '../utils/dice';
-
-const HISTORY_LIMIT = 50;
-
-type Action =
-  | { type: 'roll'; active: ActiveRoll }
-  | { type: 'settled'; rollId: string; dieId: string; value: number }
-  | { type: 'clear' };
-
-function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    case 'roll':
-      return { ...state, active: action.active };
-    case 'settled': {
-      const a = state.active;
-      if (!a || a.id !== action.rollId || a.values[action.dieId] !== undefined) return state;
-      const active = { ...a, values: { ...a.values, [action.dieId]: action.value } };
-      const done = resolve(a.id, a.notation, a.expr, a.dice, active.values);
-      return { active, history: done ? [done, ...state.history].slice(0, HISTORY_LIMIT) : state.history };
-    }
-    case 'clear':
-      return { ...state, history: [] };
-  }
-}
+import { initialRollState, rollReducer } from '../utils/rollState';
+import { buildRoll, startRoll, throwHeld } from '../utils/startRoll';
+import { sound } from '../audio/engine';
 
 function useRollState() {
-  const [state, dispatch] = useReducer(reducer, { active: null, history: [] });
+  const [state, dispatch] = useReducer(rollReducer, initialRollState);
 
   /** Returns false when the notation is invalid. */
   const roll = useCallback((notation: string) => {
-    const expr = parse(notation);
-    if (!expr) return false;
-    dispatch({ type: 'roll', active: { id: uid(), notation, expr, dice: spawn(expr), values: {} } });
+    const active = startRoll(notation, sound.launch); // every roll, button or shake
+    if (!active) return false;
+    dispatch({ type: 'roll', active });
     return true;
   }, []);
   const settle = useCallback(
@@ -41,8 +19,25 @@ function useRollState() {
   );
   const clear = useCallback(() => dispatch({ type: 'clear' }), []);
 
+  /** Holds the dice of `notation` on the table while the phone is shaken. Returns false when invalid. */
+  const shake = useCallback((notation: string) => {
+    const held = buildRoll(notation);
+    if (held) dispatch({ type: 'shake', roll: held });
+    return !!held;
+  }, []);
+  const shaking = state.shaking;
+  /** Throws the held dice, with one whoosh. */
+  const throwShake = useCallback(() => {
+    const action = throwHeld(shaking, sound.launch);
+    if (action) dispatch(action);
+  }, [shaking]);
+  const cancelShake = useCallback(() => dispatch({ type: 'cancelShake' }), []);
+
   const result = state.active && state.history[0]?.id === state.active.id ? state.history[0] : null;
-  return useMemo(() => ({ state, result, roll, settle, clear }), [state, result, roll, settle, clear]);
+  return useMemo(
+    () => ({ state, result, roll, settle, clear, shake, throwShake, cancelShake }),
+    [state, result, roll, settle, clear, shake, throwShake, cancelShake],
+  );
 }
 
 const Ctx = createContext<ReturnType<typeof useRollState> | null>(null);

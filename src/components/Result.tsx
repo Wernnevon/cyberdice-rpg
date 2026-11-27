@@ -7,9 +7,10 @@ import s from './Result.module.css';
 
 const TILTS = [-9, 7, -4, 10, -7, 5];
 
-type Props = { roll: Roll | null; rolling: boolean; ready: boolean };
+type Props = { roll: Roll | null; rolling: boolean; shaking: boolean; ready: boolean };
 
-export function Result({ roll, rolling, ready }: Props) {
+export function Result({ roll, rolling, shaking, ready }: Props) {
+  if (shaking) return null; // the held dice are the whole picture (SHA-01.4)
   if (rolling) {
     return (
       <div className={s.overlay} aria-live="polite">

@@ -1,0 +1,243 @@
+{
+  "schema": 1,
+  "promote_threshold": 2,
+  "window_days": 45,
+  "quarantine_threshold": 2,
+  "next_id": 14,
+  "lessons": [
+    {
+      "id": "L-001",
+      "key": "weak_test::a routing test must play every sound the engine can make impact tones whoosh rattle not only the first ones written",
+      "text": "A routing test must play every sound the engine can make (impact, tones, whoosh, rattle), not only the first ones written.",
+      "signal": "weak_test",
+      "scope": "audio",
+      "status": "candidate",
+      "features": [
+        "sound-polish"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C9 / F1 (audio)"
+      ],
+      "created": "2026-11-26T22:49:13Z",
+      "last_seen": "2026-11-26T22:49:13Z"
+    },
+    {
+      "id": "L-002",
+      "key": "weak_test::do not give engine parameters defaults that the real caller must pass required args let the build catch a dropped call",
+      "text": "Do not give engine parameters defaults that the real caller must pass; required args let the build catch a dropped call.",
+      "signal": "weak_test",
+      "scope": "audio",
+      "status": "candidate",
+      "features": [
+        "sound-polish"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C5 C8 / F2 (audio)"
+      ],
+      "created": "2026-11-26T22:49:13Z",
+      "last_seen": "2026-11-26T22:49:13Z"
+    },
+    {
+      "id": "L-003",
+      "key": "ac_gap::rules wired inside react hooks or components roll launch motion step can roll predicate go in pure ts helpers with tests the hook only calls them",
+      "text": "Rules wired inside React hooks or components (roll launch, motion step, can-roll predicate) go in pure .ts helpers with tests; the hook only calls them.",
+      "signal": "ac_gap",
+      "scope": "hooks",
+      "status": "candidate",
+      "features": [
+        "sound-polish"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C11 C13 C16 / F3 F4 (hooks)"
+      ],
+      "created": "2026-11-26T22:49:13Z",
+      "last_seen": "2026-11-26T22:49:13Z"
+    },
+    {
+      "id": "L-004",
+      "key": "ac_gap::when two events can follow each other button roll then gesture cancel test the chain in the reducer not each half alone a cancel must not clear state it did not create",
+      "text": "When two events can follow each other (button roll, then gesture cancel), test the chain in the reducer, not each half alone; a cancel must not clear state it did not create.",
+      "signal": "ac_gap",
+      "scope": "state",
+      "status": "candidate",
+      "features": [
+        "shake-animation"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C13 / F1 (state)"
+      ],
+      "created": "2026-11-26T23:09:27Z",
+      "last_seen": "2026-11-26T23:09:27Z"
+    },
+    {
+      "id": "L-005",
+      "key": "weak_test::gate on the same validity check the action uses parse not a proxy like a non empty string",
+      "text": "Gate on the same validity check the action uses (parse), not a proxy like a non-empty string.",
+      "signal": "weak_test",
+      "scope": "shake",
+      "status": "candidate",
+      "features": [
+        "shake-animation"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C5 / F2 (shake)"
+      ],
+      "created": "2026-11-26T23:09:27Z",
+      "last_seen": "2026-11-26T23:09:27Z"
+    },
+    {
+      "id": "L-006",
+      "key": "ac_gap::values a hook computes and forwards impulse throw action come out of the tested helper so the hook only passes them through",
+      "text": "Values a hook computes and forwards (impulse, throw action) come out of the tested helper, so the hook only passes them through.",
+      "signal": "ac_gap",
+      "scope": "hooks",
+      "status": "candidate",
+      "features": [
+        "shake-animation"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C6 C9 / F3 F4 (hooks)"
+      ],
+      "created": "2026-11-26T23:09:27Z",
+      "last_seen": "2026-11-26T23:09:27Z"
+    },
+    {
+      "id": "L-007",
+      "key": "weak_test::walk lines quote the text the saved screenshot shows record them from the same run",
+      "text": "Walk lines quote the text the saved screenshot shows; record them from the same run.",
+      "signal": "weak_test",
+      "scope": "walk",
+      "status": "candidate",
+      "features": [
+        "shake-animation"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C8 / F5 (walk)"
+      ],
+      "created": "2026-11-26T23:09:27Z",
+      "last_seen": "2026-11-26T23:09:27Z"
+    },
+    {
+      "id": "L-008",
+      "key": "ac_gap::physics rules push velocity surface per phase go in pure helpers taking a body like object tested with a fake body the component only wires them",
+      "text": "Physics rules (push velocity, surface per phase) go in pure helpers taking a body-like object, tested with a fake body; the component only wires them.",
+      "signal": "ac_gap",
+      "scope": "physics",
+      "status": "candidate",
+      "features": [
+        "shake-animation"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C17 C18 C19 / F6 F7 F10 F11 (physics)"
+      ],
+      "created": "2026-11-26T23:37:54Z",
+      "last_seen": "2026-11-26T23:37:54Z"
+    },
+    {
+      "id": "L-009",
+      "key": "spec_deviation::device motion axes are device fixed turn them by screen orientation angle and treat accelerationincludinggravity as having no usable direction",
+      "text": "Device-motion axes are device-fixed: turn them by screen.orientation.angle, and treat accelerationIncludingGravity as having no usable direction.",
+      "signal": "spec_deviation",
+      "scope": "sensors",
+      "status": "candidate",
+      "features": [
+        "shake-animation"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "SHA-05.2 / F8 (sensors)"
+      ],
+      "created": "2026-11-26T23:37:54Z",
+      "last_seen": "2026-11-26T23:37:54Z"
+    },
+    {
+      "id": "L-010",
+      "key": "spec_precision_gap::a push applied on every 60 hz sensor sample cancels itself on a back and forth shake let a moving body fly and push only slowed ones",
+      "text": "A push applied on every ~60 Hz sensor sample cancels itself on a back-and-forth shake; let a moving body fly and push only slowed ones.",
+      "signal": "spec_precision_gap",
+      "scope": "physics",
+      "status": "candidate",
+      "features": [
+        "shake-animation"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "SHA-05.5 refinement (physics)"
+      ],
+      "created": "2026-11-26T23:37:54Z",
+      "last_seen": "2026-11-26T23:37:54Z"
+    },
+    {
+      "id": "L-011",
+      "key": "weak_test::assert the observable effect of canvas and asset code what was painted requested or repainted not only that a helper was created",
+      "text": "Assert the observable effect of canvas and asset code (what was painted, requested or repainted), not only that a helper was created",
+      "signal": "weak_test",
+      "scope": "src/utils canvas",
+      "status": "candidate",
+      "features": [
+        "dice-themes"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md C19, C22, late image repaint (src/utils canvas)"
+      ],
+      "created": "2026-11-27T00:39:29Z",
+      "last_seen": "2026-11-27T00:39:29Z"
+    },
+    {
+      "id": "L-012",
+      "key": "weak_test::put every clause of a criterion inside the test its proof selects and perform the state change the criterion names",
+      "text": "Put every clause of a criterion inside the test its proof selects, and perform the state change the criterion names",
+      "signal": "weak_test",
+      "scope": "src/utils tests",
+      "status": "candidate",
+      "features": [
+        "dice-themes"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md C8, C18 (src/utils tests)"
+      ],
+      "created": "2026-11-27T00:39:29Z",
+      "last_seen": "2026-11-27T00:39:29Z"
+    },
+    {
+      "id": "L-013",
+      "key": "weak_test::walk each walk check under its exact stated condition and every listed variant before recording it",
+      "text": "Walk each walk check under its exact stated condition and every listed variant before recording it",
+      "signal": "weak_test",
+      "scope": "walk checks",
+      "status": "candidate",
+      "features": [
+        "dice-themes"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md C13, C30 (walk checks)"
+      ],
+      "created": "2026-11-27T00:39:29Z",
+      "last_seen": "2026-11-27T00:39:29Z"
+    }
+  ]
+}

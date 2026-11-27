@@ -1,8 +1,8 @@
-// Derived from .specs/features/roll-sounds/spec.md (SND-01..04). Run: npm test
+// Derived from .specs/features/roll-sounds/spec.md (SND-01..04) and sound-polish/spec.md (SPL-02, SPL-03.1). Run: npm test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Roll } from '../types/dice';
-import { contactImpact, createLimiter, FLOOR_GAIN, impactGain, loadMuted, MAX_IMPACT, MIN_IMPACT, PER_WINDOW, revealSound, saveMuted, WINDOW_MS } from './sound.ts';
+import { contactImpact, createLimiter, crowdGain, diePitch, JITTER, nextSample, pitchRate, FLOOR_GAIN, impactGain, loadMuted, MAX_IMPACT, MIN_IMPACT, PER_WINDOW, revealSound, saveMuted, WINDOW_MS } from './sound.ts';
 
 const roll = (dice: { sides: Roll['dice'][number]['sides']; value: number; kept?: boolean }[]): Roll => ({
   id: 'r',
@@ -102,4 +102,52 @@ test('SND-01.1 a die-die hit sounds once, at the faster die speed', () => {
 
 test('SND-01.1 a die hitting the table or a wall sounds at its own speed', () => {
   assert.equal(contactImpact({ handle: 3, speed: 5 }, null), 5);
+});
+
+test('SPL-02.1 impact pitch orders d4 > d6 > d8 > d10 > d12 > d20', () => {
+  const order = [4, 6, 8, 10, 12, 20] as const;
+  for (let i = 1; i < order.length; i++) {
+    assert.ok(diePitch(order[i - 1]) > diePitch(order[i]), `d${order[i - 1]} should be higher than d${order[i]}`);
+  }
+});
+
+test('SPL-02.2 impact pitch varies randomly by at most ±6 % around the die pitch', () => {
+  assert.equal(JITTER, 0.06);
+  for (const sides of [4, 6, 8, 10, 12, 20] as const) {
+    const base = diePitch(sides);
+    const lo = pitchRate(sides, () => 0);
+    const hi = pitchRate(sides, () => 0.999999);
+    assert.ok(Math.abs(lo - base * 0.94) < 1e-6, `d${sides} lowest is -6 %`);
+    assert.ok(Math.abs(hi - base * 1.06) < 1e-4, `d${sides} highest is +6 %`);
+    for (let r = 0; r < 1; r += 0.05) {
+      const rate = pitchRate(sides, () => r);
+      assert.ok(rate >= base * 0.94 - 1e-9 && rate <= base * 1.06 + 1e-9);
+    }
+    assert.notEqual(pitchRate(sides, () => 0.2), pitchRate(sides, () => 0.8), 'it varies');
+  }
+});
+
+test('SPL-02.3 two impacts in a row never use the same sample', () => {
+  for (const r of [0, 0.25, 0.5, 0.75, 0.999999]) {
+    let last: number | null = null;
+    for (let i = 0; i < 20; i++) {
+      const next = nextSample(4, last, () => r);
+      assert.ok(next >= 0 && next < 4, 'index in range');
+      assert.notEqual(next, last, `repeated sample ${next}`);
+      last = next;
+    }
+  }
+  // every other sample stays reachable
+  const seen = new Set([0, 0.3, 0.6, 0.99].map((r) => nextSample(4, 2, () => r)));
+  assert.deepEqual([...seen].sort(), [0, 1, 3]);
+  assert.equal(nextSample(1, 0, () => 0.5), 0, 'a single sample has nothing else to pick');
+});
+
+test('SPL-03.1 impact gain scales by 1/sqrt(dice count), never below 0.35', () => {
+  assert.equal(crowdGain(1), 1);
+  assert.ok(Math.abs(crowdGain(2) - 1 / Math.SQRT2) < 1e-9);
+  assert.ok(Math.abs(crowdGain(4) - 0.5) < 1e-9);
+  assert.ok(Math.abs(crowdGain(8) - 1 / Math.sqrt(8)) < 1e-9);
+  assert.equal(crowdGain(9), 0.35);
+  assert.equal(crowdGain(100), 0.35);
 });

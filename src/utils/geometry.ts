@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { DieSpec } from '../types/dice';
+import type { Theme } from './themes.ts';
 
 type Sides = DieSpec['sides'];
 type Role = DieSpec['role'];
@@ -13,17 +14,12 @@ export type DieDef = {
   /** Directions read against world up: face normals, or vertex dirs for d4. */
   readouts: { dir: THREE.Vector3; value: number }[];
   labels: Label[];
-  color: string;
 };
 
 const SIZE = 0.7;
 // ponytail: number size per die on the 3D faces (1 = original). d4 (3 numbers per face) and
 // d10/d100 (narrow kite faces) need more than the rest to stay readable on a phone.
 const LABEL_SCALE: Record<Sides, number> = { 4: 1.25, 6: 0.7, 8: 0.7, 10: 1.25, 12: 0.7, 20: 0.7 };
-// Same palette as DieIcon (2D) so 3D dice and UI match.
-export const COLORS: Record<Sides | 100, string> = {
-  4: '#FF2E4D', 6: '#FFD60A', 8: '#22D3EE', 10: '#A855F7', 12: '#FF7A1A', 20: '#FF3FD8', 100: '#3DFF8B',
-};
 
 function d10Geometry(r: number) {
   // Pentagonal trapezohedron; apex height h keeps kites planar: h = a(1+cos36)/(1-cos36)
@@ -68,19 +64,38 @@ function baseGeometry(sides: Sides): THREE.BufferGeometry {
 /** Group triangles into planar faces by normal. */
 function faces(g: THREE.BufferGeometry) {
   const pos = g.getAttribute('position');
-  const list: { normal: THREE.Vector3; verts: THREE.Vector3[] }[] = [];
+  const list: { normal: THREE.Vector3; verts: THREE.Vector3[]; indices: number[] }[] = [];
   const v = [0, 1, 2].map(() => new THREE.Vector3());
   for (let i = 0; i < pos.count; i += 3) {
     v.forEach((p, j) => p.fromBufferAttribute(pos, i + j));
     const n = new THREE.Vector3().subVectors(v[1], v[0]).cross(new THREE.Vector3().subVectors(v[2], v[0])).normalize();
     let f = list.find((g) => g.normal.dot(n) > 0.999);
-    if (!f) list.push((f = { normal: n, verts: [] }));
+    if (!f) list.push((f = { normal: n, verts: [], indices: [] }));
+    f.indices.push(i, i + 1, i + 2);
     for (const p of v) if (!f.verts.some((q) => q.distanceTo(p) < 1e-4)) f.verts.push(p.clone());
   }
   return list.map((f) => ({
     ...f,
     center: f.verts.reduce((s, p) => s.add(p), new THREE.Vector3()).divideScalar(f.verts.length),
   }));
+}
+
+/** Planar UVs, one face at a time: face center at (0.5, 0.5), farthest corner half a texture away. */
+function faceUvs(g: THREE.BufferGeometry, list: ReturnType<typeof faces>) {
+  const pos = g.getAttribute('position');
+  const uv = new THREE.BufferAttribute(new Float32Array(pos.count * 2), 2);
+  const p = new THREE.Vector3();
+  for (const f of list) {
+    const y = f.verts[0].clone().sub(f.center).projectOnPlane(f.normal).normalize();
+    const x = new THREE.Vector3().crossVectors(y, f.normal);
+    // the margin keeps float rounding inside 0..1
+    const span = 2.001 * Math.max(...f.verts.map((v) => v.distanceTo(f.center)));
+    for (const i of f.indices) {
+      p.fromBufferAttribute(pos, i).sub(f.center);
+      uv.setXY(i, 0.5 + p.dot(x) / span, 0.5 + p.dot(y) / span);
+    }
+  }
+  return uv;
 }
 
 /** Values 1..n, opposite faces summing to n+1 when the die has opposite faces. */
@@ -113,8 +128,6 @@ function fmt(value: number, sides: Sides, role: Role) {
   return sides >= 6 && (value === 6 || value === 9) ? `${value}.` : String(value);
 }
 
-const TENS_COLOR = '#178F4A'; // darker than the units d10 so the d100 pair reads apart
-
 const cache = new Map<string, DieDef>();
 
 export function getDie(sides: Sides, role?: Role): DieDef {
@@ -126,6 +139,7 @@ export function getDie(sides: Sides, role?: Role): DieDef {
   const geometry = base.index ? base.toNonIndexed() : base;
   geometry.computeVertexNormals();
   const fs = faces(geometry);
+  geometry.setAttribute('uv', faceUvs(geometry, fs));
   const labels: Label[] = [];
   let readouts: DieDef['readouts'];
 
@@ -158,7 +172,6 @@ export function getDie(sides: Sides, role?: Role): DieDef {
     edges: new THREE.EdgesGeometry(geometry, 20),
     readouts,
     labels,
-    color: role === 'tens' ? TENS_COLOR : role ? COLORS[100] : COLORS[sides],
   };
   cache.set(key, def);
   return def;
@@ -177,40 +190,56 @@ export function readValue(def: DieDef, rotation: THREE.QuaternionLike) {
   return best;
 }
 
-const LABEL_FONT = "'Russo One'";
-const textures = new Map<string, THREE.CanvasTexture>();
+type LabelEntry = { tex: THREE.CanvasTexture; text: string; theme: Theme };
+const textures = new Map<string, LabelEntry>();
+const requestedFonts = new Set<string>();
 
-function draw(c: HTMLCanvasElement, text: string) {
+function draw(c: HTMLCanvasElement, text: string, theme: Theme) {
   const ctx = c.getContext('2d')!;
   ctx.clearRect(0, 0, c.width, c.height);
-  ctx.font = `${text.length > 2 ? 54 : 76}px ${LABEL_FONT}, system-ui, sans-serif`;
+  ctx.font = `${text.length > 2 ? 54 : 76}px '${theme.font}', system-ui, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.lineJoin = 'round';
   ctx.lineWidth = 12;
-  ctx.strokeStyle = '#0B0B10';
+  ctx.strokeStyle = theme.label.outline;
   ctx.strokeText(text, 64, 66);
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = theme.label.fill;
   ctx.fillText(text, 64, 66);
+  // thickens thin serif glyphs: only a 400 weight is loaded
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = theme.label.fill;
+  ctx.strokeText(text, 64, 66);
 }
 
-// Canvas text doesn't wait for web fonts: redraw every label once the font arrives.
-globalThis.document?.fonts?.load(`76px ${LABEL_FONT}`).then(() => {
-  textures.forEach((tex, text) => {
-    draw(tex.image as HTMLCanvasElement, text);
-    tex.needsUpdate = true;
-  });
-});
+// Canvas text doesn't wait for web fonts: redraw the labels using a font once it arrives.
+function requestFont(font: string) {
+  if (requestedFonts.has(font)) return;
+  requestedFonts.add(font);
+  document.fonts?.load(`76px '${font}'`).then(
+    () => {
+      for (const { tex, text, theme } of textures.values()) {
+        if (theme.font !== font) continue;
+        draw(tex.image as HTMLCanvasElement, text, theme);
+        tex.needsUpdate = true;
+      }
+    },
+    () => requestedFonts.delete(font), // failed load: ask again with the next new label
+  );
+}
 
-export function labelTexture(text: string) {
-  let tex = textures.get(text);
-  if (!tex) {
+export function labelTexture(text: string, theme: Theme) {
+  const key = `${theme.id}:${text}`;
+  let entry = textures.get(key);
+  if (!entry) {
     const c = document.createElement('canvas');
     c.width = c.height = 128;
-    draw(c, text);
-    tex = new THREE.CanvasTexture(c);
+    draw(c, text, theme);
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace; // without it dark fills render lifted
     tex.anisotropy = 4;
-    textures.set(text, tex);
+    textures.set(key, (entry = { tex, text, theme }));
+    requestFont(theme.font);
   }
-  return tex;
+  return entry.tex;
 }

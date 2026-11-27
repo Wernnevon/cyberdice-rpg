@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { ConvexHullCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
+import { CoefficientCombineRule, ConvexHullCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import type { DieSpec } from '../types/dice';
 import { getDie, labelTexture, readValue } from '../utils/geometry';
+import { bodyColor, type Theme } from '../utils/themes';
+import { useTheme } from '../utils/themeStore';
+import { faceTexture } from '../utils/faceTexture';
 import { sound } from '../audio/engine';
+import { shakeBus, type ShakePush } from '../hooks/useShake';
+import { dieMaterial, pushHeld, type Combine } from '../utils/shakeGesture';
 import { contactImpact } from '../utils/sound';
 
 const FLAT = 0.95; // cos(~18°): below this the die is resting on an edge/corner -> reroll
@@ -16,20 +21,80 @@ const REST_S = 0.15;
 
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 const spin = () => [rand(-15, 15), rand(-15, 15), rand(-15, 15)] as [number, number, number];
+// ponytail: holding area knobs (world units) — the throw already starts from this strip
+export const HOLD_DEPTH = 2.2; // strip along the bottom edge
+export const HOLD_SPREAD = 1 / 3; // half-width as a share of the table width
+export const HOLD_LID = 2.4; // invisible lid over the table: held dice stay low, away from the camera
+const RULE: Record<Combine, CoefficientCombineRule> = {
+  average: CoefficientCombineRule.Average,
+  min: CoefficientCombineRule.Min,
+  max: CoefficientCombineRule.Max,
+};
 
-type Props = { spec: DieSpec; index: number; arena: { w: number; h: number }; onSettle: (dieId: string, value: number) => void };
+// ponytail: finish look knobs (reflection strength is ENV_INTENSITY in DiceScene)
+const STANDARD = {
+  gloss: { roughness: 0.2, metalness: 0.05 },
+  metal: { roughness: 0.3, metalness: 1 },
+  glass: { roughness: 0.1, metalness: 0, transparent: true, opacity: 0.6 },
+};
 
-export function Die({ spec, index, arena, onSettle }: Props) {
+// keyed by finish and map presence: switching either builds a fresh material (the shader and
+// `transparent` need one), the mesh stays. A texture already carries the body color.
+function BodyMaterial({ theme, color }: { theme: Theme; color: string }) {
+  const { finish } = theme;
+  const map = faceTexture(theme, color);
+  const key = `${finish}${map ? '-map' : ''}`;
+  const look = map ? { color: '#ffffff', map } : { color };
+  if (finish === 'toon') return <meshToonMaterial key={key} {...look} />;
+  return <meshStandardMaterial key={key} {...look} {...STANDARD[finish]} />;
+}
+
+/** `hold`: in the bottom strip, pushed by the shake, never read. `thrown`: flies to the top and is read. */
+export type Phase = 'hold' | 'thrown';
+
+type Props = { spec: DieSpec; index: number; count: number; phase: Phase; arena: { w: number; h: number }; onSettle: (dieId: string, value: number) => void };
+
+export function Die({ spec, index, count, phase, arena, onSettle }: Props) {
   const def = useMemo(() => getDie(spec.sides, spec.role), [spec.sides, spec.role]);
+  const theme = useTheme(); // looks only: never part of a key, so no die or body remounts
   const body = useRef<RapierRigidBody>(null);
   const done = useRef(false);
 
-  // Thrown from the bottom edge (near the thumb) toward the top of the screen
+  const throwVelocity = () => [rand(-3, 3), rand(0, 2), -rand(6, 12)] as [number, number, number];
+  // Starts in the bottom strip (near the thumb); thrown toward the top of the screen, or held there while shaking
   const [start] = useState(() => ({
-    position: [rand(-arena.w / 3, arena.w / 3), 1.5 + (index % 6) * 0.6, arena.h / 2 - 0.9] as [number, number, number],
-    linearVelocity: [rand(-3, 3), rand(0, 2), -rand(6, 12)] as [number, number, number],
-    angularVelocity: spin(),
+    position: [
+      rand(-arena.w * HOLD_SPREAD, arena.w * HOLD_SPREAD),
+      phase === 'thrown' ? 1.5 + (index % 6) * 0.6 : 0.8 + (index % 2) * 0.8,
+      arena.h / 2 - HOLD_DEPTH / 2,
+    ] as [number, number, number],
+    linearVelocity: phase === 'thrown' ? throwVelocity() : ([0, 0, 0] as [number, number, number]),
+    angularVelocity: phase === 'thrown' ? spin() : ([rand(-3, 3), rand(-3, 3), rand(-3, 3)] as [number, number, number]),
   }));
+  const thrown = phase === 'thrown';
+  const material = dieMaterial(phase); // bouncy while held, normal once thrown (SHA-05.6)
+
+  // Held: each rattle step pushes the die along the shake, harder for a harder shake (SHA-02.1, SHA-05)
+  useEffect(() => {
+    if (thrown) return;
+    const push = (e: Event) => {
+      if (body.current) pushHeld(body.current, (e as CustomEvent<ShakePush>).detail, Math.random);
+    };
+    shakeBus.addEventListener('push', push);
+    return () => shakeBus.removeEventListener('push', push);
+  }, [thrown]);
+
+  // Released: the held die is thrown from where it is (SHA-03.1)
+  const wasHeld = useRef(!thrown);
+  useEffect(() => {
+    const b = body.current;
+    if (!thrown || !wasHeld.current || !b) return;
+    wasHeld.current = false;
+    const [x, y, z] = throwVelocity();
+    const [ax, ay, az] = spin();
+    b.setLinvel({ x, y, z }, true);
+    b.setAngvel({ x: ax, y: ay, z: az }, true);
+  }, [thrown]);
 
   const settle = (force = false) => {
     const b = body.current;
@@ -52,7 +117,7 @@ export function Die({ spec, index, arena, onSettle }: Props) {
     if (!b) return;
     const v = b.linvel();
     lastSpeed.current = Math.hypot(v.x, v.y, v.z);
-    if (done.current) return;
+    if (done.current || !thrown) return; // held dice are never read
     const w = b.angvel();
     if (lastSpeed.current < REST_LIN && Math.hypot(w.x, w.y, w.z) < REST_ANG) {
       still.current += dt;
@@ -68,9 +133,10 @@ export function Die({ spec, index, arena, onSettle }: Props) {
     settleRef.current = settle;
   });
   useEffect(() => {
+    if (!thrown) return;
     const t = setTimeout(() => settleRef.current(true), FALLBACK_MS);
     return () => clearTimeout(t);
-  }, []);
+  }, [thrown]);
 
   return (
     <RigidBody
@@ -79,9 +145,8 @@ export function Die({ spec, index, arena, onSettle }: Props) {
       position={start.position}
       linearVelocity={start.linearVelocity}
       angularVelocity={start.angularVelocity}
-      restitution={0.3}
-      friction={0.6}
-      onSleep={() => settle()}
+      onSleep={() => thrown && settle()}
+      linearDamping={material.damping}
       onCollisionEnter={({ other }) => {
         const self = body.current;
         if (!self) return;
@@ -91,20 +156,27 @@ export function Die({ spec, index, arena, onSettle }: Props) {
           { handle: self.handle, speed: lastSpeed.current },
           o && v && o.isDynamic() ? { handle: o.handle, speed: Math.hypot(v.x, v.y, v.z) } : null,
         );
-        if (speed !== null) sound.impact(speed, performance.now());
+        if (speed !== null) sound.impact(speed, performance.now(), spec.sides, count);
       }}
     >
-      <ConvexHullCollider args={[def.hull]} />
+      <ConvexHullCollider
+        args={[def.hull]}
+        restitution={material.restitution}
+        friction={material.friction}
+        restitutionCombineRule={RULE[material.restitutionRule]}
+        frictionCombineRule={RULE[material.frictionRule]}
+      />
       <mesh geometry={def.geometry} castShadow>
-        <meshToonMaterial color={def.color} />
+        <BodyMaterial theme={theme} color={bodyColor(theme, spec.sides, spec.role)} />
       </mesh>
       <lineSegments geometry={def.edges}>
-        <lineBasicMaterial color="#0B0B10" />
+        <lineBasicMaterial color={theme.edge} />
       </lineSegments>
+      {/* renderOrder: numbers draw after a transparent (glass) body */}
       {def.labels.map((l, i) => (
-        <mesh key={i} position={l.position} quaternion={l.quaternion}>
+        <mesh key={i} position={l.position} quaternion={l.quaternion} renderOrder={1}>
           <planeGeometry args={[l.size, l.size]} />
-          <meshBasicMaterial map={labelTexture(l.text)} transparent depthWrite={false} />
+          <meshBasicMaterial map={labelTexture(l.text, theme)} transparent depthWrite={false} />
         </mesh>
       ))}
     </RigidBody>

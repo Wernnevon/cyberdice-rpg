@@ -1,9 +1,10 @@
 import type { CSSProperties, Dispatch, SetStateAction } from 'react';
 import type { Sides } from '../types/dice';
 import { t } from '../i18n/t';
-import { COLORS } from '../utils/geometry';
 import { SIDES } from '../utils/dice';
 import { pretty } from '../utils/format';
+import { bodyColor } from '../utils/themes';
+import { useTheme } from '../utils/themeStore';
 import { DieIcon } from './DieIcon';
 import s from './Tray.module.css';
 
@@ -27,6 +28,7 @@ const MAX_PER_DIE = 10;
 const signed = (n: number) => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n);
 
 export function Tray({ counts, mod, custom, notation, rolling, hasResult, onCounts, onMod, onClearCustom, onFormula, onRoll }: Props) {
+  const theme = useTheme();
   // functional update: fast double taps must both count
   const bump = (sides: Sides, delta: number) =>
     onCounts((c) => ({ ...c, [sides]: Math.max(0, Math.min(MAX_PER_DIE, (c[sides] ?? 0) + delta)) }));
@@ -54,7 +56,7 @@ export function Tray({ counts, mod, custom, notation, rolling, hasResult, onCoun
                   <button
                     key={n}
                     className={s.chip}
-                    style={{ '--c': COLORS[n] } as CSSProperties}
+                    style={{ '--c': bodyColor(theme, n) } as CSSProperties}
                     onClick={() => bump(n, -1)}
                     aria-label={t('remove', { item: `d${n}` })}
                   >
@@ -87,7 +89,7 @@ export function Tray({ counts, mod, custom, notation, rolling, hasResult, onCoun
               key={n}
               className={s.tile}
               data-on={c > 0}
-              style={{ '--c': COLORS[n] } as CSSProperties}
+              style={{ '--c': bodyColor(theme, n) } as CSSProperties}
               onClick={() => add(n)}
               aria-label={t('add', { die: `d${n}` })}
             >

@@ -1,17 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
 import { shakeRestore } from '../utils/prefs';
-
-// ponytail: calibration knobs — tune on real devices (m/s² above gravity, ms between shakes)
-const THRESHOLD = 15;
-const COOLDOWN = 1200;
+import { createShakeHandler, screenMotion } from '../utils/shakeGesture';
+import { sound } from '../audio/engine';
 
 type IOSMotion = typeof DeviceMotionEvent & { requestPermission?: () => Promise<'granted' | 'denied'> };
 
-/** `wanted`: the saved choice, read once at start to bring shake-to-roll back. */
-export function useShake(onShake: () => void, wanted = false) {
-  const cb = useRef(onShake);
+/** Each rattle step pushes the held dice: a `push` event with the speed change and its table direction (SHA-02.1, SHA-05). */
+export type ShakePush = { impulse: number; dir: { x: number; z: number } };
+export const shakeBus = new EventTarget();
+
+type Gesture = { start: () => void; roll: () => void; cancel: () => void };
+
+/**
+ * Shake holds and rattles the dice, and they are thrown when the shaking stops (SPL-05, SHA).
+ * `wanted`: the saved choice, read once at start. `canRoll`: false with no dice, while dice move, or on another view.
+ */
+export function useShake(gesture: Gesture, wanted: boolean, canRoll: () => boolean) {
+  const cb = useRef(gesture);
+  const can = useRef(canRoll);
   useEffect(() => {
-    cb.current = onShake;
+    cb.current = gesture;
+    can.current = canRoll;
   });
   const supported = typeof window !== 'undefined' && 'DeviceMotionEvent' in window;
   const needsPermission = supported && typeof (DeviceMotionEvent as IOSMotion).requestPermission === 'function';
@@ -25,20 +34,30 @@ export function useShake(onShake: () => void, wanted = false) {
   const listening = on || pending;
   useEffect(() => {
     if (!listening) return;
-    let last = 0;
+    const step = createShakeHandler(
+      (now, impulse, dir) => {
+        sound.rattle(now);
+        shakeBus.dispatchEvent(new CustomEvent<ShakePush>('push', { detail: { impulse, dir } }));
+      },
+      () => cb.current.roll(),
+      () => can.current(),
+      { start: () => cb.current.start(), cancel: () => cb.current.cancel() },
+    );
     const handle = (e: DeviceMotionEvent) => {
-      const a = e.acceleration ?? e.accelerationIncludingGravity;
-      if (!a) return;
-      const g = e.acceleration ? 0 : 9.8;
-      const force = Math.hypot(a.x ?? 0, a.y ?? 0, a.z ?? 0) - g;
-      const now = Date.now();
-      if (force > THRESHOLD && now - last > COOLDOWN) {
-        last = now;
-        cb.current();
-      }
+      if (document.hidden) return;
+      const m = screenMotion(e.acceleration, e.accelerationIncludingGravity, screen.orientation?.angle ?? 0);
+      if (m) step(m.force, performance.now(), m.ax, m.ay);
+    };
+    const hide = () => {
+      if (document.hidden) step.reset();
     };
     window.addEventListener('devicemotion', handle);
-    return () => window.removeEventListener('devicemotion', handle);
+    document.addEventListener('visibilitychange', hide);
+    return () => {
+      window.removeEventListener('devicemotion', handle);
+      document.removeEventListener('visibilitychange', hide);
+      cb.current.cancel(); // no listener is left to release held dice (no-op when none are held)
+    };
   }, [listening]);
 
   /** Must be called from a user gesture (iOS permission prompt). */
@@ -60,8 +79,8 @@ export function useShake(onShake: () => void, wanted = false) {
     const once = (e: Event) => {
       events.forEach((n) => window.removeEventListener(n, once, true));
       if ((e.target as Element | null)?.closest?.('[data-shake-toggle]')) return; // the toggle decides
-      setPending(false);
-      void enableRef.current();
+      // pending ends only after the answer, so a granted prompt keeps listening without a gap
+      void enableRef.current().finally(() => setPending(false));
     };
     events.forEach((n) => window.addEventListener(n, once, true));
     return () => events.forEach((n) => window.removeEventListener(n, once, true));

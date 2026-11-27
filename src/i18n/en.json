@@ -51,5 +51,15 @@
   "sessionNote": "{n} rolls this session · cleared when the app closes",
   "empty": "No rolls yet. Let's roll!",
   "reroll": "Roll {f} again",
-  "sound": "Sound"
+  "sound": "Sound",
+  "openThemes": "Open themes",
+  "themes": "THEMES",
+  "theme_neon": "Neon",
+  "theme_ivory": "Ivory",
+  "theme_marble": "Marble",
+  "theme_gold": "Gold",
+  "theme_crystal": "Crystal",
+  "theme_shonen": "Shonen",
+  "theme_manga": "Manga",
+  "theme_sakura": "Sakura"
 }
