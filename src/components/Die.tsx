@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { CoefficientCombineRule, ConvexHullCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import type { DieSpec } from '../types/dice';
-import { getDie, labelTexture, readValue } from '../utils/geometry';
+import { getDie, labelTexture, randomQuaternion, readValue } from '../utils/geometry';
 import { bodyColor, type Theme } from '../utils/themes';
 import { useTheme } from '../utils/themeStore';
 import { faceTexture } from '../utils/faceTexture';
@@ -67,6 +67,8 @@ export function Die({ spec, index, count, phase, arena, onSettle }: Props) {
       phase === 'thrown' ? 1.5 + (index % 6) * 0.6 : 0.8 + (index % 2) * 0.8,
       arena.h / 2 - HOLD_DEPTH / 2,
     ] as [number, number, number],
+    // uniform, or a die dropped with almost no push favours some faces (SHA-06.7)
+    quaternion: randomQuaternion(Math.random),
     linearVelocity: (phase === 'thrown' ? [rand(-3, 3), rand(0, 2), -rand(6, 12)] : [0, 0, 0]) as [number, number, number],
     angularVelocity: phase === 'thrown' ? spin() : ([rand(-3, 3), rand(-3, 3), rand(-3, 3)] as [number, number, number]),
   }));
@@ -142,6 +144,9 @@ export function Die({ spec, index, count, phase, arena, onSettle }: Props) {
       }}
       colliders={false}
       position={start.position}
+      // safe as a prop, like position: a stable array R3F never re-applies; the library copies the object's
+      // pose to the body on mount (overriding a setRotation in the ref) and its `quaternion` setter is a no-op
+      quaternion={start.quaternion}
       ccd // fast pushed dice, many in one box: without it some get through the walls or the lid (constant: never re-applied)
       onSleep={() => thrown && settle()}
       linearDamping={material.damping}

@@ -8,7 +8,7 @@
 
 @font-face {
   font-family: 'EB Garamond';
-  font-weight: 400;
+  font-weight: 400 700;
   font-display: swap;
   src: url('/fonts/eb-garamond.woff2') format('woff2');
 }
@@ -22,7 +22,7 @@
 
 @font-face {
   font-family: 'Cormorant Garamond';
-  font-weight: 400;
+  font-weight: 400 700;
   font-display: swap;
   src: url('/fonts/cormorant-garamond.woff2') format('woff2');
 }

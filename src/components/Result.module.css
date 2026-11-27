@@ -29,7 +29,8 @@
   height: 130px;
   display: grid;
   place-items: center;
-  flex-shrink: 0;
+  /* gives up some height on short panels, so the dice list keeps its row */
+  min-height: 80px;
   animation: pop 0.35s cubic-bezier(0.2, 1.6, 0.4, 1);
 }
 
@@ -82,14 +83,19 @@
   align-self: stretch;
   margin: 0 -12px;
   padding: 8px 12px 6px;
-  /* big rolls scroll instead of being cut off */
-  min-height: 0;
+  /* big rolls scroll instead of being cut off; at least one row of small dice stays visible */
+  min-height: 56px;
+  flex-shrink: 100;
   overflow: hidden auto;
   pointer-events: auto;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 10px 6px;
+}
+
+.dice:focus-visible {
+  outline-offset: -3px; /* the panel clips an outer ring */
 }
 
 .dice li {

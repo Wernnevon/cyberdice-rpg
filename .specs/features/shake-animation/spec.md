@@ -98,6 +98,7 @@ Supersedes "toward the top of the table" in SHA-03.1 (the button roll still thro
 4. WHILE the dice are being shaken, IF a push points more than 120 degrees away from a die's flight and at least 250 ms passed since that die's last push THEN THE SYSTEM SHALL turn the die to the push, even if it flies faster than 60 % of the push size. This narrows "a die already flying faster keeps flying" in SHA-05.5; any other push still leaves a fast die alone.
 5. WHILE the dice are being shaken THE SYSTEM SHALL push them at 22 m/s or more, so a die crosses the table in about 0.25 s, and give each push a spin of at most 14 rad/s per axis.
 6. THE SYSTEM SHALL use continuous collision detection on the dice, so fast dice stay inside the walls and below the lid.
+7. WHEN a die is spawned THE SYSTEM SHALL give it a uniformly random orientation, set once, so a die dropped with almost no push does not favour a face and a release keeps its inertia.
 
 ## Requirement Traceability
 

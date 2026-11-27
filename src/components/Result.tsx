@@ -47,7 +47,7 @@ export function Result({ roll, rolling, shaking, ready }: Props) {
       <p className={s.strip}>
         {pretty(roll.notation)} = {breakdown(roll)}
       </p>
-      <ul className={s.dice}>
+      <ul className={s.dice} tabIndex={0} aria-label={t('diceList')}>
         {roll.dice.map((d, i) => {
           const state: DieState = !d.kept ? 'drop' : d.value === d.sides ? 'max' : d.value === 1 ? 'min' : undefined;
           return (
