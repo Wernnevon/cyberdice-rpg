@@ -81,6 +81,25 @@ As a player, the dice fly across the whole screen and bang into its edges, follo
    Refined 2026-11-26 after the walk (setting the speed on every ~60 Hz sample kept reversing the dice in place, the "preso" the user reported): WHEN a rattle step arrives and a held die's sideways speed is below 60 % of the push size THE SYSTEM SHALL set its sideways velocity to the push size along the push direction; a die already flying faster keeps flying and bouncing.
 6. WHILE the dice are being shaken THE SYSTEM SHALL make them bounce off the table edges and off each other keeping at least 90 % of their speed, with almost no friction on the table, like bouncy balls; once thrown they get back their normal bounce and friction.
 
+### SHA-06 No friction while shaking, released with inertia (P1) - added 2026-11-27
+
+User: "while I shake there should be no friction so the die really hits the 4 corners of the screen. When released it falls following inertia, going where the shake was sending it."
+
+Supersedes "toward the top of the table" in SHA-03.1 (the button roll still throws toward the top) and the "at least 90 %" / "almost no friction" wording of SHA-05.6.
+
+**Acceptance criteria**
+
+1. WHILE the dice are being shaken THE SYSTEM SHALL give them no friction, no damping and full restitution.
+2. WHEN the shake gesture ends with a roll THE SYSTEM SHALL keep each die's current linear and angular velocity, add no push (a nearly still die gets none either), restore the thrown bounce and friction, and let it fall under gravity until it settles and is read.
+3. THE SYSTEM SHALL place the table walls close to the visible edges of the table panel, using a narrow field of view, with resting dice not cropped.
+
+**After the phone test (2026-11-27):** "I still feel a lot of friction, the die is still veeery sluggish/dragging". Measured in a headless simulation: the cause was the push speed (4 to 14 m/s: mean 6.5 m/s, about 0.7 s to cross the table), not friction. SHA-02.1 keeps its growth rule with new limits (22 to 30 m/s).
+
+4. WHILE the dice are being shaken, IF a push points more than 120 degrees away from a die's flight and at least 250 ms passed since that die's last push THEN THE SYSTEM SHALL turn the die to the push, even if it flies faster than 60 % of the push size. This narrows "a die already flying faster keeps flying" in SHA-05.5; any other push still leaves a fast die alone.
+5. WHILE the dice are being shaken THE SYSTEM SHALL push them at 22 m/s or more, so a die crosses the table in about 0.25 s, and give each push a spin of at most 14 rad/s per axis.
+6. THE SYSTEM SHALL use continuous collision detection on the dice, so fast dice stay inside the walls and below the lid.
+7. WHEN a die is spawned THE SYSTEM SHALL give it a uniformly random orientation, set once, so a die dropped with almost no push does not favour a face and a release keeps its inertia.
+
 ## Requirement Traceability
 
 | ID | Story | Status |
@@ -90,6 +109,7 @@ As a player, the dice fly across the whole screen and bang into its edges, follo
 | SHA-03 | Thrown from the hand | Done |
 | SHA-04 | Weak shake leaves no trace | Done |
 | SHA-05 | Shaken inside the phone (replaces the holding area of SHA-01.1, SHA-01.3) | Done |
+| SHA-06 | No friction while shaking, released with inertia | Implemented, awaiting phone check |
 
 ## Assumptions & Open Questions
 

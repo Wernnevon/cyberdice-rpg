@@ -35,7 +35,7 @@ export function Result({ roll, rolling, shaking, ready }: Props) {
     );
   }
 
-  const size = roll.dice.length <= 3 ? 64 : roll.dice.length <= 6 ? 52 : 40;
+  const size = roll.dice.length <= 3 ? 64 : roll.dice.length <= 6 ? 52 : 36;
   return (
     <div className={s.overlay} aria-live="polite">
       <span className={`tag ${s.corner}`} style={{ '--tag-bg': 'var(--yellow)', '--tag-fg': 'var(--ink)', '--tag-shadow': 'var(--ink)' } as CSSProperties}>
@@ -47,7 +47,7 @@ export function Result({ roll, rolling, shaking, ready }: Props) {
       <p className={s.strip}>
         {pretty(roll.notation)} = {breakdown(roll)}
       </p>
-      <ul className={s.dice}>
+      <ul className={s.dice} tabIndex={0} aria-label={t('diceList')}>
         {roll.dice.map((d, i) => {
           const state: DieState = !d.kept ? 'drop' : d.value === d.sides ? 'max' : d.value === 1 ? 'min' : undefined;
           return (

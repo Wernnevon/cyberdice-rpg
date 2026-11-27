@@ -6,8 +6,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 48px 12px 12px;
+  gap: 8px;
+  padding: 44px 12px 8px;
   text-align: center;
 }
 
@@ -25,11 +25,12 @@
 
 .burst {
   position: relative;
-  width: 200px;
-  height: 170px;
+  width: 160px;
+  height: 130px;
   display: grid;
   place-items: center;
-  flex-shrink: 0;
+  /* gives up some height on short panels, so the dice list keeps its row */
+  min-height: 80px;
   animation: pop 0.35s cubic-bezier(0.2, 1.6, 0.4, 1);
 }
 
@@ -47,7 +48,7 @@
 }
 
 .burst::after {
-  inset: 20px;
+  inset: 15px;
   background: var(--yellow);
   transform: rotate(-6deg);
 }
@@ -56,7 +57,7 @@
   position: relative;
   z-index: 1;
   font-family: var(--font-display);
-  font-size: 80px;
+  font-size: 64px;
   line-height: 1;
   color: #fff;
   -webkit-text-stroke: 4px var(--ink);
@@ -78,12 +79,23 @@
 
 .dice {
   list-style: none;
-  margin: 4px 0 0;
-  padding: 0;
+  /* full panel width: room for the stickers, which stick out of each die */
+  align-self: stretch;
+  margin: 0 -12px;
+  padding: 8px 12px 6px;
+  /* big rolls scroll instead of being cut off; at least one row of small dice stays visible */
+  min-height: 56px;
+  flex-shrink: 100;
+  overflow: hidden auto;
+  pointer-events: auto;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 10px 6px;
+}
+
+.dice:focus-visible {
+  outline-offset: -3px; /* the panel clips an outer ring */
 }
 
 .dice li {

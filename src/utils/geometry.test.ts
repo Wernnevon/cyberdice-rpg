@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { Euler, Quaternion } from 'three';
-import { getDie, readValue } from './geometry.ts';
+import { getDie, randomQuaternion, readValue } from './geometry.ts';
 import { themeStore } from './themeStore.ts';
 import { THEMES } from './themes.ts';
 
@@ -55,4 +55,22 @@ test('C33 every face has uvs in range', () => {
       assert.ok(area > 0.01, `d${sides} triangle ${i / 3} area ${area}`);
     }
   }
+});
+
+test('SHA-06.7 randomQuaternion is a unit quaternion, uniform over orientations', () => {
+  let seed = 1;
+  const random = () => (seed = (seed * 48271) % 2147483647) / 2147483647;
+  const def = getDie(20);
+  const n = 20000;
+  const counts = new Array(20).fill(0);
+  let w2 = 0;
+  for (let i = 0; i < n; i++) {
+    const [x, y, z, w] = randomQuaternion(random);
+    assert.ok(Math.abs(Math.hypot(x, y, z, w) - 1) < 1e-9);
+    w2 += w * w;
+    counts[readValue(def, { x, y, z, w }).value - 1]++;
+  }
+  assert.ok(Math.abs(w2 / n - 0.25) < 0.01); // uniform on the 3-sphere: each component averages 1/4 squared
+  const chi2 = counts.reduce((s, o) => s + (o - n / 20) ** 2 / (n / 20), 0);
+  assert.ok(chi2 < 43.8, `chi2 ${chi2}`); // df 19, p = 0.001
 });

@@ -10,8 +10,8 @@ import { Die, HOLD_LID } from './Die';
 // keep the same share of the panel on any screen; MIN_H keeps short panels from zooming in too far.
 const VIEW_W = 6;
 const MIN_H = 5.5;
-const FOV = 40;
-const CEILING = 6.5; // below the closest camera (MIN_H framing ≈ 7.5) so dice never fly past it
+const FOV = 10; // narrow = little perspective, so the walls sit at the visible edges (SHA-06.3)
+const CEILING = 6.5; // far below the closest camera (MIN_H framing ≈ 31) so dice never fly past it
 const WALL = 10;
 const DIE_TOP = 1.6; // tallest die resting height + small margin
 
@@ -91,7 +91,7 @@ function Table() {
 
 export function DiceScene() {
   return (
-    <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 18, 0.001], fov: FOV }} gl={{ alpha: true }}>
+    <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 18, 0.001], fov: FOV, near: 5 }} gl={{ alpha: true }}>
       <Environment />
       <ambientLight intensity={1.2} />
       <directionalLight

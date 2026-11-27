@@ -41,8 +41,9 @@ export function createShakeGesture() {
 export const canShakeRoll = (view: string, rolling: boolean, notation: string) => view === 'table' && !rolling && !!parse(notation);
 
 // ponytail: push size per rattle step, as a speed change in m/s (any die mass), tuned on a phone
-export const MIN_IMPULSE = 4;
-export const MAX_IMPULSE = 14;
+export const MIN_IMPULSE = 22; // crosses the table (~4.7 units of free travel) in about 0.25 s
+export const MAX_IMPULSE = 30;
+export const MAX_SPIN = 14; // rad/s per axis on a push: faster dice must not turn into tops
 const NO_DIRECTION = 0.05; // m/s² of screen-plane motion below which the direction is noise
 
 /**
@@ -69,19 +70,28 @@ export function shakeImpulse(force: number) {
 export const PUSH_SPREAD = 0.3;
 
 export const FLYING = 0.6; // a held die faster than this share of the push keeps flying (SHA-05.5)
+// ponytail: reversal knobs (SHA-06.4). A flying die is turned only by a push against it (cos below
+// REVERSE_COS = more than 120° apart) and only REVERSE_MS after its last push, about one table
+// crossing: sooner than that and a 3-5 Hz shake keeps the dice oscillating mid-table.
+export const REVERSE_COS = -0.5;
+export const REVERSE_MS = 250;
 
 /**
  * Velocity a held die takes on a push (SHA-05.5): sideways speed exactly `impulse` (m/s, any mass),
  * along `dir` with a small per-die wobble, plus a small hop. Null while the die still flies faster than
- * FLYING x impulse, so it travels and bounces freely instead of being reversed on every ~60 Hz sample.
+ * FLYING x impulse, so it travels and bounces freely instead of being reversed on every ~60 Hz sample;
+ * a reversed shake turns it once `sinceKick` (ms since its last push) reaches REVERSE_MS.
  */
 export function heldVelocity(
   current: { x: number; z: number },
   dir: { x: number; z: number },
   impulse: number,
   random: () => number,
+  sinceKick = 0,
 ) {
-  if (Math.hypot(current.x, current.z) >= FLYING * impulse) return null;
+  const speed = Math.hypot(current.x, current.z);
+  const reversed = sinceKick >= REVERSE_MS && current.x * dir.x + current.z * dir.z < REVERSE_COS * speed;
+  if (speed >= FLYING * impulse && !reversed) return null;
   const dx = dir.x + (random() * 2 - 1) * PUSH_SPREAD;
   const dz = dir.z + (random() * 2 - 1) * PUSH_SPREAD;
   const n = Math.hypot(dx, dz) || 1;
@@ -95,10 +105,10 @@ type PushBody = {
 };
 
 /** Applies one shake push to a held die body: a slowed die is flung, a flying one is left alone (SHA-05.5). */
-export function pushHeld(body: PushBody, push: { impulse: number; dir: { x: number; z: number } }, random: () => number) {
-  const v = heldVelocity(body.linvel(), push.dir, push.impulse, random);
+export function pushHeld(body: PushBody, push: { impulse: number; dir: { x: number; z: number } }, random: () => number, sinceKick = 0) {
+  const v = heldVelocity(body.linvel(), push.dir, push.impulse, random, sinceKick);
   if (!v) return false;
-  const i = push.impulse;
+  const i = Math.min(push.impulse, MAX_SPIN);
   body.setLinvel(v, true);
   body.setAngvel({ x: (random() * 2 - 1) * i, y: (random() * 2 - 1) * i, z: (random() * 2 - 1) * i }, true);
   return true;
@@ -107,13 +117,13 @@ export function pushHeld(body: PushBody, push: { impulse: number; dir: { x: numb
 export type Combine = 'average' | 'min' | 'max';
 
 /**
- * Die surface per phase (SHA-05.6). Held: bouncy balls - keeps 95 % of its speed against the walls
- * (their restitution is 0, so the rule is max) and nearly no friction (rule min), light damping.
+ * Die surface per phase (SHA-05.6, SHA-06.1). Held: no energy sink - full bounce against the walls
+ * (their restitution is 0, so the rule is max), no friction (rule min), no damping.
  * Thrown: the normal table, so dice stop and are read.
  */
 export function dieMaterial(phase: 'hold' | 'thrown') {
   return phase === 'hold'
-    ? { restitution: 0.95, friction: 0.02, restitutionRule: 'max' as Combine, frictionRule: 'min' as Combine, damping: 0.5 }
+    ? { restitution: 1, friction: 0, restitutionRule: 'max' as Combine, frictionRule: 'min' as Combine, damping: 0 }
     : { restitution: 0.3, friction: 0.6, restitutionRule: 'average' as Combine, frictionRule: 'average' as Combine, damping: 0 };
 }
 

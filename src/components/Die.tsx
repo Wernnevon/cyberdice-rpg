@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { CoefficientCombineRule, ConvexHullCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import type { DieSpec } from '../types/dice';
-import { getDie, labelTexture, readValue } from '../utils/geometry';
+import { getDie, labelTexture, randomQuaternion, readValue } from '../utils/geometry';
 import { bodyColor, type Theme } from '../utils/themes';
 import { useTheme } from '../utils/themeStore';
 import { faceTexture } from '../utils/faceTexture';
@@ -35,7 +35,7 @@ const RULE: Record<Combine, CoefficientCombineRule> = {
 const STANDARD = {
   gloss: { roughness: 0.2, metalness: 0.05 },
   metal: { roughness: 0.3, metalness: 1 },
-  glass: { roughness: 0.1, metalness: 0, transparent: true, opacity: 0.6 },
+  glass: { roughness: 0.1, metalness: 0, transparent: true, opacity: 0.8 },
 };
 
 // keyed by finish and map presence: switching either builds a fresh material (the shader and
@@ -49,7 +49,7 @@ function BodyMaterial({ theme, color }: { theme: Theme; color: string }) {
   return <meshStandardMaterial key={key} {...look} {...STANDARD[finish]} />;
 }
 
-/** `hold`: in the bottom strip, pushed by the shake, never read. `thrown`: flies to the top and is read. */
+/** `hold`: pushed by the shake, never read. `thrown`: falls with its inertia (button roll: flies to the top) and is read. */
 export type Phase = 'hold' | 'thrown';
 
 type Props = { spec: DieSpec; index: number; count: number; phase: Phase; arena: { w: number; h: number }; onSettle: (dieId: string, value: number) => void };
@@ -60,40 +60,33 @@ export function Die({ spec, index, count, phase, arena, onSettle }: Props) {
   const body = useRef<RapierRigidBody>(null);
   const done = useRef(false);
 
-  const throwVelocity = () => [rand(-3, 3), rand(0, 2), -rand(6, 12)] as [number, number, number];
-  // Starts in the bottom strip (near the thumb); thrown toward the top of the screen, or held there while shaking
+  // Starts in the bottom strip (near the thumb); a button roll is thrown toward the top, a shake holds it there
   const [start] = useState(() => ({
     position: [
       rand(-arena.w * HOLD_SPREAD, arena.w * HOLD_SPREAD),
       phase === 'thrown' ? 1.5 + (index % 6) * 0.6 : 0.8 + (index % 2) * 0.8,
       arena.h / 2 - HOLD_DEPTH / 2,
     ] as [number, number, number],
-    linearVelocity: phase === 'thrown' ? throwVelocity() : ([0, 0, 0] as [number, number, number]),
+    // uniform, or a die dropped with almost no push favours some faces (SHA-06.7)
+    quaternion: randomQuaternion(Math.random),
+    linearVelocity: (phase === 'thrown' ? [rand(-3, 3), rand(0, 2), -rand(6, 12)] : [0, 0, 0]) as [number, number, number],
     angularVelocity: phase === 'thrown' ? spin() : ([rand(-3, 3), rand(-3, 3), rand(-3, 3)] as [number, number, number]),
   }));
   const thrown = phase === 'thrown';
   const material = dieMaterial(phase); // bouncy while held, normal once thrown (SHA-05.6)
 
+  const lastKick = useRef(0);
   // Held: each rattle step pushes the die along the shake, harder for a harder shake (SHA-02.1, SHA-05)
   useEffect(() => {
     if (thrown) return;
     const push = (e: Event) => {
-      if (body.current) pushHeld(body.current, (e as CustomEvent<ShakePush>).detail, Math.random);
+      const now = performance.now();
+      if (body.current && pushHeld(body.current, (e as CustomEvent<ShakePush>).detail, Math.random, now - lastKick.current)) {
+        lastKick.current = now;
+      }
     };
     shakeBus.addEventListener('push', push);
     return () => shakeBus.removeEventListener('push', push);
-  }, [thrown]);
-
-  // Released: the held die is thrown from where it is (SHA-03.1)
-  const wasHeld = useRef(!thrown);
-  useEffect(() => {
-    const b = body.current;
-    if (!thrown || !wasHeld.current || !b) return;
-    wasHeld.current = false;
-    const [x, y, z] = throwVelocity();
-    const [ax, ay, az] = spin();
-    b.setLinvel({ x, y, z }, true);
-    b.setAngvel({ x: ax, y: ay, z: az }, true);
   }, [thrown]);
 
   const settle = (force = false) => {
@@ -140,11 +133,21 @@ export function Die({ spec, index, count, phase, arena, onSettle }: Props) {
 
   return (
     <RigidBody
-      ref={body}
+      // Initial velocity once per created body. Never as props: the library re-applies every mutable prop
+      // (and the mesh pose) when any of them changes, which would stop a released die (SHA-06.2).
+      ref={(b: RapierRigidBody) => {
+        body.current = b;
+        const [x, y, z] = start.linearVelocity;
+        const [ax, ay, az] = start.angularVelocity;
+        b.setLinvel({ x, y, z }, true);
+        b.setAngvel({ x: ax, y: ay, z: az }, true);
+      }}
       colliders={false}
       position={start.position}
-      linearVelocity={start.linearVelocity}
-      angularVelocity={start.angularVelocity}
+      // safe as a prop, like position: a stable array R3F never re-applies; the library copies the object's
+      // pose to the body on mount (overriding a setRotation in the ref) and its `quaternion` setter is a no-op
+      quaternion={start.quaternion}
+      ccd // fast pushed dice, many in one box: without it some get through the walls or the lid (constant: never re-applied)
       onSleep={() => thrown && settle()}
       linearDamping={material.damping}
       onCollisionEnter={({ other }) => {

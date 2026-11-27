@@ -177,6 +177,16 @@ export function getDie(sides: Sides, role?: Role): DieDef {
   return def;
 }
 
+/** Uniformly random orientation as [x, y, z, w] (Shoemake). Random Euler angles would be biased. */
+export function randomQuaternion(random: () => number): [number, number, number, number] {
+  const u = random();
+  const a = 2 * Math.PI * random();
+  const b = 2 * Math.PI * random();
+  const r = Math.sqrt(1 - u);
+  const s = Math.sqrt(u);
+  return [r * Math.sin(a), r * Math.cos(a), s * Math.sin(b), s * Math.cos(b)];
+}
+
 const UP = new THREE.Vector3(0, 1, 0);
 
 /** Which value faces up for a body rotation; `tilt` is cos(angle) to vertical (1 = flat). */
@@ -206,7 +216,7 @@ function draw(c: HTMLCanvasElement, text: string, theme: Theme) {
   ctx.strokeText(text, 64, 66);
   ctx.fillStyle = theme.label.fill;
   ctx.fillText(text, 64, 66);
-  // thickens thin serif glyphs: only a 400 weight is loaded
+  // thickens thin serif glyphs: some bundled fonts, like Cinzel, only come in 400
   ctx.lineWidth = 3;
   ctx.strokeStyle = theme.label.fill;
   ctx.strokeText(text, 64, 66);
