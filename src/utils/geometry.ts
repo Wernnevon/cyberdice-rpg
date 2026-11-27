@@ -206,7 +206,7 @@ function draw(c: HTMLCanvasElement, text: string, theme: Theme) {
   ctx.strokeText(text, 64, 66);
   ctx.fillStyle = theme.label.fill;
   ctx.fillText(text, 64, 66);
-  // thickens thin serif glyphs: only a 400 weight is loaded
+  // thickens thin serif glyphs: some bundled fonts, like Cinzel, only come in 400
   ctx.lineWidth = 3;
   ctx.strokeStyle = theme.label.fill;
   ctx.strokeText(text, 64, 66);

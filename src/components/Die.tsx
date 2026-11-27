@@ -35,7 +35,7 @@ const RULE: Record<Combine, CoefficientCombineRule> = {
 const STANDARD = {
   gloss: { roughness: 0.2, metalness: 0.05 },
   metal: { roughness: 0.3, metalness: 1 },
-  glass: { roughness: 0.1, metalness: 0, transparent: true, opacity: 0.6 },
+  glass: { roughness: 0.1, metalness: 0, transparent: true, opacity: 0.8 },
 };
 
 // keyed by finish and map presence: switching either builds a fresh material (the shader and
