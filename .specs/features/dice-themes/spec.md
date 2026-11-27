@@ -125,9 +125,9 @@ Every die looks the same on every device: colors per die type, a toon material, 
 
 | Requirement ID | Story | Phase | Status |
 | -------------- | ----- | ----- | ------ |
-| THEME-01 | P1: Pick a theme | Execute | Implementing |
-| THEME-02 | P1: The theme dresses the dice | Execute | Implementing |
-| THEME-03 | P1: Textures | Execute | Implementing |
+| THEME-01 | P1: Pick a theme | Execute | Verified |
+| THEME-02 | P1: The theme dresses the dice | Execute | Verified |
+| THEME-03 | P1: Textures | Execute | Verified |
 
 ---
 
@@ -137,7 +137,7 @@ Every die looks the same on every device: colors per die type, a toon material, 
 - https://ambientcg.com/view?id=Marble012 - marble candidate, CC0.
 - https://ambientcg.com/view?id=Metal042A - gold candidate, CC0.
 - https://openclipart.org/detail/254943/grunge-halftone-2 - halftone candidate, CC0.
-- https://openclipart.org/detail/347864/cherry-blossoms - cherry blossom candidate, CC0.
+- https://openclipart.org/detail/213934/ - cherry blossom used, CC0 (347864 was dropped: opaque scene).
 
 ---
 
