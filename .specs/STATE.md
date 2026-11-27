@@ -16,6 +16,13 @@ Like the sound choice (AD-001), shake-to-roll on/off is saved in `localStorage` 
 - **Why:** the user asked for it ("eu queria q ele lembrasse sempre q eu ecolhesse o agitar e com som/sem som").
 - **Applies to:** shake-to-roll.
 
+### AD-003: The dice theme is stored on the device (2026-11-26)
+
+The chosen dice theme is saved in `localStorage` (`dice-theme`) and restored on launch, like AD-001 and AD-002.
+
+- **Why:** the user chose "Sim, salvar" when asked whether the dice look should stay saved on the device.
+- **Applies to:** dice-themes.
+
 ## Handoff
 
 - **Feature:** roll-sounds, done 2026-11-25. Verifier round 1 FAIL (7 findings), all closed; round 2 proofs 17/17; validate_verification exit 0.
