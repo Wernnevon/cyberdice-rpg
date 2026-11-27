@@ -71,8 +71,8 @@ T6 → T7 → T8 → T9
 
 **Done when**:
 
-- [ ] `themes.test.ts` has the tests named in checks C1, C5, C7, C8, C9, C15, C16, C17
-- [ ] Gate passes: `npm test`
+- [x] `themes.test.ts` has the tests named in checks C1, C5, C7, C8, C9, C15, C16, C17
+- [x] Gate passes: `npm test`
 
 **Tests**: unit
 **Gate**: quick
