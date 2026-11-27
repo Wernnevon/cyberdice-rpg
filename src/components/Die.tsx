@@ -3,6 +3,8 @@ import { useFrame } from '@react-three/fiber';
 import { CoefficientCombineRule, ConvexHullCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import type { DieSpec } from '../types/dice';
 import { getDie, labelTexture, readValue } from '../utils/geometry';
+import { bodyColor } from '../utils/themes';
+import { useTheme } from '../utils/themeStore';
 import { sound } from '../audio/engine';
 import { shakeBus, type ShakePush } from '../hooks/useShake';
 import { dieMaterial, pushHeld, type Combine } from '../utils/shakeGesture';
@@ -35,6 +37,7 @@ type Props = { spec: DieSpec; index: number; count: number; phase: Phase; arena:
 
 export function Die({ spec, index, count, phase, arena, onSettle }: Props) {
   const def = useMemo(() => getDie(spec.sides, spec.role), [spec.sides, spec.role]);
+  const theme = useTheme(); // looks only: never part of a key, so no die or body remounts
   const body = useRef<RapierRigidBody>(null);
   const done = useRef(false);
 
@@ -145,15 +148,15 @@ export function Die({ spec, index, count, phase, arena, onSettle }: Props) {
         frictionCombineRule={RULE[material.frictionRule]}
       />
       <mesh geometry={def.geometry} castShadow>
-        <meshToonMaterial color={def.color} />
+        <meshToonMaterial color={bodyColor(theme, spec.sides, spec.role)} />
       </mesh>
       <lineSegments geometry={def.edges}>
-        <lineBasicMaterial color="#0B0B10" />
+        <lineBasicMaterial color={theme.edge} />
       </lineSegments>
       {def.labels.map((l, i) => (
         <mesh key={i} position={l.position} quaternion={l.quaternion}>
           <planeGeometry args={[l.size, l.size]} />
-          <meshBasicMaterial map={labelTexture(l.text)} transparent depthWrite={false} />
+          <meshBasicMaterial map={labelTexture(l.text, theme)} transparent depthWrite={false} />
         </mesh>
       ))}
     </RigidBody>

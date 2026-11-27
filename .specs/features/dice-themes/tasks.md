@@ -141,10 +141,10 @@ T6 → T7 → T8 → T9
 
 **Done when**:
 
-- [ ] `COLORS`, `TENS_COLOR` and `DieDef.color` are gone; `Die.tsx` uses `bodyColor` and `useTheme`
-- [ ] `geometry.test.ts` has the test named in check C18
-- [ ] Switching theme does not remount any die
-- [ ] Gate passes: `npm test && npm run build && npm run lint`
+- [x] `COLORS`, `TENS_COLOR` and `DieDef.color` are gone; `Die.tsx` uses `bodyColor` and `useTheme`
+- [x] `geometry.test.ts` has the test named in check C18
+- [x] Switching theme does not remount any die
+- [x] Gate passes: `npm test && npm run build && npm run lint`
 
 **Tests**: unit
 **Gate**: build
