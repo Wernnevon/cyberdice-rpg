@@ -16,7 +16,7 @@
 ## Rules
 
 - Applying a theme never remounts a `Die` or its `RigidBody`: only geometry-independent material props change (AC "keep values and positions"). Changing the material element type is allowed, changing keys on the body is not.
-- Theme fonts load from Google Fonts like today. The app calls `document.fonts.load` for every theme font at startup so the service worker caches all of them.
+- The 8 die fonts are self-hosted latin woff2 files in `public/fonts/` (OFL, `LICENSES.md`), precached by the service worker and loaded at startup with `document.fonts.load`. This is the fallback named in Risks: runtime caching cannot guarantee fonts requested on the first visit. UI fonts stay on Google Fonts.
 - Preset accents map to die colors: 1d20→d20, 2d20kh1→d8, 2d20kl1→d4, 4d6kh3→d6, d%→d100, 8d6→d12. Under neon the only change is 2d20kl1, from #E0102F to the d4 #FF2E4D.
 
 ## Risks

@@ -27,7 +27,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,jpg,wasm,m4a}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,jpg,wasm,m4a,woff2}'],
         // Rapier ships its WASM inlined in JS (~2MB+), above workbox's 2MB default
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         // Google Fonts: cached on first load so the app keeps its look offline

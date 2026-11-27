@@ -215,9 +215,9 @@ T6 → T7 → T8 → T9
 
 **Done when**:
 
-- [ ] Every theme font is in the stylesheet link and loaded at startup
-- [ ] Offline after one online load, all 8 themes keep textures and fonts
-- [ ] Gate passes: `npm test && npm run build && npm run lint`
+- [x] Every theme font is in the stylesheet link and loaded at startup
+- [x] Offline after one online load, all 8 themes keep textures and fonts
+- [x] Gate passes: `npm test && npm run build && npm run lint`
 
 **Tests**: none
 **Gate**: build
