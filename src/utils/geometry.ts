@@ -206,6 +206,10 @@ function draw(c: HTMLCanvasElement, text: string, theme: Theme) {
   ctx.strokeText(text, 64, 66);
   ctx.fillStyle = theme.label.fill;
   ctx.fillText(text, 64, 66);
+  // thickens thin serif glyphs: only a 400 weight is loaded
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = theme.label.fill;
+  ctx.strokeText(text, 64, 66);
 }
 
 // Canvas text doesn't wait for web fonts: redraw the labels using a font once it arrives.
@@ -232,6 +236,7 @@ export function labelTexture(text: string, theme: Theme) {
     c.width = c.height = 128;
     draw(c, text, theme);
     const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace; // without it dark fills render lifted
     tex.anisotropy = 4;
     textures.set(key, (entry = { tex, text, theme }));
     requestFont(theme.font);

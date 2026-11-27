@@ -19,7 +19,7 @@ function swatch({ bodies, texture }: Theme): CSSProperties {
     backgroundColor: bodies[20],
     backgroundImage: !texture ? undefined : texture.kind === 'code' ? CODE_SWATCH[texture.pattern] : `url(${texture.src})`,
     backgroundSize: texture?.kind === 'image' ? 'cover' : texture?.kind === 'tile' ? '24px' : undefined,
-    backgroundBlendMode: 'multiply',
+    backgroundBlendMode: texture?.kind === 'code' ? 'normal' : 'multiply', // multiply hides white lines
   };
 }
 
