@@ -4,21 +4,26 @@ import { parse } from './dice.ts';
 export const RATTLE_THRESHOLD = 6;
 export const ROLL_THRESHOLD = 15;
 export const CALM_MS = 300;
+export const STALE_MS = 1000; // a longer gap between samples means the sensor stopped (app in background)
 
 /**
  * Shake-to-roll as a gesture: motion above RATTLE_THRESHOLD rattles; once it stays calm for
  * CALM_MS the gesture ends, with one roll if any motion in it reached ROLL_THRESHOLD.
- * Feed every motion sample; `canRoll` false (dice moving, other view) cancels the gesture.
+ * Feed every motion sample; `canRoll` false (dice moving, other view) cancels the gesture, and so
+ * does a gap over STALE_MS since the previous sample.
  */
 export function createShakeGesture() {
   let lastAbove: number | null = null;
   let armed = false;
+  let lastSample = 0;
   return (force: number, now: number, canRoll: boolean): 'rattle' | 'roll' | null => {
-    if (!canRoll) {
+    const stale = now - lastSample > STALE_MS;
+    lastSample = now;
+    if (!canRoll || stale) {
       lastAbove = null;
       armed = false;
-      return null;
     }
+    if (!canRoll) return null;
     if (force > RATTLE_THRESHOLD) {
       lastAbove = now;
       if (force > ROLL_THRESHOLD) armed = true;
@@ -120,10 +125,12 @@ type Vec = { x: number | null; y: number | null; z: number | null } | null;
  * direction is unknown (gravity sits in x/y), so the parts are 0 and the push goes random.
  */
 export function screenMotion(acceleration: Vec, withGravity: Vec, angle: number) {
-  const a = acceleration ?? withGravity;
+  // Some devices send `acceleration` as an object of nulls: same as not sending it.
+  const free = acceleration && (acceleration.x ?? acceleration.y ?? acceleration.z) !== null ? acceleration : null;
+  const a = free ?? withGravity;
   if (!a) return null;
-  const force = Math.hypot(a.x ?? 0, a.y ?? 0, a.z ?? 0) - (acceleration ? 0 : 9.8);
-  if (!acceleration) return { force, ax: 0, ay: 0 };
+  const force = Math.hypot(a.x ?? 0, a.y ?? 0, a.z ?? 0) - (free ? 0 : 9.8);
+  if (!free) return { force, ax: 0, ay: 0 };
   const r = (angle * Math.PI) / 180;
   const x = a.x ?? 0;
   const y = a.y ?? 0;
@@ -137,6 +144,7 @@ type GestureEvents = { start?: () => void; cancel?: () => void };
  * gesture, `rattle` on each rattle step with the push for the held dice (`shakeImpulse` of its force, along
  * `pushDirection` of the motion's screen-plane parts), `roll` on release after a strong shake, and
  * `cancel` when a started gesture ends with no roll (weak shake, or it can no longer roll).
+ * `reset` drops the gesture, cancelling a started one (app hidden).
  */
 export function createShakeHandler(
   rattle: (now: number, impulse: number, dir: { x: number; z: number }) => void,
@@ -148,20 +156,29 @@ export function createShakeHandler(
   const gesture = createShakeGesture();
   let active = false;
   let lastRattle = 0;
-  return (force: number, now: number, ax: number, ay: number) => {
+  const drop = () => {
+    if (!active) return;
+    active = false;
+    cancel?.();
+  };
+  const step = (force: number, now: number, ax: number, ay: number) => {
     const allowed = canRoll();
-    const step = gesture(force, now, allowed);
-    if (step === 'rattle') {
+    const kind = gesture(force, now, allowed);
+    if (kind === 'rattle') {
       if (!active) start?.();
       active = true;
       lastRattle = now;
       rattle(now, shakeImpulse(force), pushDirection(ax, ay, random));
-    } else if (step === 'roll') {
+    } else if (kind === 'roll') {
       active = false;
       roll();
-    } else if (active && (!allowed || (force <= RATTLE_THRESHOLD && now - lastRattle >= CALM_MS))) {
-      active = false;
-      cancel?.();
+    } else if (!allowed || (force <= RATTLE_THRESHOLD && now - lastRattle >= CALM_MS)) {
+      drop();
     }
   };
+  const reset = () => {
+    gesture(0, 0, false);
+    drop();
+  };
+  return Object.assign(step, { reset });
 }

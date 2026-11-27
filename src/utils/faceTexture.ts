@@ -178,22 +178,36 @@ export function paintFace(ctx: CanvasRenderingContext2D, size: number, color: st
 }
 
 const textures = new Map<string, THREE.CanvasTexture>();
-const images = new Map<string, HTMLImageElement>();
+export const IMAGE_RETRY_MS = 10_000;
+const images = new Map<string, { img: HTMLImageElement; failedAt: number }>();
+/** Repaints of the textures still waiting for each image; kept across failed attempts. */
+const waiting = new Map<string, ((img: HTMLImageElement) => void)[]>();
 
+/** The shared image of `src`. A failed one is requested again, at most once per IMAGE_RETRY_MS. */
 function loadImage(src: string) {
-  let img = images.get(src);
-  if (!img) {
-    img = new Image();
-    img.src = src;
-    images.set(src, img);
-  }
-  return img;
+  const hit = images.get(src);
+  if (hit && !(performance.now() - hit.failedAt >= IMAGE_RETRY_MS)) return hit.img;
+  const entry = { img: new Image(), failedAt: Infinity };
+  images.set(src, entry);
+  entry.img.addEventListener('error', () => (entry.failedAt = performance.now()), { once: true });
+  entry.img.addEventListener(
+    'load',
+    () => {
+      waiting.get(src)?.forEach((repaint) => repaint(entry.img));
+      waiting.delete(src);
+    },
+    { once: true },
+  );
+  entry.img.src = src;
+  return entry.img;
 }
 
 /** Cached face texture of a body color, or null for untextured themes. */
 export function faceTexture(theme: Theme, color: string): THREE.CanvasTexture | null {
   const { texture } = theme;
   if (!texture) return null;
+  // before the cache lookup: a later request is what retries a failed image
+  const img = texture.kind === 'code' ? null : loadImage(texture.src);
   const key = `${theme.id}:${color}`;
   const hit = textures.get(key);
   if (hit) return hit;
@@ -206,21 +220,18 @@ export function faceTexture(theme: Theme, color: string): THREE.CanvasTexture | 
   tex.anisotropy = 4;
   textures.set(key, tex);
 
-  const img = texture.kind === 'code' ? null : loadImage(texture.src);
   const ready = img?.complete && img.naturalWidth > 0;
   const paint = (loaded: HTMLImageElement | null) =>
     paintFace(ctx, SIZE, color, texture, loaded && texture.kind === 'tile' ? tintTile(loaded, color) : loaded);
   paint(ready ? img : null);
-  // a failed image never fires load: the face stays in the body color
-  if (img && !ready) {
-    img.addEventListener(
-      'load',
-      () => {
-        paint(img);
-        tex.needsUpdate = true;
-      },
-      { once: true },
-    );
+  // until an attempt loads, the face stays in the body color
+  if (texture.kind !== 'code' && !ready) {
+    const queue = waiting.get(texture.src) ?? [];
+    waiting.set(texture.src, queue);
+    queue.push((loaded) => {
+      paint(loaded);
+      tex.needsUpdate = true;
+    });
   }
   return tex;
 }

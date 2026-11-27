@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { faceTexture, paintFace } from './faceTexture.ts';
+import { faceTexture, IMAGE_RETRY_MS, paintFace } from './faceTexture.ts';
 import { getTheme, type ThemeId } from './themes.ts';
 
 const SIZE = 256;
@@ -68,8 +68,14 @@ class FakeImage {
   complete = false;
   naturalWidth = 0;
   private onLoad: (() => void)[] = [];
+  private onError: (() => void)[] = [];
   addEventListener(type: string, fn: () => void) {
     if (type === 'load') this.onLoad.push(fn);
+    if (type === 'error') this.onError.push(fn);
+  }
+  fail() {
+    this.complete = true;
+    this.onError.splice(0).forEach((fn) => fn());
   }
   load() {
     this.complete = true;
@@ -207,5 +213,40 @@ test('sakura blossoms are tinted against the body', () => {
     faceTexture(getTheme('sakura'), '#FFD3DD');
     const tints = paints.filter((p) => p.mode === 'source-in').map((p) => p.style);
     assert.deepEqual(tints, ['#FFFFFF', '#D6246E']);
+  });
+});
+
+test('a failed image is retried by a later request, with a cooldown, and repaints the earlier textures', (t) => {
+  let now = 1000;
+  t.mock.method(performance, 'now', () => now);
+  withFakeDom(({ paints, built }) => {
+    const theme = getTheme('manga');
+    const first = faceTexture(theme, '#101010')!;
+    const second = faceTexture(theme, '#202020')!;
+    assert.equal(built.length, 1);
+    built[0].fail();
+    // every render asks again: no new request inside the cooldown
+    now += IMAGE_RETRY_MS - 1;
+    for (let i = 0; i < 50; i++) assert.equal(faceTexture(theme, '#101010'), first);
+    assert.equal(built.length, 1);
+    now += 1;
+    for (let i = 0; i < 50; i++) faceTexture(theme, '#101010');
+    assert.equal(built.length, 2, 'one retry, none more while it is in flight');
+    // a second failure waits a full cooldown again
+    built[1].fail();
+    faceTexture(theme, '#101010');
+    assert.equal(built.length, 2);
+    now += IMAGE_RETRY_MS;
+    faceTexture(theme, '#101010');
+    assert.equal(built.length, 3);
+    const versions = [first.version, second.version];
+    const before = paints.filter((p) => p.op === 'drawImage').length;
+    built[2].load();
+    const draws = paints.filter((p) => p.op === 'drawImage').slice(before);
+    assert.deepEqual(draws.map((p) => p.args[0]), [built[2], built[2]]);
+    assert.ok(first.version > versions[0] && second.version > versions[1], 'both flagged for upload');
+    now += IMAGE_RETRY_MS;
+    faceTexture(theme, '#101010');
+    assert.equal(built.length, 3, 'a loaded image is not requested again');
   });
 });

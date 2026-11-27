@@ -1,7 +1,7 @@
 // Derived from .specs/features/sound-polish/spec.md (SPL-05) and shake-animation/spec.md (SHA-01.5, SHA-02.1, SHA-04, SHA-05). Run: npm test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CALM_MS, canShakeRoll, createShakeGesture, createShakeHandler, dieMaterial, FLYING, heldVelocity, pushHeld, MAX_IMPULSE, MIN_IMPULSE, PUSH_SPREAD, pushDirection, screenMotion, RATTLE_THRESHOLD, ROLL_THRESHOLD, shakeImpulse } from './shakeGesture.ts';
+import { CALM_MS, canShakeRoll, createShakeGesture, createShakeHandler, dieMaterial, FLYING, heldVelocity, pushHeld, MAX_IMPULSE, MIN_IMPULSE, PUSH_SPREAD, pushDirection, screenMotion, RATTLE_THRESHOLD, ROLL_THRESHOLD, shakeImpulse, STALE_MS } from './shakeGesture.ts';
 
 const WEAK = (RATTLE_THRESHOLD + ROLL_THRESHOLD) / 2; // rattles, never rolls
 const STRONG = ROLL_THRESHOLD + 1;
@@ -283,4 +283,43 @@ test('SHA-05.6 held dice bounce like balls with almost no friction; thrown dice 
     { r: thrown.restitution, f: thrown.friction, rr: thrown.restitutionRule, fr: thrown.frictionRule, d: thrown.damping },
     { r: 0.3, f: 0.6, rr: 'average', fr: 'average', d: 0 },
   );
+});
+
+test('an armed gesture left stale by a long gap between samples never rolls', () => {
+  const g = createShakeGesture();
+  g(STRONG, 5000, true);
+  assert.equal(g(CALM, 5000 + STALE_MS + 1, true), null);
+  assert.equal(g(CALM, 9000, true), null);
+  // a shake after the gap starts unarmed
+  const again = createShakeGesture();
+  again(STRONG, 0, true);
+  assert.equal(again(WEAK, 5000, true), 'rattle');
+  assert.equal(again(CALM, 5000 + CALM_MS, true), null);
+  // the handler releases the held dice on the first calm sample after the gap
+  const { calls, handle } = recorder();
+  handle(STRONG, 0, 0, 0);
+  handle(CALM, 60_000, 0, 0);
+  assert.deepEqual(calls, ['start', `rattle@0:${shakeImpulse(STRONG)}`, 'cancel']);
+});
+
+test('reset (app hidden) cancels the held dice once and never rolls', () => {
+  const { calls, handle } = recorder();
+  handle.reset();
+  assert.deepEqual(calls, [], 'nothing held: no cancel');
+  handle(STRONG, 0, 0, 0);
+  handle.reset();
+  handle.reset();
+  handle(CALM, CALM_MS, 0, 0);
+  assert.deepEqual(calls, ['start', `rattle@0:${shakeImpulse(STRONG)}`, 'cancel']);
+  handle(STRONG, 400, 0, 0);
+  assert.equal(calls[3], 'start', 'the next shake starts over');
+});
+
+test('an acceleration of nulls falls back to the reading with gravity', () => {
+  const nulls = { x: null, y: null, z: null };
+  assert.deepEqual(screenMotion(nulls, { x: 0, y: 30, z: 0 }, 90), { force: 30 - 9.8, ax: 0, ay: 0 });
+  assert.equal(screenMotion(nulls, null, 0), null);
+  // zeros and partly null readings are real data
+  assert.equal(screenMotion({ x: 0, y: 0, z: 0 }, { x: 0, y: 30, z: 0 }, 0)!.force, 0);
+  assert.equal(screenMotion({ x: null, y: null, z: 7 }, { x: 0, y: 30, z: 0 }, 0)!.force, 7);
 });

@@ -44,11 +44,20 @@ export function useShake(gesture: Gesture, wanted: boolean, canRoll: () => boole
       { start: () => cb.current.start(), cancel: () => cb.current.cancel() },
     );
     const handle = (e: DeviceMotionEvent) => {
+      if (document.hidden) return;
       const m = screenMotion(e.acceleration, e.accelerationIncludingGravity, screen.orientation?.angle ?? 0);
       if (m) step(m.force, performance.now(), m.ax, m.ay);
     };
+    const hide = () => {
+      if (document.hidden) step.reset();
+    };
     window.addEventListener('devicemotion', handle);
-    return () => window.removeEventListener('devicemotion', handle);
+    document.addEventListener('visibilitychange', hide);
+    return () => {
+      window.removeEventListener('devicemotion', handle);
+      document.removeEventListener('visibilitychange', hide);
+      cb.current.cancel(); // no listener is left to release held dice (no-op when none are held)
+    };
   }, [listening]);
 
   /** Must be called from a user gesture (iOS permission prompt). */
@@ -70,8 +79,8 @@ export function useShake(gesture: Gesture, wanted: boolean, canRoll: () => boole
     const once = (e: Event) => {
       events.forEach((n) => window.removeEventListener(n, once, true));
       if ((e.target as Element | null)?.closest?.('[data-shake-toggle]')) return; // the toggle decides
-      setPending(false);
-      void enableRef.current();
+      // pending ends only after the answer, so a granted prompt keeps listening without a gap
+      void enableRef.current().finally(() => setPending(false));
     };
     events.forEach((n) => window.addEventListener(n, once, true));
     return () => events.forEach((n) => window.removeEventListener(n, once, true));
