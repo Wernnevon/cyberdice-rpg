@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { CoefficientCombineRule, ConvexHullCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import type { DieSpec } from '../types/dice';
 import { getDie, labelTexture, readValue } from '../utils/geometry';
-import { bodyColor } from '../utils/themes';
+import { bodyColor, type Theme } from '../utils/themes';
 import { useTheme } from '../utils/themeStore';
 import { sound } from '../audio/engine';
 import { shakeBus, type ShakePush } from '../hooks/useShake';
@@ -29,6 +29,19 @@ const RULE: Record<Combine, CoefficientCombineRule> = {
   min: CoefficientCombineRule.Min,
   max: CoefficientCombineRule.Max,
 };
+
+// ponytail: finish look knobs (reflection strength is ENV_INTENSITY in DiceScene)
+const STANDARD = {
+  gloss: { roughness: 0.2, metalness: 0.05 },
+  metal: { roughness: 0.3, metalness: 1 },
+  glass: { roughness: 0.1, metalness: 0, transparent: true, opacity: 0.6 },
+};
+
+// keyed by finish: switching it builds a fresh material (`transparent` needs one), the mesh stays
+function BodyMaterial({ finish, color }: { finish: Theme['finish']; color: string }) {
+  if (finish === 'toon') return <meshToonMaterial key={finish} color={color} />;
+  return <meshStandardMaterial key={finish} color={color} {...STANDARD[finish]} />;
+}
 
 /** `hold`: in the bottom strip, pushed by the shake, never read. `thrown`: flies to the top and is read. */
 export type Phase = 'hold' | 'thrown';
@@ -148,13 +161,14 @@ export function Die({ spec, index, count, phase, arena, onSettle }: Props) {
         frictionCombineRule={RULE[material.frictionRule]}
       />
       <mesh geometry={def.geometry} castShadow>
-        <meshToonMaterial color={bodyColor(theme, spec.sides, spec.role)} />
+        <BodyMaterial finish={theme.finish} color={bodyColor(theme, spec.sides, spec.role)} />
       </mesh>
       <lineSegments geometry={def.edges}>
         <lineBasicMaterial color={theme.edge} />
       </lineSegments>
+      {/* renderOrder: numbers draw after a transparent (glass) body */}
       {def.labels.map((l, i) => (
-        <mesh key={i} position={l.position} quaternion={l.quaternion}>
+        <mesh key={i} position={l.position} quaternion={l.quaternion} renderOrder={1}>
           <planeGeometry args={[l.size, l.size]} />
           <meshBasicMaterial map={labelTexture(l.text, theme)} transparent depthWrite={false} />
         </mesh>

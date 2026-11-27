@@ -160,8 +160,8 @@ T6 → T7 → T8 → T9
 
 **Done when**:
 
-- [ ] Each theme renders with its finish; gold reads as metal and crystal as translucent
-- [ ] Gate passes: `npm test && npm run build && npm run lint`
+- [x] Each theme renders with its finish; gold reads as metal and crystal as translucent
+- [x] Gate passes: `npm test && npm run build && npm run lint`
 
 **Tests**: none
 **Gate**: build

@@ -1,4 +1,6 @@
 import { Suspense, useCallback, useLayoutEffect } from 'react';
+import { PMREMGenerator } from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Canvas, useThree } from '@react-three/fiber';
 import { CuboidCollider, Physics, RigidBody } from '@react-three/rapier';
 import { useRoll } from '../hooks/useRoll';
@@ -12,6 +14,30 @@ const FOV = 40;
 const CEILING = 6.5; // below the closest camera (MIN_H framing ≈ 7.5) so dice never fly past it
 const WALL = 10;
 const DIE_TOP = 1.6; // tallest die resting height + small margin
+
+// ponytail: reflection strength knob — lower it if gold/marble wash out, raise it if metal looks dull.
+// (material.envMapIntensity is ignored for scene.environment; the lights below also add to it.)
+const ENV_INTENSITY = 0.5;
+
+/** Something for metal, gloss and glass to reflect; toon ignores it. */
+function Environment() {
+  const get = useThree((s) => s.get);
+  useLayoutEffect(() => {
+    const { gl, scene } = get();
+    const pmrem = new PMREMGenerator(gl);
+    const room = new RoomEnvironment();
+    const target = pmrem.fromScene(room, 0.04);
+    room.dispose();
+    pmrem.dispose();
+    scene.environment = target.texture;
+    scene.environmentIntensity = ENV_INTENSITY;
+    return () => {
+      scene.environment = null;
+      target.dispose();
+    };
+  }, [get]);
+  return null;
+}
 
 function Table() {
   const { state, settle } = useRoll();
@@ -66,6 +92,7 @@ function Table() {
 export function DiceScene() {
   return (
     <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 18, 0.001], fov: FOV }} gl={{ alpha: true }}>
+      <Environment />
       <ambientLight intensity={1.2} />
       <directionalLight
         position={[4, 14, 6]}
