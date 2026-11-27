@@ -105,9 +105,9 @@ T6 → T7 → T8 → T9
 
 **Done when**:
 
-- [ ] Tapping the button opens the screen, tapping a theme marks it, back returns to the table
-- [ ] At 360 px there is no horizontal scroll and the list scrolls under a fixed back button
-- [ ] Gate passes: `npm test && npm run build && npm run lint`
+- [x] Tapping the button opens the screen, tapping a theme marks it, back returns to the table
+- [x] At 360 px there is no horizontal scroll and the list scrolls under a fixed back button
+- [x] Gate passes: `npm test && npm run build && npm run lint`
 
 **Tests**: none
 **Gate**: build

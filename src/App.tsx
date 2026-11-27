@@ -4,6 +4,7 @@ import { DiceScene } from './components/DiceScene';
 import { Formula } from './components/Formula';
 import { History } from './components/History';
 import { Result } from './components/Result';
+import { ThemeScreen } from './components/ThemeScreen';
 import { Tray, type Counts } from './components/Tray';
 import { RollProvider, useRoll } from './hooks/useRoll';
 import { useShake } from './hooks/useShake';
@@ -14,7 +15,7 @@ import { loadMuted, saveMuted } from './utils/sound';
 import { loadFlag, saveFlag } from './utils/prefs';
 import s from './App.module.css';
 
-type View = 'table' | 'history' | 'formula';
+type View = 'table' | 'history' | 'formula' | 'themes';
 
 const SHAKE_KEY = 'shake-on';
 
@@ -95,6 +96,12 @@ function Layout() {
               </svg>
             </button>
           )}
+          <button className="iconBtn" onClick={() => setView('themes')} aria-label={t('openThemes')}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 1.5-2.5S14 16 15.5 16H18a3 3 0 0 0 3-3c0-5.5-4-10-9-10z" />
+              <path d="M7.5 12h.01M9.5 7.5h.01M15 7.5h.01" />
+            </svg>
+          </button>
           <button className="iconBtn" onClick={() => setView('history')} aria-label={t('openHistory')}>
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
@@ -127,6 +134,7 @@ function Layout() {
       />
 
       {view === 'history' && <History onBack={() => setView('table')} onReroll={(n) => doRoll(n)} />}
+      {view === 'themes' && <ThemeScreen onBack={() => setView('table')} />}
       {view === 'formula' && (
         <Formula
           initial={notation}

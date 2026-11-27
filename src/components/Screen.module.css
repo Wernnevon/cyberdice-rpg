@@ -146,6 +146,29 @@
   transform: skewX(-8deg);
 }
 
+/* Themes */
+.themes {
+  padding-top: 12px;
+}
+
+.theme {
+  width: 100%;
+  min-height: 64px;
+  text-align: left;
+}
+
+.theme[aria-pressed='true'] {
+  border-color: var(--yellow);
+  box-shadow: 4px 4px 0 var(--red);
+}
+
+.swatch {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border: 2px solid var(--ink);
+}
+
 /* Formula */
 .body {
   flex: 1;

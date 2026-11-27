@@ -25,6 +25,18 @@
   display: flex;
 }
 
+/* Four 48px buttons beside the title on a 360px phone. */
+@media (max-width: 400px) {
+  .header {
+    padding-left: 12px;
+  }
+
+  .header h1 {
+    padding: 4px 8px;
+    font-size: 18px;
+  }
+}
+
 /* Manga panel holding the 3D dice. */
 .table {
   position: relative;
