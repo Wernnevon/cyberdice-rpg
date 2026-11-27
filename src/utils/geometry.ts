@@ -64,19 +64,38 @@ function baseGeometry(sides: Sides): THREE.BufferGeometry {
 /** Group triangles into planar faces by normal. */
 function faces(g: THREE.BufferGeometry) {
   const pos = g.getAttribute('position');
-  const list: { normal: THREE.Vector3; verts: THREE.Vector3[] }[] = [];
+  const list: { normal: THREE.Vector3; verts: THREE.Vector3[]; indices: number[] }[] = [];
   const v = [0, 1, 2].map(() => new THREE.Vector3());
   for (let i = 0; i < pos.count; i += 3) {
     v.forEach((p, j) => p.fromBufferAttribute(pos, i + j));
     const n = new THREE.Vector3().subVectors(v[1], v[0]).cross(new THREE.Vector3().subVectors(v[2], v[0])).normalize();
     let f = list.find((g) => g.normal.dot(n) > 0.999);
-    if (!f) list.push((f = { normal: n, verts: [] }));
+    if (!f) list.push((f = { normal: n, verts: [], indices: [] }));
+    f.indices.push(i, i + 1, i + 2);
     for (const p of v) if (!f.verts.some((q) => q.distanceTo(p) < 1e-4)) f.verts.push(p.clone());
   }
   return list.map((f) => ({
     ...f,
     center: f.verts.reduce((s, p) => s.add(p), new THREE.Vector3()).divideScalar(f.verts.length),
   }));
+}
+
+/** Planar UVs, one face at a time: face center at (0.5, 0.5), farthest corner half a texture away. */
+function faceUvs(g: THREE.BufferGeometry, list: ReturnType<typeof faces>) {
+  const pos = g.getAttribute('position');
+  const uv = new THREE.BufferAttribute(new Float32Array(pos.count * 2), 2);
+  const p = new THREE.Vector3();
+  for (const f of list) {
+    const y = f.verts[0].clone().sub(f.center).projectOnPlane(f.normal).normalize();
+    const x = new THREE.Vector3().crossVectors(y, f.normal);
+    // the margin keeps float rounding inside 0..1
+    const span = 2.001 * Math.max(...f.verts.map((v) => v.distanceTo(f.center)));
+    for (const i of f.indices) {
+      p.fromBufferAttribute(pos, i).sub(f.center);
+      uv.setXY(i, 0.5 + p.dot(x) / span, 0.5 + p.dot(y) / span);
+    }
+  }
+  return uv;
 }
 
 /** Values 1..n, opposite faces summing to n+1 when the die has opposite faces. */
@@ -120,6 +139,7 @@ export function getDie(sides: Sides, role?: Role): DieDef {
   const geometry = base.index ? base.toNonIndexed() : base;
   geometry.computeVertexNormals();
   const fs = faces(geometry);
+  geometry.setAttribute('uv', faceUvs(geometry, fs));
   const labels: Label[] = [];
   let readouts: DieDef['readouts'];
 

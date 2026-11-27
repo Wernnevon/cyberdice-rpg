@@ -197,9 +197,9 @@ T6 → T7 → T8 → T9
 
 **Done when**:
 
-- [ ] `faceTexture.test.ts` has the tests named in checks C19 to C27
-- [ ] `geometry.ts` gives every face UVs inside 0..1, covered by the test in check C33
-- [ ] Gate passes: `npm test && npm run build && npm run lint`
+- [x] `faceTexture.test.ts` has the tests named in checks C19 to C27
+- [x] `geometry.ts` gives every face UVs inside 0..1, covered by the test in check C33
+- [x] Gate passes: `npm test && npm run build && npm run lint`
 
 **Tests**: unit
 **Gate**: build

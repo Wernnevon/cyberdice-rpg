@@ -5,6 +5,7 @@ import type { DieSpec } from '../types/dice';
 import { getDie, labelTexture, readValue } from '../utils/geometry';
 import { bodyColor, type Theme } from '../utils/themes';
 import { useTheme } from '../utils/themeStore';
+import { faceTexture } from '../utils/faceTexture';
 import { sound } from '../audio/engine';
 import { shakeBus, type ShakePush } from '../hooks/useShake';
 import { dieMaterial, pushHeld, type Combine } from '../utils/shakeGesture';
@@ -37,10 +38,15 @@ const STANDARD = {
   glass: { roughness: 0.1, metalness: 0, transparent: true, opacity: 0.6 },
 };
 
-// keyed by finish: switching it builds a fresh material (`transparent` needs one), the mesh stays
-function BodyMaterial({ finish, color }: { finish: Theme['finish']; color: string }) {
-  if (finish === 'toon') return <meshToonMaterial key={finish} color={color} />;
-  return <meshStandardMaterial key={finish} color={color} {...STANDARD[finish]} />;
+// keyed by finish and map presence: switching either builds a fresh material (the shader and
+// `transparent` need one), the mesh stays. A texture already carries the body color.
+function BodyMaterial({ theme, color }: { theme: Theme; color: string }) {
+  const { finish } = theme;
+  const map = faceTexture(theme, color);
+  const key = `${finish}${map ? '-map' : ''}`;
+  const look = map ? { color: '#ffffff', map } : { color };
+  if (finish === 'toon') return <meshToonMaterial key={key} {...look} />;
+  return <meshStandardMaterial key={key} {...look} {...STANDARD[finish]} />;
 }
 
 /** `hold`: in the bottom strip, pushed by the shake, never read. `thrown`: flies to the top and is read. */
@@ -161,7 +167,7 @@ export function Die({ spec, index, count, phase, arena, onSettle }: Props) {
         frictionCombineRule={RULE[material.frictionRule]}
       />
       <mesh geometry={def.geometry} castShadow>
-        <BodyMaterial finish={theme.finish} color={bodyColor(theme, spec.sides, spec.role)} />
+        <BodyMaterial theme={theme} color={bodyColor(theme, spec.sides, spec.role)} />
       </mesh>
       <lineSegments geometry={def.edges}>
         <lineBasicMaterial color={theme.edge} />
