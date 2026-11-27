@@ -125,9 +125,9 @@ Every die looks the same on every device: colors per die type, a toon material, 
 
 | Requirement ID | Story | Phase | Status |
 | -------------- | ----- | ----- | ------ |
-| THEME-01 | P1: Pick a theme | Tasks | Pending |
-| THEME-02 | P1: The theme dresses the dice | Tasks | Pending |
-| THEME-03 | P1: Textures | Tasks | Pending |
+| THEME-01 | P1: Pick a theme | Execute | Implementing |
+| THEME-02 | P1: The theme dresses the dice | Execute | Implementing |
+| THEME-03 | P1: Textures | Execute | Implementing |
 
 ---
 

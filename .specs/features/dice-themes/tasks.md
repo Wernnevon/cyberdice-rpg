@@ -11,7 +11,7 @@ User's orchestration: one Sonnet sub-agent implements each task, one after anoth
 ---
 
 **Design**: `.specs/features/dice-themes/design.md`
-**Status**: Approved
+**Status**: Done
 **Approved**: 2026-11-26 - user: "aprovo as tarefas, pode executar"
 **Build**: `npm run build; npm run lint`
 **Run unit**: `node --test --test-reporter=spec src/**/*.test.ts`
@@ -331,8 +331,8 @@ Proof: run unit | ✔ C33 every face has uvs in range
 ## Handoff
 
 **Settled mid-build:** none
-**Dispatched:** none
-**Walked:** not yet
+**Dispatched:** T1-T9 each: one Sonnet implementer and a Haiku gate run, all returned; visual fix: Sonnet + Haiku, returned.
+**Walked:** 2026-11-26, production preview on http://localhost:4317 in headless Chrome 360x740 (extension screenshots timed out). Pick a theme: header palette button, 8 names in pt-BR and en with the active one marked, tap applies, back shows the table, choice still active after reload; at 360x420 the list scrolled (scrollTop 276) with back at top 12; no horizontal scroll (360/360). Theme dresses the dice: rolled d4 d6 d8 d10 d12 d20 d100, switched all 8, result unchanged; 3D colors, finishes, textures, tray, result icons and formula accents followed the theme. Found washed-out 3D numbers (ivory, gold) and an invisible shonen swatch, fixed in `fix(themes): keep 3d numbers and shonen swatch visible`. Textures offline: after one online load the server was killed; reload worked, 4 textures returned 200 and 8 die fonts loaded. History under sakura was captured; late-font redraw was not throttled, each theme showed its own font on first switch. Not walked: a real phone.
 
 ---
 
